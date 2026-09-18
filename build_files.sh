@@ -1,14 +1,20 @@
 #!/bin/bash
-# Runs during every Vercel build (see vercel.json's static-build step).
 set -o errexit
 
-# static-build step doesn't provision a venv for us, and the
-# interpreter uv points at is "externally managed" — so make our own.
+echo "=== Starting build ==="
+
+# Create virtual environment (this should work as before)
 uv venv .venv
-source .venv/bin/activate
 
-uv pip install -r requirements.txt
+# Install dependencies directly into the venv without activating it.
+# This bypasses any PATH or activation issues.
+uv pip install --python .venv/bin/python -r requirements.txt
 
-python manage.py collectstatic --noinput --clear
+# Run Django commands using the venv's Python interpreter explicitly.
+echo "=== Collecting static files ==="
+.venv/bin/python manage.py collectstatic --noinput --clear
 
-python manage.py migrate --noinput
+echo "=== Running migrations ==="
+.venv/bin/python manage.py migrate --noinput
+
+echo "=== Build complete ==="
