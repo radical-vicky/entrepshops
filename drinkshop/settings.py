@@ -175,7 +175,12 @@ USE_TZ = True
 # WhiteNoise for static files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Vercel's runtime filesystem is read-only except /tmp
+if os.environ.get('VERCEL'):
+    STATIC_ROOT = '/tmp/staticfiles'
+else:
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 
