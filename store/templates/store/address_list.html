@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Your delivery addresses — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Account</span>
+        <h1>Your delivery addresses</h1>
+    </div>
+
+    <p style="margin-bottom:20px"><a href="{% url 'store:address_add' %}" class="btn btn-small">+ Add new address</a></p>
+
+    <ul class="address-list">
+        {% for address in addresses %}
+            <li class="address-card">
+                <strong>{{ address.label }}</strong>{% if address.is_default %} <span class="badge">Default</span>{% endif %}
+                <p>{{ address.full_name }} — {{ address.phone_number }}</p>
+                <p>{{ address.as_text }}</p>
+                {% if address.delivery_notes %}<p class="muted">Notes: {{ address.delivery_notes }}</p>{% endif %}
+                {% if address.has_gps %}
+                    <p><a href="{{ address.maps_url }}" target="_blank" rel="noopener"><svg style="width:13px;height:13px;vertical-align:-2px"><use href="#icon-pin"/></svg> View pinned location on map</a></p>
+                {% endif %}
+            </li>
+        {% empty %}
+            <div class="form-card">
+                <p>You haven't saved any delivery addresses yet.</p>
+            </div>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

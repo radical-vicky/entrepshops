@@ -1,0 +1,14 @@
+{% comment %}
+Reusable 5-star rating row. Usage: {% include "includes/star_rating.html" with product=product %}
+Expects product to have .rating_rounded (int 0-5) and .average_rating (avg, count) tuple.
+{% endcomment %}
+{% with avg=product.average_rating.0 count=product.average_rating.1 %}
+{% if count %}
+<div class="star-rating" title="{{ avg|floatformat:1 }} out of 5 — {{ count }} review{{ count|pluralize }}">
+    {% for i in "12345" %}
+        <svg class="star{% if forloop.counter <= product.rating_rounded %} is-filled{% endif %}"><use href="#icon-star"/></svg>
+    {% endfor %}
+    <span class="rating-count">({{ count }})</span>
+</div>
+{% endif %}
+{% endwith %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% block title %}Register — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Account</span>
+        <h1>Create an account</h1>
+        <p class="lede">Save delivery addresses and pay with M-Pesa in a couple of taps.</p>
+    </div>
+
+    <div class="form-card">
+        {% get_providers as socialaccount_providers %}
+        {% if socialaccount_providers %}
+            <div class="social-auth">
+                <a href="{% provider_login_url 'google' method='oauth2' %}" class="btn btn-google">
+                    Sign up with Google
+                </a>
+            </div>
+            <p class="muted or-divider">or register with a username and password</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'account_signup' %}" class="auth-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+            {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+            <button type="submit" class="btn">Register</button>
+        </form>
+        <p style="margin-top:18px">Already have an account? <a href="{% url 'account_login' %}">Login here</a></p>
+    </div>
+</div>
+{% endblock %}

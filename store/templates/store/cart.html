@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Your cart — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Cart</span>
+        <h1>Your cart</h1>
+    </div>
+
+    {% if cart|length == 0 %}
+        <div class="form-card">
+            <p>Your cart is empty.</p>
+            <a href="{% url 'store:home' %}" class="btn btn-small">Browse drinks</a>
+        </div>
+    {% else %}
+        <div class="form-card wide">
+            <table class="cart-table">
+                <thead>
+                    <tr><th></th><th>Product</th><th>Unit price</th><th>Quantity</th><th>Subtotal</th><th></th></tr>
+                </thead>
+                <tbody>
+                {% for line in cart %}
+                    <tr>
+                        <td class="cart-thumb-cell">
+                            {% if line.product.image %}
+                                <img src="{{ line.product.image.url }}" alt="" class="cart-thumb">
+                            {% else %}
+                                <div class="cart-thumb cart-thumb-placeholder"><svg style="width:18px;height:18px;color:#45D68A"><use href="#icon-bottle"/></svg></div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ line.product.name }}
+                            {% if line.is_bonus %}
+                                <br><span class="badge badge-success">FREE gift</span>
+                                <span class="muted" style="font-size:0.78rem">{{ line.bundle_label }}</span>
+                            {% endif %}
+                            {% if not line.product.in_stock and not line.is_bonus %}<span class="badge badge-warning">Out of stock</span>{% endif %}
+                        </td>
+                        <td>KES {{ line.unit_price }}</td>
+                        <td>
+                            {% if line.is_bonus %}
+                                <span class="muted">{{ line.quantity }} (bonus)</span>
+                            {% else %}
+                                <form action="{% url 'store:cart_update' line.product.id %}" method="post" class="inline-form">
+                                    {% csrf_token %}
+                                    <input type="number" name="quantity" value="{{ line.quantity }}" min="1" max="{{ line.product.stock }}">
+                                    <button type="submit" class="btn btn-small btn-outline">Update</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                        <td>KES {{ line.subtotal }}</td>
+                        <td>
+                            {% if not line.is_bonus %}
+                                <form action="{% url 'store:cart_remove' line.product.id %}" method="post" class="inline-form">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-small btn-danger">Remove</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="cart-summary">
+                <p class="total">Subtotal: KES {{ cart.subtotal }}</p>
+                <p class="muted">Delivery fee is calculated at checkout based on your address.</p>
+                <a href="{% url 'orders:checkout' %}" class="btn">Proceed to checkout</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

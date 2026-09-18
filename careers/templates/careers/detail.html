@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — Careers — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-head">
+    <span class="eyebrow">{{ job.department }} &middot; {{ job.location }} &middot; {{ job.get_employment_type_display }}</span>
+    <h1>{{ job.title }}</h1>
+</div>
+
+<div class="job-detail-layout">
+    <div>
+        <p>{{ job.description|linebreaks }}</p>
+        {% if job.requirements_list %}
+            <h3>What we're looking for</h3>
+            <ul class="requirements-list">
+                {% for req in job.requirements_list %}<li>{{ req }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    <div class="glass form-card">
+        <h3 style="margin-top:0">Apply for this role</h3>
+        <form method="post" action="{% url 'careers:apply' job.slug %}" class="auth-form">
+            {% csrf_token %}
+            <label>Full name<input type="text" name="full_name" required></label>
+            <label>Email<input type="email" name="email" required></label>
+            <label>Phone number<input type="text" name="phone_number" required></label>
+            <label>CV / portfolio link<input type="url" name="resume_link" placeholder="https://..."></label>
+            <label>Why you're a fit<textarea name="message" rows="4"></textarea></label>
+            <button type="submit" class="btn">Submit application</button>
+        </form>
+    </div>
+</div>
+</div>
+{% endblock %}

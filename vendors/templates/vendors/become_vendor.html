@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sell on DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-head">
+    <span class="eyebrow">Sell with us</span>
+    <h1>Start your own shop here</h1>
+    <p class="lede">List wholesale or single items across any of our departments — drinks, electronics, vehicles, fashion, and more. KES {{ fee }} a month, cancel anytime.</p>
+</div>
+
+<div class="form-card">
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+        <label>Business name<input type="text" name="business_name" required></label>
+        <label>Phone number (M-Pesa, for your subscription payments)<input type="text" name="phone_number" placeholder="07XXXXXXXX" required></label>
+        <button type="submit" class="btn">Create seller account</button>
+    </form>
+    <p class="muted" style="margin-top:16px">First payment: KES {{ fee }} for {{ days }} days of listing access. Your account also needs a quick admin approval before your products go live.</p>
+</div>
+</div>
+{% endblock %}

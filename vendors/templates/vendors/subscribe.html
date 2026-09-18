@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Subscribe — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-head">
+    <span class="eyebrow">{{ vendor.business_name }}</span>
+    <h1>{% if vendor.subscription_active %}Renew your subscription{% else %}Activate your subscription{% endif %}</h1>
+    <p class="lede">KES {{ fee }} covers {{ days }} days of listing access. Paying early stacks onto time you already have — nothing is wasted.</p>
+</div>
+
+<div class="form-card">
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+        <label>M-Pesa phone number
+            <input type="text" name="phone_number" placeholder="{{ vendor.phone_number }}">
+        </label>
+        <button type="submit" class="btn btn-orange">Pay KES {{ fee }} with M-Pesa</button>
+    </form>
+    {% if vendor.subscription_active %}
+        <p class="badge badge-success" style="margin-top:16px">Active until {{ vendor.subscription_expires_at|date:"d M Y" }}</p>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

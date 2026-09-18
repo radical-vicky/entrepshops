@@ -1,0 +1,33 @@
+{% for product in products %}
+    <article class="product-card">
+        <a href="{{ product.get_absolute_url }}">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+            {% else %}
+                <div class="img-placeholder"><svg viewBox="0 0 24 24" style="color:#45D68A"><use href="#icon-bottle"/></svg></div>
+            {% endif %}
+            {% if product.discount_percent %}<span class="badge badge-warning discount-flag">-{{ product.discount_percent }}%</span>{% endif %}
+            <h4>{{ product.name }}</h4>
+        </a>
+        {% include "includes/star_rating.html" with product=product %}
+        <p class="price">
+            KES {{ product.price }}
+            {% if product.compare_at_price %}<span class="was-price">KES {{ product.compare_at_price }}</span>{% endif %}
+        </p>
+        {% if not product.is_deliverable %}
+            <p class="badge badge-warning">Delivery unavailable</p>
+        {% elif not product.in_stock %}
+            <p class="badge badge-muted">Out of stock</p>
+        {% else %}
+            <p class="badge badge-success in-stock-badge">In stock</p>
+            <form action="{% url 'store:cart_add' product.id %}" method="post" class="ajax-add-form">
+                {% csrf_token %}
+                <input type="hidden" name="quantity" value="1">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-small">Add to cart</button>
+            </form>
+        {% endif %}
+    </article>
+{% empty %}
+    <p>No drinks available in this category yet.</p>
+{% endfor %}

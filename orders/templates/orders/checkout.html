@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Checkout — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Checkout</span>
+        <h1>Complete your order</h1>
+    </div>
+
+    {% if not address_options %}
+        <div class="form-card">
+            <p>You need a delivery address first.</p>
+            <a href="{% url 'store:address_add' %}" class="btn btn-small">Add delivery address</a>
+        </div>
+    {% else %}
+        <form method="post" class="form-card wide checkout-form">
+            {% csrf_token %}
+            <h3>Deliver to</h3>
+            {% for option in address_options %}
+                <label class="radio-card {% if not option.deliverable %}radio-card-disabled{% endif %}">
+                    <input type="radio" name="address_id" value="{{ option.address.id }}"
+                           {% if forloop.first %}checked{% endif %}
+                           {% if not option.deliverable %}disabled{% endif %}>
+                    <span>
+                        <strong>{{ option.address.label }}</strong> — {{ option.address.as_text }}<br>
+                        {% if option.deliverable %}
+                            <span class="muted">
+                                Delivery fee: KES {{ option.fee }}
+                                {% if option.zone %}({{ option.zone.name }}, ~{{ option.zone.estimated_minutes }} min){% endif %}
+                                — Total: KES {{ option.total }}
+                            </span>
+                        {% else %}
+                            <span class="badge badge-warning">Not currently delivering to {{ option.address.area }}</span>
+                        {% endif %}
+                    </span>
+                </label>
+            {% endfor %}
+            <p><a href="{% url 'store:address_add' %}">+ Add another address</a></p>
+
+            <h3>M-Pesa phone number</h3>
+            <label>We'll send an STK push to this number to pay
+                <input type="text" name="phone_number" placeholder="07XXXXXXXX (leave blank to use address phone)">
+            </label>
+
+            <h3>Order summary</h3>
+            <table class="cart-table">
+                <tbody>
+                {% for line in cart %}
+                    <tr>
+                        <td class="cart-thumb-cell">
+                            {% if line.product.image %}
+                                <img src="{{ line.product.image.url }}" alt="" class="cart-thumb cart-thumb-sm">
+                            {% else %}
+                                <div class="cart-thumb cart-thumb-sm cart-thumb-placeholder"><svg style="width:14px;height:14px;color:#45D68A"><use href="#icon-bottle"/></svg></div>
+                            {% endif %}
+                        </td>
+                        <td>{{ line.quantity }} x {{ line.product.name }}{% if line.is_bonus %} <span class="badge badge-success">FREE</span>{% endif %}</td>
+                        <td>KES {{ line.subtotal }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p class="total" style="font-family:var(--font-mono);font-weight:700;color:var(--green-bright)">Subtotal: KES {{ cart.subtotal }}</p>
+            <p class="muted">Delivery fee depends on the address above — free on orders KES {{ free_delivery_small }} or under, and free again on bulk orders of KES {{ free_delivery_wholesale }}+.</p>
+
+            <button type="submit" class="btn">Pay with M-Pesa</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

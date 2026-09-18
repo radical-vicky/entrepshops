@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Add delivery address — DrinkShop{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Account</span>
+        <h1>Add a delivery address</h1>
+    </div>
+
+    <div class="form-card">
+        <div class="location-btn-row">
+            <button type="button" id="use-location-btn" class="btn btn-outline btn-small">
+                <svg style="width:15px;height:15px"><use href="#icon-pin"/></svg>
+                Use my current location
+            </button>
+            <span id="pin-readout" class="muted"></span>
+        </div>
+
+        <div id="pin-map" class="pin-map"></div>
+        <p id="location-status" class="muted map-hint">
+            Tap or drag the pin to mark exactly where we should deliver — this helps your rider find the right
+            gate, block, or entrance, especially in larger apartment complexes.
+        </p>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            <label>Label (e.g. Home, Office)<input type="text" name="label" value="Home"></label>
+            <label>Full name<input type="text" name="full_name" required></label>
+            <label>Phone number (for M-Pesa & the rider to call you)<input type="text" name="phone_number" placeholder="07XXXXXXXX" required></label>
+            <label>Building / apartment name<input type="text" name="building_name" required></label>
+            <label>Apartment / house number<input type="text" name="apartment_number"></label>
+            <label>Floor<input type="text" name="floor"></label>
+            <label>Street<input type="text" name="street" required></label>
+            <label>Area / estate<input type="text" name="area" required></label>
+            <label>City<input type="text" name="city" value="Nairobi"></label>
+            <label>Delivery notes (gate code, landmark, etc.)<textarea name="delivery_notes"></textarea></label>
+            <label class="checkbox-label"><input type="checkbox" name="is_default"> Set as default address</label>
+
+            <input type="hidden" id="id_latitude" name="latitude">
+            <input type="hidden" id="id_longitude" name="longitude">
+
+            <button type="submit" class="btn">Save address</button>
+        </form>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+    const DEFAULT_CENTER = [-1.286389, 36.817223]; // Nairobi CBD fallback
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+    const readout = document.getElementById('pin-readout');
+    const status = document.getElementById('location-status');
+    const locateBtn = document.getElementById('use-location-btn');
+
+    const map = L.map('pin-map', { zoomControl: true }).setView(DEFAULT_CENTER, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+    }).addTo(map);
+
+    const marker = L.marker(DEFAULT_CENTER, { draggable: true }).addTo(map);
+
+    function setPin(lat, lng, andCenter) {
+        marker.setLatLng([lat, lng]);
+        if (andCenter) map.setView([lat, lng], 16);
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+        readout.textContent = `Pinned: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+
+    // Tap anywhere on the map to drop the pin there.
+    map.on('click', (e) => setPin(e.latlng.lat, e.latlng.lng, false));
+
+    // Fine-tune by dragging the marker itself.
+    marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        setPin(pos.lat, pos.lng, false);
+    });
+
+    // "Use my current location" recenters the map and drops the pin there,
+    // rather than blindly filling hidden fields the user can't see/adjust.
+    locateBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            status.textContent = 'Your browser does not support GPS location — tap the map to pin your address instead.';
+            return;
+        }
+        status.textContent = 'Getting your location…';
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setPin(position.coords.latitude, position.coords.longitude, true);
+                status.textContent = `Location found (accuracy ~${Math.round(position.coords.accuracy)}m). Drag the pin to fine-tune if needed.`;
+            },
+            (error) => {
+                status.textContent = 'Could not get your location automatically — tap or drag the pin on the map instead. (' + error.message + ')';
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    });
+
+    // Best-effort: silently try to center on the user as soon as the page
+    // loads, without blocking on it or nagging for permission twice.
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => setPin(position.coords.latitude, position.coords.longitude, true),
+            () => {},
+            { enableHighAccuracy: false, timeout: 4000 }
+        );
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}DrinkShop — cold drinks, delivered{% endblock %}
+
+{% block content %}
+{% if hero_slides %}
+<section class="hero" id="hero">
+    {% for slide in hero_slides %}
+    <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-theme="{{ slide.theme }}">
+        <div class="hero-slide-bg"></div>
+        <div class="hero-content">
+            <span class="hero-badge"><svg style="width:14px;height:14px"><use href="#icon-ticket"/></svg>{{ slide.badge }}</span>
+            <h2>{{ slide.headline }}</h2>
+            <p>{{ slide.description|truncatechars:140 }}</p>
+            <a href="{{ slide.product.get_absolute_url }}" class="btn btn-{{ slide.theme }}">
+                Shop now <svg style="width:16px;height:16px"><use href="#icon-arrow-right"/></svg>
+            </a>
+        </div>
+        {% if slide.product.image %}
+            <img class="hero-art hero-art-photo" src="{{ slide.product.image.url }}" alt="{{ slide.product.name }}">
+        {% else %}
+            <svg class="hero-art hero-art-icon theme-{{ slide.theme }}" viewBox="0 0 24 24"><use href="#icon-bottle"/></svg>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    {% if hero_slides|length > 1 %}
+        <div class="hero-nav" id="hero-dots">
+            {% for slide in hero_slides %}
+                <button class="hero-dot {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="Slide {{ forloop.counter }}"></button>
+            {% endfor %}
+        </div>
+        <div class="hero-arrows">
+            <button class="hero-arrow" id="hero-prev" aria-label="Previous slide"><svg><use href="#icon-chevron-left"/></svg></button>
+            <button class="hero-arrow" id="hero-next" aria-label="Next slide"><svg><use href="#icon-chevron-right"/></svg></button>
+        </div>
+    {% endif %}
+</section>
+{% endif %}
+
+<div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+        <span>Free delivery on orders over KES 2,000</span>
+        <span>Pay safely with M-Pesa</span>
+        <span>Same-day delivery across Nairobi</span>
+        <span>New: energy drinks restocked</span>
+        <span>Refer a friend, get KES 100 credit</span>
+        <span>Free delivery on orders over KES 2,000</span>
+        <span>Pay safely with M-Pesa</span>
+        <span>Same-day delivery across Nairobi</span>
+        <span>New: energy drinks restocked</span>
+        <span>Refer a friend, get KES 100 credit</span>
+    </div>
+</div>
+
+<div class="container">
+    <section class="reveal" id="offers">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Offers &amp; vouchers</span>
+                <h3>Deals worth clipping</h3>
+            </div>
+            <span class="sub">Codes apply automatically at checkout on eligible orders</span>
+        </div>
+
+        {% if promotions %}
+        <div class="promo-slider" id="promo-slider">
+            {% for promo in promotions %}
+            <div class="promo-slide {% if forloop.first %}is-active{% endif %}" data-tone="{{ promo.tone }}">
+                <div class="promo-slide-media">
+                    {% if promo.media_type == 'video' and promo.video_source %}
+                        <video autoplay muted loop playsinline preload="metadata">
+                            <source src="{{ promo.video_source }}" type="video/mp4">
+                        </video>
+                    {% elif promo.image %}
+                        <img src="{{ promo.image.url }}" alt="">
+                    {% endif %}
+                    <div class="promo-slide-scrim"></div>
+                </div>
+                <div class="promo-slide-content">
+                    <span class="kicker">{{ promo.kicker }}</span>
+                    <h4>{{ promo.title }}</h4>
+                    {% if promo.description %}<p>{{ promo.description }}</p>{% endif %}
+                    <div class="promo-slide-footer">
+                        {% if promo.voucher_code %}
+                            <div class="voucher-code">
+                                <code>{{ promo.voucher_code }}</code>
+                                <svg style="width:18px;height:18px"><use href="#icon-ticket"/></svg>
+                            </div>
+                        {% endif %}
+                        <a href="{{ promo.cta_url|default:'#shop' }}" class="btn btn-small btn-{{ promo.tone }}">{{ promo.cta_label }}</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if promotions|length > 1 %}
+                <div class="hero-nav promo-nav" id="promo-dots">
+                    {% for promo in promotions %}
+                        <button class="hero-dot {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="Offer {{ forloop.counter }}"></button>
+                    {% endfor %}
+                </div>
+                <div class="hero-arrows promo-arrows">
+                    <button class="hero-arrow" id="promo-prev" aria-label="Previous offer"><svg><use href="#icon-chevron-left"/></svg></button>
+                    <button class="hero-arrow" id="promo-next" aria-label="Next offer"><svg><use href="#icon-chevron-right"/></svg></button>
+                </div>
+            {% endif %}
+        </div>
+        {% else %}
+            <p class="muted">No active offers right now — check back soon.</p>
+        {% endif %}
+    </section>
+
+    {% if departments|length > 1 or not selected_department %}
+    <section class="reveal" id="departments">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Browse by department</span>
+                <h3>What are you shopping for?</h3>
+            </div>
+        </div>
+        <div class="dept-grid">
+            {% for dept in departments %}
+                <a href="?department={{ dept.slug }}#shop" class="glass dept-card" data-dept-preview="{{ dept.theme }}">
+                    <svg style="width:26px;height:26px"><use href="#icon-{{ dept.icon_kind }}"/></svg>
+                    <h4>{{ dept.name }}</h4>
+                    {% if dept.tagline %}<p class="muted">{{ dept.tagline }}</p>{% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="reveal" id="shop">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">The shop</span>
+                <h3 id="shop-heading">{% if selected_category %}{{ selected_category.name }}{% elif selected_department %}{{ selected_department.name }}{% else %}All departments{% endif %}</h3>
+            </div>
+            <form id="shop-search-form" class="shop-search-form" role="search">
+                <svg style="width:16px;height:16px"><use href="#icon-search"/></svg>
+                <input type="search" name="q" id="shop-search-input" placeholder="Search drinks…" value="{{ search_query }}" autocomplete="off">
+            </form>
+        </div>
+        <div class="shop-layout">
+            <aside class="sidebar">
+                <h3>Categories</h3>
+                <ul class="category-list" id="category-list">
+                    <li><a href="{% url 'store:home' %}#shop" data-category-link data-category-name="All drinks" class="{% if not selected_category %}active{% endif %}">All drinks</a></li>
+                    {% for category in categories %}
+                        <li>
+                            <a href="?category={{ category.slug }}#shop" data-category-link data-category-slug="{{ category.slug }}" data-category-name="{{ category.name }}" class="{% if selected_category == category %}active{% endif %}">
+                                {{ category.name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </aside>
+
+            <section class="product-grid" id="product-grid">
+                {% include "store/_product_grid.html" %}
+            </section>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    // Generic slider: works for both the hero and the offers carousel —
+    // just point it at a container plus its slide/dot/arrow elements.
+    function initSlider({ container, slideSelector, dotSelector, prevId, nextId, activeClass, autoplayMs }) {
+        if (!container) return;
+        const slides = container.querySelectorAll(slideSelector);
+        const dots = container.querySelectorAll(dotSelector);
+        if (slides.length < 2) return;
+        let current = 0;
+        let timer;
+
+        function show(index) {
+            slides[current].classList.remove(activeClass);
+            if (dots[current]) dots[current].classList.remove(activeClass);
+            current = (index + slides.length) % slides.length;
+            slides[current].classList.add(activeClass);
+            if (dots[current]) dots[current].classList.add(activeClass);
+        }
+
+        function next() { show(current + 1); }
+        function prev() { show(current - 1); }
+
+        function restart() {
+            clearInterval(timer);
+            timer = setInterval(next, autoplayMs);
+        }
+
+        const prevBtn = document.getElementById(prevId);
+        const nextBtn = document.getElementById(nextId);
+        if (prevBtn) prevBtn.addEventListener('click', () => { prev(); restart(); });
+        if (nextBtn) nextBtn.addEventListener('click', () => { next(); restart(); });
+        dots.forEach(dot => dot.addEventListener('click', () => { show(parseInt(dot.dataset.slide, 10)); restart(); }));
+
+        restart();
+    }
+
+    initSlider({
+        container: document.getElementById('hero'),
+        slideSelector: '.hero-slide', dotSelector: '.hero-dot',
+        prevId: 'hero-prev', nextId: 'hero-next',
+        activeClass: 'is-active', autoplayMs: 5500,
+    });
+
+    initSlider({
+        container: document.getElementById('promo-slider'),
+        slideSelector: '.promo-slide', dotSelector: '#promo-dots .hero-dot',
+        prevId: 'promo-prev', nextId: 'promo-next',
+        activeClass: 'is-active', autoplayMs: 6000,
+    });
+})();
+
+(function () {
+    // Category filtering without a full page reload — fetches just the
+    // product grid and swaps it in, updating the URL so back/forward and
+    // direct links still work normally.
+    const grid = document.getElementById('product-grid');
+    const heading = document.getElementById('shop-heading');
+    const categoryList = document.getElementById('category-list');
+    if (!grid || !categoryList) return;
+
+    async function loadCategory(url, push) {
+        grid.classList.add('is-loading');
+        try {
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) throw new Error('bad response');
+            const data = await res.json();
+            grid.innerHTML = data.grid_html;
+            heading.textContent = data.heading;
+            if (data.dept_theme) {
+                document.body.dataset.dept = data.dept_theme;
+            } else {
+                delete document.body.dataset.dept;
+            }
+            categoryList.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+            const match = categoryList.querySelector(`a[href="${new URL(url, window.location.origin).search}#shop"]`)
+                || (url.indexOf('category=') === -1 ? categoryList.querySelector('a[href$="#shop"]') : null);
+            if (match) match.classList.add('active');
+            if (push) history.pushState({}, '', url + '#shop');
+        } catch (err) {
+            // Fall back to a normal navigation if anything goes wrong.
+            window.location.href = url;
+        } finally {
+            grid.classList.remove('is-loading');
+        }
+    }
+
+    categoryList.addEventListener('click', (e) => {
+        const link = e.target.closest('a[data-category-link]');
+        if (!link) return;
+        e.preventDefault();
+        const url = link.getAttribute('href').replace('#shop', '') || window.location.pathname;
+        loadCategory(url || window.location.pathname, true);
+    });
+
+    window.addEventListener('popstate', () => {
+        loadCategory(window.location.pathname + window.location.search, false);
+    });
+
+    const searchForm = document.getElementById('shop-search-form');
+    const searchInput = document.getElementById('shop-search-input');
+    let searchTimer;
+
+    function runSearch() {
+        const q = searchInput.value.trim();
+        const url = q ? `${window.location.pathname}?q=${encodeURIComponent(q)}` : window.location.pathname;
+        loadCategory(url, true);
+    }
+
+    searchForm.addEventListener('submit', (e) => { e.preventDefault(); runSearch(); });
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(runSearch, 350);
+    });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DrinkShop{% endblock %}</title>
+    <link rel="preconnect" href="https://api.fontshare.com">
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700,900&display=swap">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body{% if current_department %} data-dept="{{ current_department.theme }}"{% endif %}{% if active_background %} style="--site-bg-image:url('{{ active_background.image.url }}');--scrim-alpha:0.6"{% endif %}>
+    {% include "includes/icons.html" %}
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="{% url 'store:home' %}" class="logo">
+                {% if active_logo %}
+                    <img src="{{ active_logo.image.url }}" alt="DrinkShop" class="logo-image">
+                {% else %}
+                    <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
+                    Drink<span class="accent">Shop</span>
+                {% endif %}
+            </a>
+            <nav class="main-nav">
+                <a href="{% url 'store:home' %}">Shop</a>
+                <a href="{% url 'careers:list' %}">Careers</a>
+                {% if user.is_authenticated %}
+                    {% if user.vendor_profile %}
+                        <a href="{% url 'vendors:dashboard' %}"><svg><use href="#icon-gift"/></svg>My Shop</a>
+                    {% else %}
+                        <a href="{% url 'vendors:become_vendor' %}">Sell with us</a>
+                    {% endif %}
+                    <a href="{% url 'orders:order_history' %}"><svg><use href="#icon-order"/></svg>Orders</a>
+                    <a href="{% url 'store:address_list' %}"><svg><use href="#icon-pin"/></svg>Addresses</a>
+                    <a href="{% url 'accounts:spin' %}"><svg><use href="#icon-gift"/></svg>Spin</a>
+                    {% if user.rider_profile %}
+                        <a href="{% url 'orders:rider_dashboard' %}"><svg><use href="#icon-truck"/></svg>Rider</a>
+                    {% endif %}
+                    <a href="{% url 'accounts:profile' %}" class="nav-avatar-link">
+                        {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="" class="nav-avatar">
+                        {% else %}
+                            <svg><use href="#icon-user"/></svg>
+                        {% endif %}
+                        {{ user.username }}
+                    </a>
+                    <a href="{% url 'account_logout' %}">Logout</a>
+                {% else %}
+                    <a href="{% url 'vendors:become_vendor' %}">Sell with us</a>
+                    <a href="{% url 'account_login' %}">Login</a>
+                    <a href="{% url 'account_signup' %}">Register</a>
+                {% endif %}
+                <a href="{% url 'store:cart_detail' %}" class="cart-link">
+                    <svg><use href="#icon-cart"/></svg>
+                    Cart{% if cart|length %}<span class="count">{{ cart|length }}</span>{% endif %}
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li class="message {{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <span>DrinkShop &copy; {% now "Y" %} — cold drinks, delivered to your door.</span>
+            <span><a href="{% url 'store:home' %}">Shop</a> &nbsp;&middot;&nbsp; <a href="{% url 'store:address_list' %}">Delivery</a></span>
+        </div>
+    </footer>
+
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <script>
+        // Scroll-reveal for elements marked .reveal
+        const revealEls = document.querySelectorAll('.reveal');
+        if (revealEls.length && 'IntersectionObserver' in window) {
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            revealEls.forEach(el => io.observe(el));
+        } else {
+            revealEls.forEach(el => el.classList.add('in-view'));
+        }
+
+        // Toasts for AJAX feedback (add-to-cart etc.) — Django's message
+        // banners only render on a full page load, so anything that skips
+        // the reload needs its own lightweight notification.
+        function showToast(text, tone) {
+            const stack = document.getElementById('toast-stack');
+            const el = document.createElement('div');
+            el.className = 'toast' + (tone === 'error' ? ' toast-error' : '');
+            el.textContent = text;
+            stack.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('is-visible'));
+            setTimeout(() => {
+                el.classList.remove('is-visible');
+                setTimeout(() => el.remove(), 300);
+            }, 2600);
+        }
+
+        // AJAX "add to cart" — no full page reload, just a toast + a bump
+        // on the cart badge in the nav.
+        document.addEventListener('submit', async (e) => {
+            const form = e.target.closest('.ajax-add-form');
+            if (!form) return;
+            e.preventDefault();
+            const button = form.querySelector('button[type="submit"]');
+            const originalText = button ? button.textContent : '';
+            if (button) { button.disabled = true; button.textContent = 'Adding…'; }
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await res.json();
+                showToast(data.message, data.ok ? 'success' : 'error');
+                if (data.ok && typeof data.cart_count === 'number') {
+                    const cartLink = document.querySelector('.cart-link');
+                    let countEl = cartLink.querySelector('.count');
+                    if (!countEl) {
+                        countEl = document.createElement('span');
+                        countEl.className = 'count';
+                        cartLink.appendChild(countEl);
+                    }
+                    countEl.textContent = data.cart_count;
+                    cartLink.classList.remove('cart-bump');
+                    void cartLink.offsetWidth; // restart the animation
+                    cartLink.classList.add('cart-bump');
+                }
+            } catch (err) {
+                // Network hiccup or non-JSON response — fall back to a
+                // normal form submit so "add to cart" still works.
+                form.submit();
+                return;
+            } finally {
+                if (button) { button.disabled = false; button.textContent = originalText; }
+            }
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

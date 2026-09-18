@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{% if product %}Edit product{% else %}Add product{% endif %} — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-head">
+    <span class="eyebrow">{{ vendor.business_name }}</span>
+    <h1>{% if product %}Edit product{% else %}Add a product{% endif %}</h1>
+</div>
+
+<div class="form-card">
+    <form method="post" enctype="multipart/form-data" class="auth-form">
+        {% csrf_token %}
+        <label>Category
+            <select name="category" required>
+                <option value="">Choose a category…</option>
+                {% for dept in departments %}
+                    <optgroup label="{{ dept.name }}">
+                        {% for cat in dept.categories.all %}
+                            <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </optgroup>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Product name<input type="text" name="name" value="{{ product.name|default:'' }}" required></label>
+        <label>Price (KES)<input type="number" name="price" step="0.01" value="{{ product.price|default:'' }}" required></label>
+        <label>Stock quantity<input type="number" name="stock" value="{{ product.stock|default:0 }}"></label>
+        <label>Description<textarea name="description" rows="4">{{ product.description|default:'' }}</textarea></label>
+        <label>Photo{% if product.image %} (leave blank to keep current){% endif %}<input type="file" name="image" accept="image/*"></label>
+        <button type="submit" class="btn">Save product</button>
+    </form>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="order-detail-head">
+<h1>Order #{{ order.id }}</h1>
+{% if order.status != 'pending_payment' and order.status != 'cancelled' %}
+    <a href="{% url 'orders:download_receipt' order.id %}" target="_blank" class="btn btn-small btn-outline">
+        <svg style="width:15px;height:15px"><use href="#icon-order"/></svg>
+        Download / print receipt
+    </a>
+{% endif %}
+</div>
+
+{% if order.status != 'cancelled' and order.status != 'pending_payment' %}
+<div class="timeline">
+    {% for step in order.status_timeline %}
+        <div class="timeline-step {% if step.done %}is-done{% elif step.active %}is-active{% endif %}">
+            <span class="timeline-dot">
+                {% if step.done %}<svg style="width:12px;height:12px"><use href="#icon-check"/></svg>{% endif %}
+            </span>
+            <span class="timeline-label">{{ step.label }}</span>
+            {% if step.timestamp %}<span class="timeline-time">{{ step.timestamp|date:"d M, H:i" }}</span>{% endif %}
+        </div>
+    {% endfor %}
+</div>
+{% else %}
+    <p class="badge {% if order.status == 'cancelled' %}badge-warning{% endif %}">{{ order.get_status_display }}</p>
+    {% if order.status == 'cancelled' and order.cancellation_reason %}
+        <p class="muted">{{ order.cancellation_reason }}</p>
+        <form method="post" action="{% url 'orders:retry_payment' order.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-small btn-orange">Try payment again</button>
+        </form>
+    {% endif %}
+{% endif %}
+
+<div class="order-meta glass">
+    <div>
+        <span class="eyebrow">Delivering to</span>
+        <p>{{ order.delivery_address.as_text }}</p>
+        {% if order.delivery_address.has_gps %}
+            <a href="{{ order.delivery_address.maps_url }}" target="_blank" rel="noopener">
+                <svg style="width:13px;height:13px;vertical-align:-2px"><use href="#icon-pin"/></svg> View pinned drop-off location
+            </a>
+        {% endif %}
+    </div>
+    {% if order.rider %}
+        <div>
+            <span class="eyebrow">Your rider</span>
+            <p>{{ order.rider.name }} — {{ order.rider.phone_number }}{% if order.rider.vehicle %} · {{ order.rider.vehicle }}{% endif %}</p>
+        </div>
+    {% endif %}
+    <div>
+        <span class="eyebrow">Phone</span>
+        <p>{{ order.phone_number }}</p>
+    </div>
+</div>
+
+<table class="cart-table">
+    <thead><tr><th></th><th>Product</th><th>Unit price</th><th>Qty</th><th>Subtotal</th></tr></thead>
+    <tbody>
+    {% for item in order.items.all %}
+        <tr>
+            <td class="cart-thumb-cell">
+                {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="" class="cart-thumb">
+                {% else %}
+                    <div class="cart-thumb cart-thumb-placeholder"><svg style="width:18px;height:18px;color:#45D68A"><use href="#icon-bottle"/></svg></div>
+                {% endif %}
+            </td>
+            <td>{{ item.product.name }}{% if item.unit_price == 0 %} <span class="badge badge-success">FREE</span>{% endif %}</td>
+            <td>KES {{ item.unit_price }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>KES {{ item.subtotal }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div class="cart-summary">
+    <p>Subtotal: KES {{ order.subtotal }}</p>
+    <p>Delivery fee: KES {{ order.delivery_fee }}</p>
+    <p class="total">Total: KES {{ order.total }}</p>
+</div>
+
+{% if reviewable_items %}
+<section style="margin-top:40px">
+    <div class="section-head"><div><span class="eyebrow">Delivered</span><h3>Rate your drinks</h3></div></div>
+    <div class="review-grid">
+        {% for item in reviewable_items %}
+            <div class="glass review-card">
+                <h4>{{ item.product.name }}</h4>
+                {% if item.review %}
+                    <p class="badge badge-success">You rated this {{ item.review.rating }}/5</p>
+                    {% if item.review.comment %}<p class="muted">"{{ item.review.comment }}"</p>{% endif %}
+                {% else %}
+                    <form method="post" action="{% url 'orders:submit_review' item.id %}" class="review-form">
+                        {% csrf_token %}
+                        <div class="star-select">
+                            {% for i in "12345" %}
+                                <label>
+                                    <input type="radio" name="rating" value="{{ i }}" {% if i == "5" %}checked{% endif %}>
+                                    <svg style="width:20px;height:20px"><use href="#icon-star"/></svg>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <textarea name="comment" placeholder="Optional comment" rows="2"></textarea>
+                        <button type="submit" class="btn btn-small">Submit rating</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if order.is_delivered and order.rider %}
+<section style="margin-top:32px">
+    <div class="section-head"><div><span class="eyebrow">Say thanks</span><h3>Tip {{ order.rider.name }}</h3></div></div>
+    <div class="glass tip-card">
+        {% if latest_tip and latest_tip.status == 'success' %}
+            <p class="badge badge-success">You tipped KES {{ latest_tip.amount }} — thank you!</p>
+        {% elif latest_tip and latest_tip.status == 'initiated' %}
+            <p class="badge badge-muted" id="tip-status-line">Waiting for M-Pesa confirmation…</p>
+        {% else %}
+            <form method="post" action="{% url 'orders:send_tip' order.id %}" class="tip-form">
+                {% csrf_token %}
+                <div class="tip-amounts">
+                    {% for amt in "50,100,200" %}
+                        <label class="tip-chip"><input type="radio" name="amount" value="{{ amt }}" {% if amt == "100" %}checked{% endif %}>KES {{ amt }}</label>
+                    {% endfor %}
+                </div>
+                <input type="text" name="phone_number" placeholder="M-Pesa number (leave blank to use {{ order.phone_number }})">
+                <button type="submit" class="btn btn-small btn-orange">Send tip</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if latest_tip and latest_tip.status == 'initiated' %}
+<script>
+    const tipStatusUrl = "{% url 'payments:tip_status' latest_tip.id %}";
+    const tipLine = document.getElementById('tip-status-line');
+    const tipInterval = setInterval(async () => {
+        try {
+            const res = await fetch(tipStatusUrl);
+            const data = await res.json();
+            if (data.tip_status === 'success') {
+                tipLine.textContent = 'Tip sent — thank you!';
+                tipLine.className = 'badge badge-success';
+                clearInterval(tipInterval);
+            } else if (data.tip_status === 'failed' || data.tip_status === 'cancelled') {
+                tipLine.textContent = 'Tip ' + data.tip_status + '.';
+                tipLine.className = 'badge badge-warning';
+                clearInterval(tipInterval);
+            }
+        } catch (e) {}
+    }, 3000);
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Waiting for payment — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="waiting-box">
+    <div class="pulse-icon"><svg><use href="#icon-phone"/></svg></div>
+    <h1>Check your phone</h1>
+    <p>We've sent an M-Pesa payment prompt to <strong>{{ order.phone_number }}</strong>.</p>
+    <p>Enter your M-Pesa PIN to complete payment for order #{{ order.id }} (KES {{ order.total }}).</p>
+    <p id="status-line" class="badge badge-muted">Waiting for confirmation…</p>
+    <div id="waiting-actions">
+        <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-small btn-outline">View order</a>
+    </div>
+</div>
+</div>
+
+<script>
+    const statusUrl = "{% url 'payments:payment_status' order.id %}";
+    const statusLine = document.getElementById('status-line');
+    const actions = document.getElementById('waiting-actions');
+
+    async function poll() {
+        try {
+            const res = await fetch(statusUrl);
+            const data = await res.json();
+            if (data.order_status === 'paid') {
+                statusLine.textContent = 'Payment confirmed! Preparing your order.';
+                statusLine.className = 'badge badge-success';
+                clearInterval(interval);
+                setTimeout(() => window.location.href = "{% url 'orders:order_detail' order.id %}", 1500);
+            } else if (data.txn_status === 'failed' || data.txn_status === 'cancelled') {
+                statusLine.textContent = data.txn_message || ('Payment ' + data.txn_status + '.');
+                statusLine.className = 'badge badge-warning';
+                clearInterval(interval);
+                const retryForm = document.createElement('form');
+                retryForm.method = 'post';
+                retryForm.action = "{% url 'orders:retry_payment' order.id %}";
+                retryForm.innerHTML = `{% csrf_token %}<button type="submit" class="btn btn-small btn-orange">Try again</button>`;
+                actions.prepend(retryForm);
+            }
+        } catch (e) {
+            // Network hiccup — keep polling silently.
+        }
+    }
+    const interval = setInterval(poll, 3000);
+    poll();
+</script>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Your profile — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-head">
+    <span class="eyebrow">Account</span>
+    <h1>Your profile</h1>
+</div>
+
+<div class="profile-layout">
+    <div class="glass profile-card">
+        <div class="avatar-row">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="" class="avatar-lg">
+            {% else %}
+                <div class="avatar-lg avatar-placeholder"><svg style="width:32px;height:32px"><use href="#icon-user"/></svg></div>
+            {% endif %}
+            <div>
+                <h3 style="margin:0">{{ user.username }}</h3>
+                <p class="muted" style="margin:4px 0 0">{{ user.email }}</p>
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'accounts:update_profile' %}" enctype="multipart/form-data" class="auth-form" style="margin-top:20px">
+            {% csrf_token %}
+            <label>Username<input type="text" name="username" value="{{ user.username }}"></label>
+            <label>Profile picture<input type="file" name="avatar" accept="image/*"></label>
+            <button type="submit" class="btn btn-small">Save changes</button>
+        </form>
+    </div>
+
+    <div class="glass profile-card">
+        <span class="eyebrow">Wallet</span>
+        <h3 style="margin:4px 0 16px">KES {{ profile.wallet_balance }}</h3>
+
+        <form method="post" action="{% url 'accounts:withdraw' %}" class="withdraw-form">
+            {% csrf_token %}
+            <label>Withdraw to M-Pesa (min KES {{ min_withdrawal }})
+                <input type="number" name="amount" min="{{ min_withdrawal }}" step="1" placeholder="{{ min_withdrawal }}">
+            </label>
+            <label>Phone number
+                <input type="text" name="phone_number" placeholder="07XXXXXXXX">
+            </label>
+            <button type="submit" class="btn btn-small btn-orange" {% if profile.wallet_balance < min_withdrawal %}disabled title="Balance below minimum"{% endif %}>
+                Withdraw instantly
+            </button>
+            {% if profile.wallet_balance < min_withdrawal %}
+                <p class="muted" style="font-size:0.8rem;margin-top:6px">Reach KES {{ min_withdrawal }} to unlock withdrawals.</p>
+            {% endif %}
+        </form>
+
+        {% if recent_withdrawals %}
+            <h4 style="margin:20px 0 8px;font-size:0.85rem;color:var(--text-mute);text-transform:uppercase;letter-spacing:.04em">Withdrawal history</h4>
+            <table class="cart-table">
+                <tbody>
+                {% for w in recent_withdrawals %}
+                    <tr>
+                        <td>KES {{ w.amount }} → {{ w.phone_number }}<br><span class="badge {% if w.status == 'success' %}badge-success{% elif w.status == 'failed' %}badge-warning{% else %}badge-muted{% endif %}">{{ w.get_status_display }}</span></td>
+                        <td class="muted" style="text-align:right">{{ w.created_at|date:"d M, H:i" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if recent_transactions %}
+            <h4 style="margin:20px 0 8px;font-size:0.85rem;color:var(--text-mute);text-transform:uppercase;letter-spacing:.04em">Recent activity</h4>
+            <table class="cart-table">
+                <tbody>
+                {% for txn in recent_transactions %}
+                    <tr>
+                        <td>{{ txn.get_kind_display }}<br><span class="muted">{{ txn.description }}</span></td>
+                        <td style="text-align:right">{% if txn.amount >= 0 %}+{% endif %}KES {{ txn.amount }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">No wallet activity yet — refer a friend or spin the daily wheel to start earning.</p>
+        {% endif %}
+    </div>
+
+    <div class="glass profile-card">
+        <span class="eyebrow">Refer &amp; earn</span>
+        <h3 style="margin:4px 0 10px">{{ profile.referral_count }} friend{{ profile.referral_count|pluralize }} referred</h3>
+        <p class="muted">Share your link — you and your friend both get KES {{ referral_bonus }} once they complete their first order.</p>
+        <div class="referral-link-box">
+            <code id="referral-link">{{ referral_link }}</code>
+            <button type="button" class="btn btn-small btn-outline" onclick="navigator.clipboard.writeText(document.getElementById('referral-link').textContent); this.textContent='Copied!'">Copy</button>
+        </div>
+    </div>
+
+    <div class="glass profile-card">
+        <span class="eyebrow">Daily spin</span>
+        {% if today_spin %}
+            <h3 style="margin:4px 0 10px">Today: {{ today_spin.prize.label }}</h3>
+            <p class="muted">Come back tomorrow for another spin.</p>
+        {% else %}
+            <h3 style="margin:4px 0 10px">You have a free spin today</h3>
+        {% endif %}
+        <a href="{% url 'accounts:spin' %}" class="btn btn-small btn-orange">Go to spin wheel</a>
+    </div>
+</div>
+</div>
+{% endblock %}

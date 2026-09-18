@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Rider dashboard — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="section-head">
+    <div><span class="eyebrow">Rider dashboard</span><h1>Hi {{ rider.name }}</h1></div>
+</div>
+
+<h3>Active deliveries</h3>
+{% if not active_orders %}
+    <p class="muted">No orders assigned to you right now.</p>
+{% else %}
+<div class="rider-grid">
+    {% for order in active_orders %}
+        <div class="glass rider-card">
+            <div class="rider-card-head">
+                <strong>Order #{{ order.id }}</strong>
+                <span class="badge">{{ order.get_status_display }}</span>
+            </div>
+            <p>{{ order.user.username }} — {{ order.phone_number }}</p>
+            <p>{{ order.delivery_address.as_text }}</p>
+            {% if order.delivery_address.has_gps %}
+                <a href="{{ order.delivery_address.maps_url }}" target="_blank" rel="noopener">
+                    <svg style="width:13px;height:13px;vertical-align:-2px"><use href="#icon-pin"/></svg> Open in Google Maps
+                </a>
+            {% endif %}
+            <p class="price">KES {{ order.total }}</p>
+            <div class="rider-actions">
+                {% if order.status == 'preparing' %}
+                    <form method="post" action="{% url 'orders:rider_mark_out_for_delivery' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-small">Mark out for delivery</button>
+                    </form>
+                {% elif order.status == 'out_for_delivery' %}
+                    <form method="post" action="{% url 'orders:rider_mark_delivered' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-small btn-orange">Mark delivered</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<h3 style="margin-top:40px">Recently delivered</h3>
+{% if not completed_orders %}
+    <p class="muted">Nothing delivered yet.</p>
+{% else %}
+<table class="cart-table">
+    <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Delivered</th></tr></thead>
+    <tbody>
+    {% for order in completed_orders %}
+        <tr>
+            <td>#{{ order.id }}</td>
+            <td>{{ order.user.username }}</td>
+            <td>KES {{ order.total }}</td>
+            <td>{{ order.delivered_at|date:"d M, H:i" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+</div>
+{% endblock %}

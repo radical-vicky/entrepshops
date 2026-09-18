@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Careers — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+<div class="page-head">
+    <span class="eyebrow">Careers</span>
+    <h1>Join the team</h1>
+    <p class="lede">Riders, marketers, managers, and more — open roles are posted here as they come up.</p>
+</div>
+
+{% if not jobs %}
+    <p class="muted">No open roles right now — check back soon.</p>
+{% else %}
+<div class="job-grid">
+    {% for job in jobs %}
+        <a href="{{ job.get_absolute_url }}" class="glass job-card">
+            <span class="badge">{{ job.department }}</span>
+            <h3>{{ job.title }}</h3>
+            <p class="muted">{{ job.location }} &middot; {{ job.get_employment_type_display }}</p>
+        </a>
+    {% endfor %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

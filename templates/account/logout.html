@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Logout — DrinkShop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Account</span>
+        <h1>Log out</h1>
+    </div>
+    <div class="form-card">
+        <p>Are you sure you want to log out, {{ user.username }}?</p>
+        <form method="post" action="{% url 'account_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn">Log out</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
