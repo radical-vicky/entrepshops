@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DrinkShop{% endblock %}</title>
+    <title>{% block title %}Entrep - Shop{% endblock %}</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}" sizes="any">
     <link rel="preconnect" href="https://api.fontshare.com">
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700,900&display=swap">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +21,7 @@
         <div class="container header-inner">
             <a href="{% url 'store:home' %}" class="logo">
                 {% if active_logo %}
-                    <img src="{{ active_logo.image.url }}" alt="DrinkShop" class="logo-image">
+                    <img src="{{ active_logo.image.url }}" alt="Entrep - Shop" class="logo-image">
                 {% else %}
                     <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
                     Drink<span class="accent">Shop</span>
@@ -78,7 +79,7 @@
 
     <footer class="site-footer">
         <div class="container">
-            <span>DrinkShop &copy; {% now "Y" %} — cold drinks, delivered to your door.</span>
+            <span>Entrep - Shop &copy; {% now "Y" %} — cold drinks, delivered to your door.</span>
             <span><a href="{% url 'store:home' %}">Shop</a> &nbsp;&middot;&nbsp; <a href="{% url 'store:address_list' %}">Delivery</a></span>
         </div>
     </footer>
