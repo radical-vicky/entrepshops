@@ -1,17 +1,17 @@
 {
-    "builds": [
-        {
-            "src": "drinkshop/wsgi.py",
-            "use": "@vercel/python",
-            "config": { "runtime": "python3.12", "maxLambdaSize": "50mb" }
-        },
-        {
-            "src": "build_files.sh",
-            "use": "@vercel/static-build",
-            "config": { "distDir": "staticfiles" }
-        }
-    ],
-    "routes": [
-        { "src": "/(.*)", "dest": "drinkshop/wsgi.py" }
-    ]
+  "builds": [
+    {
+      "src": "drinkshop/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "drinkshop/wsgi.py"
+    }
+  ]
 }
