@@ -6,11 +6,11 @@ echo "=== Starting build ==="
 # Create the virtual environment
 uv venv .venv
 
-# Install dependencies INTO the venv using the explicit Python path
-# AND the --break-system-packages flag to bypass PEP 668 protection
-uv pip install --python .venv/bin/python --break-system-packages -r requirements.txt
+# Install dependencies using uv's native command
+# The --python flag points uv to the venv's Python interpreter
+uv pip install --python .venv/bin/python -r requirements.txt
 
-# Run Django commands using the venv's Python interpreter directly
+# Run Django commands using the venv's Python
 echo "=== Collecting static files ==="
 .venv/bin/python manage.py collectstatic --noinput --clear
 
