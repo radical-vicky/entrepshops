@@ -269,8 +269,7 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'DrinkShop <noreply@dr
 # Shop settings
 # ---------------------------------------------------------------------------
 # Delivery fee in KES, charged per order (flat-rate; customize per zone later).
-DELIVERY_FEE = int(os.environ.get('DELIVERY_FEE', ''))
-
+DELIVERY_FEE = int(os.environ.get('DELIVERY_FEE') or '150')
 # Free delivery at both ends of the order-size spectrum: small orders
 # (low-fuss threshold) and bulk/wholesale-size orders. Set either to 0 to
 # disable that end. Everything in between pays the normal zone fee.
@@ -291,7 +290,7 @@ DISALLOW_ALCOHOL_DELIVERY = os.environ.get('DISALLOW_ALCOHOL_DELIVERY', 'True') 
 # Referral bonus (KES) credited to BOTH the referrer and the new signup
 # when someone joins via a ?ref= link. Set to 0 to disable bonuses while
 # keeping referral tracking itself active.
-REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES', ''))
+REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES') or '50')
 
 # ---------------------------------------------------------------------------
 # M-Pesa Daraja API settings (Safaricom)
