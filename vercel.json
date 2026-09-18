@@ -8,6 +8,5 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "drinkshop/wsgi.py" }
-  ],
-  "buildCommand": "bash build_files.sh"
+  ]
 }
