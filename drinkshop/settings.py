@@ -50,7 +50,6 @@ if os.environ.get('VERCEL'):
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-
 # ---------------------------------------------------------------------------
 # Applications
 # ---------------------------------------------------------------------------
@@ -78,7 +77,6 @@ INSTALLED_APPS = [
     'payments',
     'accounts',
     'careers',
-    'vendors',
 ]
 
 SITE_ID = 1
@@ -120,33 +118,22 @@ WSGI_APPLICATION = 'drinkshop.wsgi.application'
 
 # ---------------------------------------------------------------------------
 # Database
-# Defaults to SQLite for easy local dev. On serverless hosts like Vercel the
-# filesystem is read-only/ephemeral, so SQLite can't persist there — set
-# DATABASE_URL (Vercel Postgres, Neon, Supabase, etc.) and it takes over
-# automatically. See README "Deploying to Vercel".
+# Local dev falls back to SQLite so `runserver` works with zero setup.
+# On Vercel (or any serverless/container host with an ephemeral filesystem),
+# set DATABASE_URL to a managed Postgres URL — Vercel Postgres, Neon,
+# Supabase, Railway, Render, etc. all work.
 # ---------------------------------------------------------------------------
 import dj_database_url
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=not DEBUG,
+    )
+}
 
-if DATABASE_URL:
-    # Postgres / MySQL / Neon / Supabase etc. via DATABASE_URL
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=not DEBUG,   # only meaningful for Postgres in prod
-        )
-    }
-else:
-    # Local dev — SQLite, no SSL, no conn_max_age weirdness
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
 # ---------------------------------------------------------------------------
 # Password validation
 # ---------------------------------------------------------------------------
@@ -167,13 +154,20 @@ USE_TZ = True
 
 # ---------------------------------------------------------------------------
 # Static & media files
-# Product images (and any other uploaded media) are stored on Cloudinary
-# instead of local disk — required for hosts with an ephemeral filesystem,
-# and gives free image CDN/transformations. Get credentials from
-# https://cloudinary.com/console.
+#
+# Static files (CSS/JS/icons) are served by WhiteNoise, which runs inside the
+# WSGI process — that's what makes them work on Vercel, where there's no
+# writable disk and no CDN layer for /static/ out of the box.
+#
+# Media uploads (product images, avatars, background photos) go to Cloudinary
+# when credentials are set, and fall back to local disk otherwise so
+# `runserver` still works during initial local setup.
+#
+# The modern STORAGES dict (Django 5+) replaces the deprecated
+# DEFAULT_FILE_STORAGE / STATICFILES_STORAGE settings — setting both at once
+# raises an ImproperlyConfigured error.
 # ---------------------------------------------------------------------------
-# WhiteNoise for static files
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -200,8 +194,6 @@ STORAGES = {
     },
 }
 
-
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ---------------------------------------------------------------------------
@@ -222,7 +214,7 @@ LOGOUT_REDIRECT_URL = 'store:home'
 # (not just email) since existing accounts/migrations use it; allauth will
 # ask for one on signup unless you flip ACCOUNT_USERNAME_REQUIRED off.
 # ---------------------------------------------------------------------------
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', 'optional')
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', '')
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_UNIQUE_EMAIL = True
@@ -253,7 +245,7 @@ SOCIALACCOUNT_PROVIDERS = {
 EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
 if EMAIL_HOST and not DEBUG:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', ''))
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     # Gmail displays app passwords with spaces for readability; strip them
     # so it doesn't matter whether you paste it with or without spaces.
@@ -263,18 +255,19 @@ if EMAIL_HOST and not DEBUG:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'DrinkShop <noreply@drinkshop.local>')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'RadicaldrinkShop <info.radicaldrinkshop@gmail.com>')
 
 # ---------------------------------------------------------------------------
 # Shop settings
 # ---------------------------------------------------------------------------
 # Delivery fee in KES, charged per order (flat-rate; customize per zone later).
-DELIVERY_FEE = int(os.environ.get('DELIVERY_FEE') or '150')
+DELIVERY_FEE = int(os.environ.get('DELIVERY_FEE', ''))
+
 # Free delivery at both ends of the order-size spectrum: small orders
 # (low-fuss threshold) and bulk/wholesale-size orders. Set either to 0 to
 # disable that end. Everything in between pays the normal zone fee.
-FREE_DELIVERY_MAX_SMALL_ORDER = int(os.environ.get('FREE_DELIVERY_MAX_SMALL_ORDER', '300'))
-FREE_DELIVERY_MIN_WHOLESALE_ORDER = int(os.environ.get('FREE_DELIVERY_MIN_WHOLESALE_ORDER', '5000'))
+FREE_DELIVERY_MAX_SMALL_ORDER = int(os.environ.get('FREE_DELIVERY_MAX_SMALL_ORDER', ''))
+FREE_DELIVERY_MIN_WHOLESALE_ORDER = int(os.environ.get('FREE_DELIVERY_MIN_WHOLESALE_ORDER', ''))
 
 # Default estimated delivery time (minutes) used in the "order received"
 # email when the delivery address doesn't match a configured DeliveryZone
@@ -285,12 +278,12 @@ DEFAULT_DELIVERY_ETA_MINUTES = int(os.environ.get('DEFAULT_DELIVERY_ETA_MINUTES'
 # delivered via this site. Kenya's NACADA rules currently restrict online
 # sale and home delivery of alcohol — keep this True unless your legal
 # situation changes. See README for details.
-DISALLOW_ALCOHOL_DELIVERY = os.environ.get('DISALLOW_ALCOHOL_DELIVERY', 'True') == 'True'
+DISALLOW_ALCOHOL_DELIVERY = os.environ.get('DISALLOW_ALCOHOL_DELIVERY', '') == ''
 
 # Referral bonus (KES) credited to BOTH the referrer and the new signup
 # when someone joins via a ?ref= link. Set to 0 to disable bonuses while
 # keeping referral tracking itself active.
-REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES') or '50')
+REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES', '100'))
 
 # ---------------------------------------------------------------------------
 # M-Pesa Daraja API settings (Safaricom)
@@ -302,9 +295,7 @@ MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', '')
 MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')
 MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '174379')  # sandbox default
 MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '')
-MPESA_CALLBACK_URL = os.environ.get(
-    'MPESA_CALLBACK_URL', 'https://example.com/payments/mpesa/callback/'
-)
+MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', '')
 
 if MPESA_ENV == 'production':
     MPESA_AUTH_URL = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
@@ -325,13 +316,13 @@ MPESA_INITIATOR_NAME = os.environ.get('MPESA_INITIATOR_NAME', '')
 MPESA_INITIATOR_PASSWORD = os.environ.get('MPESA_INITIATOR_PASSWORD', '')
 MPESA_B2C_SHORTCODE = os.environ.get('MPESA_B2C_SHORTCODE', MPESA_SHORTCODE)
 MPESA_B2C_CERT_PATH = os.environ.get('MPESA_B2C_CERT_PATH', str(BASE_DIR / 'payments' / 'certs' / 'sandbox_cert.cer'))
-MPESA_B2C_TIMEOUT_URL = os.environ.get('MPESA_B2C_TIMEOUT_URL', 'https://example.com/payments/mpesa/b2c/timeout/')
-MPESA_B2C_RESULT_URL = os.environ.get('MPESA_B2C_RESULT_URL', 'https://example.com/payments/mpesa/b2c/result/')
+MPESA_B2C_TIMEOUT_URL = os.environ.get('MPESA_B2C_TIMEOUT_URL', 'https://radicaldrinkshop.co.ke/payments/mpesa/b2c/timeout/')
+MPESA_B2C_RESULT_URL = os.environ.get('MPESA_B2C_RESULT_URL', 'https://radicaldrinkshop.co.ke/payments/mpesa/b2c/result/')
 
 # Minimum wallet balance a user must have to request a withdrawal.
 WALLET_MIN_WITHDRAWAL_KES = int(os.environ.get('WALLET_MIN_WITHDRAWAL_KES', '1000'))
 
-# Third-party sellers pay this much for this many days of platform access
-# to list their own products (see the "vendors" app).
+MPESA_ACCOUNT_PREFIX = "Radical DrinkShop"
+MPESA_DEFAULT_DESC = "Payment for DrinkShop order"
 VENDOR_SUBSCRIPTION_FEE_KES = int(os.environ.get('VENDOR_SUBSCRIPTION_FEE_KES', '5000'))
 VENDOR_SUBSCRIPTION_DAYS = int(os.environ.get('VENDOR_SUBSCRIPTION_DAYS', '30'))
