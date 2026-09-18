@@ -2,9 +2,18 @@
 # Runs during every Vercel build (see vercel.json's static-build step).
 set -o errexit
 
+<<<<<<< HEAD
 echo "=== Starting build ==="
 echo "Python version:"
 python3 --version
+=======
+# static-build step doesn't provision a venv for us, and the
+# interpreter uv points at is "externally managed" — so make our own.
+uv venv .venv
+source .venv/bin/activate
+
+uv pip install -r requirements.txt
+>>>>>>> 34ee5571bd460b82af6ea1c6d222e47cd3be8a47
 
 echo "uv version:"
 uv --version
