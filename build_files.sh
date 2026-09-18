@@ -1,9 +1,13 @@
-#!/bin/bash
-set -o errexit
-
-echo "=== Starting build ==="
-
-python manage.py collectstatic --noinput --clear
-python manage.py migrate --noinput
-
-echo "=== Build complete ==="
+{
+  "builds": [
+    {
+      "src": "drinkshop/wsgi.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
+    }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "drinkshop/wsgi.py" }
+  ],
+  "buildCommand": "bash build_files.sh"
+}
