@@ -3,14 +3,14 @@ set -o errexit
 
 echo "=== Starting build ==="
 
-# Create virtual environment (this should work as before)
+# Create the virtual environment
 uv venv .venv
 
-# Install dependencies directly into the venv without activating it.
-# This bypasses any PATH or activation issues.
-uv pip install --python .venv/bin/python -r requirements.txt
+# Install dependencies INTO the venv using the explicit Python path
+# AND the --break-system-packages flag to bypass PEP 668 protection
+uv pip install --python .venv/bin/python --break-system-packages -r requirements.txt
 
-# Run Django commands using the venv's Python interpreter explicitly.
+# Run Django commands using the venv's Python interpreter directly
 echo "=== Collecting static files ==="
 .venv/bin/python manage.py collectstatic --noinput --clear
 
