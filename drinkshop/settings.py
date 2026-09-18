@@ -85,6 +85,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -171,6 +172,7 @@ USE_TZ = True
 # and gives free image CDN/transformations. Get credentials from
 # https://cloudinary.com/console.
 # ---------------------------------------------------------------------------
+# WhiteNoise for static files
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -184,11 +186,21 @@ CLOUDINARY_STORAGE = {
 }
 
 if CLOUDINARY_STORAGE['CLOUD_NAME']:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    _media_backend = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 else:
-    # No Cloudinary credentials configured yet — fall back to local disk so
-    # `runserver` still works out of the box during initial setup.
+    _media_backend = 'django.core.files.storage.FileSystemStorage'
     MEDIA_ROOT = BASE_DIR / 'media'
+
+STORAGES = {
+    'default': {
+        'BACKEND': _media_backend,
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
