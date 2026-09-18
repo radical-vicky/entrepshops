@@ -257,7 +257,7 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'DrinkShop <noreply@dr
 # Shop settings
 # ---------------------------------------------------------------------------
 # Delivery fee in KES, charged per order (flat-rate; customize per zone later).
-DELIVERY_FEE = int(os.environ.get('DELIVERY_FEE', '150'))
+DELIVERY_FEE = int(os.environ.get('DELIVERY_FEE', ''))
 
 # Free delivery at both ends of the order-size spectrum: small orders
 # (low-fuss threshold) and bulk/wholesale-size orders. Set either to 0 to
