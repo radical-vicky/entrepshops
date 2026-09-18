@@ -279,7 +279,7 @@ DISALLOW_ALCOHOL_DELIVERY = os.environ.get('DISALLOW_ALCOHOL_DELIVERY', 'True') 
 # Referral bonus (KES) credited to BOTH the referrer and the new signup
 # when someone joins via a ?ref= link. Set to 0 to disable bonuses while
 # keeping referral tracking itself active.
-REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES', '50'))
+REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES', ''))
 
 # ---------------------------------------------------------------------------
 # M-Pesa Daraja API settings (Safaricom)
