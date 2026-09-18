@@ -1,14 +1,40 @@
 #!/bin/bash
 # Runs during every Vercel build (see vercel.json's static-build step).
-# This is where "automatic migration on deploy" actually happens — Vercel
-# has no Heroku-style release phase, so build time is the right place to
-# run it. Requires DATABASE_URL to be set in the Vercel project's env vars
-# and reachable from the build environment (Vercel Postgres, Neon,
-# Supabase, etc. all work — see README "Deploying to Vercel").
 set -o errexit
 
-pip install -r requirements.txt
+echo "=== Starting build ==="
+echo "Python version:"
+python3 --version
 
+echo "uv version:"
+uv --version
+
+# Create virtual environment
+echo "=== Creating virtual environment ==="
+uv venv .venv
+
+# Activate virtual environment
+echo "=== Activating virtual environment ==="
+source .venv/bin/activate
+
+# Verify activation
+echo "Python in venv: $(which python)"
+echo "Pip in venv: $(which pip)"
+
+# Install dependencies
+echo "=== Installing dependencies ==="
+uv pip install -r requirements.txt
+
+# Verify Django is installed
+echo "=== Verifying Django installation ==="
+python -c "import django; print('Django version:', django.get_version())"
+
+# Collect static files
+echo "=== Collecting static files ==="
 python manage.py collectstatic --noinput --clear
 
+# Run migrations
+echo "=== Running migrations ==="
 python manage.py migrate --noinput
+
+echo "=== Build complete ==="
