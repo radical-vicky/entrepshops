@@ -228,7 +228,7 @@ LOGOUT_REDIRECT_URL = 'store:home'
 # (not just email) since existing accounts/migrations use it; allauth will
 # ask for one on signup unless you flip ACCOUNT_USERNAME_REQUIRED off.
 # ---------------------------------------------------------------------------
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', 'optional')
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', '')
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_UNIQUE_EMAIL = True
@@ -269,7 +269,7 @@ if EMAIL_HOST and not DEBUG:
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'DrinkShop <noreply@drinkshop.local>')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', '')
 
 # ---------------------------------------------------------------------------
 # Shop settings
@@ -296,7 +296,7 @@ DISALLOW_ALCOHOL_DELIVERY = os.environ.get('DISALLOW_ALCOHOL_DELIVERY', 'True') 
 # Referral bonus (KES) credited to BOTH the referrer and the new signup
 # when someone joins via a ?ref= link. Set to 0 to disable bonuses while
 # keeping referral tracking itself active.
-REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES') or '50')
+REFERRAL_BONUS_KES = int(os.environ.get('REFERRAL_BONUS_KES') or '100')
 
 # ---------------------------------------------------------------------------
 # M-Pesa Daraja API settings (Safaricom)
@@ -309,7 +309,7 @@ MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', '')
 MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '174379')  # sandbox default
 MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '')
 MPESA_CALLBACK_URL = os.environ.get(
-    'MPESA_CALLBACK_URL', 'https://example.com/payments/mpesa/callback/'
+    'MPESA_CALLBACK_URL', ''
 )
 
 if MPESA_ENV == 'production':
@@ -331,8 +331,8 @@ MPESA_INITIATOR_NAME = os.environ.get('MPESA_INITIATOR_NAME', '')
 MPESA_INITIATOR_PASSWORD = os.environ.get('MPESA_INITIATOR_PASSWORD', '')
 MPESA_B2C_SHORTCODE = os.environ.get('MPESA_B2C_SHORTCODE', MPESA_SHORTCODE)
 MPESA_B2C_CERT_PATH = os.environ.get('MPESA_B2C_CERT_PATH', str(BASE_DIR / 'payments' / 'certs' / 'sandbox_cert.cer'))
-MPESA_B2C_TIMEOUT_URL = os.environ.get('MPESA_B2C_TIMEOUT_URL', 'https://example.com/payments/mpesa/b2c/timeout/')
-MPESA_B2C_RESULT_URL = os.environ.get('MPESA_B2C_RESULT_URL', 'https://example.com/payments/mpesa/b2c/result/')
+MPESA_B2C_TIMEOUT_URL = os.environ.get('MPESA_B2C_TIMEOUT_URL', 'https://entrepshops.vercel.app/payments/mpesa/b2c/timeout/')
+MPESA_B2C_RESULT_URL = os.environ.get('MPESA_B2C_RESULT_URL', 'https://entrepshops.vercel.app/payments/mpesa/b2c/result/')
 
 # Minimum wallet balance a user must have to request a withdrawal.
 WALLET_MIN_WITHDRAWAL_KES = int(os.environ.get('WALLET_MIN_WITHDRAWAL_KES', '1000'))
