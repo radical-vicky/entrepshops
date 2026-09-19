@@ -22,11 +22,13 @@
             <a href="{% url 'store:home' %}" class="logo">
                 {% if active_logo %}
                     <img src="{{ active_logo.image.url }}" alt="Entrep - Shop" class="logo-image">
+                    <span class="logo-wordmark">Entrep<span class="accent"> - Shop</span></span>
                 {% else %}
                     <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
-                    Drink<span class="accent">Shop</span>
+                    <span class="logo-wordmark">Entrep<span class="accent"> - Shop</span></span>
                 {% endif %}
             </a>
+
             <nav class="main-nav">
                 <a href="{% url 'store:home' %}">Shop</a>
                 <a href="{% url 'careers:list' %}">Careers</a>

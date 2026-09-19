@@ -6,32 +6,204 @@
     <div class="page-head">
         <span class="eyebrow">{{ product.category.name }}</span>
     </div>
-    <div class="product-detail">
-        {% if product.image %}
-            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="detail-img">
-        {% else %}
-            <div class="img-placeholder large"><svg viewBox="0 0 24 24" style="color:#45D68A"><use href="#icon-bottle"/></svg></div>
-        {% endif %}
-        <div>
+
+    
+    <div class="pd-layout">
+
+        {# ---------------- Left column: gallery ---------------- #}
+        <section class="pd-gallery">
+            {% with primary=product.primary_image %}
+                {% if primary %}
+                    <img id="pd-main-image"
+                         src="{{ primary.url }}"
+                         alt="{{ product.name }}"
+                         class="pd-main-image">
+                {% else %}
+                    <div class="img-placeholder large">
+                        <svg viewBox="0 0 24 24" style="color:#45D68A">
+                            <use href="#icon-{{ product.department.icon_kind|default:'bottle' }}"/>
+                        </svg>
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% if product.images.count > 1 %}
+            <div class="pd-thumbs" id="pd-thumbs">
+                {% for img in product.images.all %}
+                    <button type="button"
+                            class="pd-thumb {% if forloop.first %}is-active{% endif %}"
+                            data-full="{{ img.image.url }}"
+                            aria-label="View image {{ forloop.counter }}">
+                        <img src="{{ img.image.url }}"
+                             alt="{{ img.alt_text|default:product.name }}">
+                    </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </section>
+
+        {# ---------------- Right column: info ---------------- #}
+        <section class="pd-info">
             <h1>{{ product.name }}</h1>
+
             {% include "includes/star_rating.html" with product=product %}
-            <p class="price large">KES {{ product.price }}{% if product.volume_ml %} <span class="muted">/ {{ product.volume_ml }}ml</span>{% endif %}</p>
-            <p>{{ product.description }}</p>
+
+            {# Availability banners #}
+            {% if product.availability == 'discontinued' %}
+                <p class="badge badge-muted pd-availability">
+                    Sorry, this product is no longer available online.
+                </p>
+            {% elif product.availability == 'unavailable' %}
+                <p class="badge badge-muted pd-availability">
+                    This product is temporarily unavailable.
+                </p>
+            {% elif product.availability == 'last_chance' %}
+                <p class="badge badge-warning pd-availability">
+                    Last chance — limited stock remaining.
+                </p>
+            {% endif %}
 
             {% if not product.is_deliverable %}
-                <p class="badge badge-warning">This item is currently not available for online sale/delivery.</p>
-            {% elif not product.in_stock %}
-                <p class="badge badge-muted">Out of stock</p>
+                <p class="badge badge-warning pd-availability">
+                    This item is currently not available for online sale/delivery.
+                </p>
+            {% endif %}
+
+            {# ------------- Size / variant selector ------------- #}
+            {% if product.has_variants %}
+            <div class="pd-sizes">
+                <span class="pd-sizes-label">
+                    {% if product.department.unit_kind == 'screen' %}Screen size
+                    {% elif product.department.unit_kind == 'volume' %}Size
+                    {% elif product.department.unit_kind == 'weight' %}Weight
+                    {% else %}Choose an option{% endif %}
+                </span>
+                <div class="pd-size-buttons" id="pd-size-buttons">
+                    {% for variant in product.available_variants %}
+                        <button type="button"
+                                class="pd-size-btn {% if forloop.first %}is-active{% endif %}"
+                                data-variant-id="{{ variant.id }}"
+                                data-price="{{ variant.price }}"
+                                data-compare-at="{{ variant.compare_at_price|default:'' }}"
+                                data-stock="{{ variant.stock }}"
+                                {% if variant.stock == 0 %}disabled{% endif %}>
+                            {{ variant.size_label }}
+                            {% if variant.discount_percent %}
+                                <span class="pd-size-badge">-{{ variant.discount_percent }}%</span>
+                            {% endif %}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# ------------- Price ------------- #}
+            <div class="pd-price" id="pd-price">
+                <span class="pd-price-current" id="pd-price-current">
+                    KES {{ product.available_variants.first.price|default:product.price }}{% if product.volume_ml and not product.has_variants %} <span class="muted">/ {{ product.volume_ml }}ml</span>{% endif %}
+                </span>
+                <span class="pd-price-compare" id="pd-price-compare">
+                    {% with v=product.available_variants.first %}
+                        {% if v.compare_at_price %}KES {{ v.compare_at_price }}{% elif product.compare_at_price %}KES {{ product.compare_at_price }}{% endif %}
+                    {% endwith %}
+                </span>
+            </div>
+
+            {# ------------- Description ------------- #}
+            {% if product.description %}
+                <p class="pd-description">{{ product.description }}</p>
+            {% endif %}
+
+            {# ------------- Add to cart ------------- #}
+            {% if not product.is_available %}
+                <p class="badge badge-muted">Currently unavailable</p>
             {% else %}
-                <form action="{% url 'store:cart_add' product.id %}" method="post" class="add-form ajax-add-form">
+                <form action="{% url 'store:cart_add' product.id %}"
+                      method="post"
+                      class="add-form ajax-add-form pd-add-form"
+                      id="pd-add-form">
                     {% csrf_token %}
+                    <input type="hidden" name="variant_id" id="pd-variant-id"
+                           value="{{ product.available_variants.first.id|default:'' }}">
                     <label for="quantity">Quantity</label>
-                    <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product.stock }}" style="width:80px;padding:8px;background:var(--panel-solid);border:1px solid var(--border-glass);border-radius:8px;color:var(--text);margin:0 12px">
+                    <input type="number"
+                           id="quantity"
+                           name="quantity"
+                           value="1"
+                           min="1"
+                           max="{{ product.available_variants.first.stock|default:product.stock }}">
                     <input type="hidden" name="next" value="{{ request.path }}">
                     <button type="submit" class="btn">Add to cart</button>
                 </form>
             {% endif %}
-        </div>
+
+            {# ------------- Special offers ------------- #}
+            {% if product.offers.exists %}
+            <div class="pd-offers">
+                <h3 class="pd-offers-heading">Special offers</h3>
+                <ul>
+                    {% for offer in product.offers.all %}
+                        {% if offer.is_active %}
+                        <li>
+                            {% if offer.url %}
+                                <a href="{{ offer.url }}">{{ offer.text }}</a>
+                            {% else %}
+                                {{ offer.text }}
+                            {% endif %}
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </section>
     </div>
 </div>
+
+<script>
+(function () {
+    // ---- Gallery thumbnails → main image ----
+    const main = document.getElementById('pd-main-image');
+    const thumbs = document.querySelectorAll('#pd-thumbs .pd-thumb');
+    thumbs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!main) return;
+            main.src = btn.dataset.full;
+            thumbs.forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+        });
+    });
+
+    // ---- Size buttons → price, hidden variant_id, quantity max ----
+    const sizeButtons = document.querySelectorAll('#pd-size-buttons .pd-size-btn');
+    const priceCurrent = document.getElementById('pd-price-current');
+    const priceCompare = document.getElementById('pd-price-compare');
+    const variantInput = document.getElementById('pd-variant-id');
+    const qtyInput = document.getElementById('quantity');
+
+    sizeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            sizeButtons.forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+
+            if (variantInput) variantInput.value = btn.dataset.variantId;
+
+            if (priceCurrent) {
+                priceCurrent.textContent = 'KES ' + btn.dataset.price;
+            }
+            if (priceCompare) {
+                priceCompare.textContent = btn.dataset.compareAt
+                    ? 'KES ' + btn.dataset.compareAt
+                    : '';
+            }
+            if (qtyInput) {
+                qtyInput.max = btn.dataset.stock;
+                if (parseInt(qtyInput.value, 10) > parseInt(btn.dataset.stock, 10)) {
+                    qtyInput.value = btn.dataset.stock;
+                }
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}

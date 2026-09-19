@@ -145,7 +145,14 @@
             <aside class="sidebar">
                 <h3>Categories</h3>
                 <ul class="category-list" id="category-list">
-                    <li><a href="{% url 'store:home' %}#shop" data-category-link data-category-name="All drinks" class="{% if not selected_category %}active{% endif %}">All drinks</a></li>
+                    <li>
+    <a href="{% url 'store:home' %}{% if selected_department %}?department={{ selected_department.slug }}{% endif %}#shop"
+       data-category-link
+       data-category-name="All {{ selected_department.name|default:'products' }}"
+       class="{% if not selected_category %}active{% endif %}">
+        All {{ selected_department.name|default:'products' }}
+    </a>
+</li>
                     {% for category in categories %}
                         <li>
                             <a href="?category={{ category.slug }}#shop" data-category-link data-category-slug="{{ category.slug }}" data-category-name="{{ category.name }}" class="{% if selected_category == category %}active{% endif %}">

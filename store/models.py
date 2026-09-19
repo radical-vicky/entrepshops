@@ -74,10 +74,20 @@ class Department(models.Model):
         VIOLET = 'violet', 'Violet & rose (fashion, beauty, lifestyle)'
         AMBER = 'amber', 'Amber & bronze (general / anything else)'
 
+    class UnitKind(models.TextChoices):
+        VOLUME = 'volume', 'Volume (ml / L)'
+        WEIGHT = 'weight', 'Weight (g / kg)'
+        SCREEN = 'screen', 'Screen size (inches)'
+        NONE = 'none', 'No size variants'
+
     name = models.CharField(max_length=100, unique=True, help_text='e.g. Drinks, Electronics, Vehicles, Fashion.')
     slug = models.SlugField(max_length=110, unique=True, blank=True)
     tagline = models.CharField(max_length=150, blank=True, help_text='Short line shown under the name, e.g. "Wholesale & retail, delivered nationwide".')
     theme = models.CharField(max_length=10, choices=Theme.choices, default=Theme.GREEN)
+    unit_kind = models.CharField(
+        max_length=10, choices=UnitKind.choices, default=UnitKind.NONE,
+        help_text='Controls the "size" label shown on the product page and the unit used on variants. Drinks → volume, Electronics → screen, groceries → weight.'
+    )
     icon_kind = models.CharField(
         max_length=20, default='bottle',
         choices=[
@@ -123,17 +133,39 @@ class ProductQuerySet(models.QuerySet):
     def visible(self):
         """Everything a customer should actually be able to see and buy:
         active + approved, AND (platform's own OR a vendor who's both
-        admin-approved and currently subscribed). A vendor's products
-        disappear automatically the moment their subscription lapses —
-        no separate cleanup job needed, this is just what "visible" means."""
+        admin-approved and currently subscribed). Discontinued products
+        are hidden entirely. A vendor's products disappear automatically
+        the moment their subscription lapses — no separate cleanup job
+        needed, this is just what "visible" means."""
         from django.utils import timezone
-        return self.filter(is_active=True, is_approved=True).filter(
+        return self.filter(is_active=True, is_approved=True).exclude(
+            availability=Product.Availability.DISCONTINUED
+        ).filter(
             models.Q(vendor__isnull=True) |
             models.Q(vendor__is_approved=True, vendor__subscription_expires_at__gt=timezone.now())
         )
 
+    def in_stock(self):
+        """Only products with at least one purchasable variant, or (for
+        legacy products with no variants) with fallback stock > 0."""
+        return self.filter(
+            models.Q(variants__is_active=True, variants__stock__gt=0) |
+            models.Q(variants__isnull=True, stock__gt=0)
+        ).distinct()
+
 
 class Product(models.Model):
+    class Availability(models.TextChoices):
+        AVAILABLE = 'available', 'Available'
+        LAST_CHANCE = 'last_chance', 'Last chance'
+        UNAVAILABLE = 'unavailable', 'Temporarily unavailable'
+        DISCONTINUED = 'discontinued', 'No longer available'
+
+    department = models.ForeignKey(
+        Department, related_name='products', on_delete=models.PROTECT,
+        null=True, blank=True,
+        help_text='Which top-level department this product belongs to. Auto-filled from the category if left blank.'
+    )
     category = models.ForeignKey(
         Category, related_name='products', on_delete=models.CASCADE
     )
@@ -149,12 +181,30 @@ class Product(models.Model):
     name = models.CharField(max_length=150)
     slug = models.SlugField(max_length=160, unique=True)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to='products/', blank=True, null=True)
-    price = models.DecimalField(max_digits=8, decimal_places=2, help_text='Price in KES')
+    image = models.ImageField(
+        upload_to='products/', blank=True, null=True,
+        help_text='Main product photo. Additional gallery photos go in the "Images" section below.'
+    )
+    availability = models.CharField(
+        max_length=20, choices=Availability.choices, default=Availability.AVAILABLE,
+        help_text='Controls the badge and whether "Add to cart" is enabled.'
+    )
+
+    # Fallback pricing/stock — only used if this product has no variants.
+    price = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True,
+        help_text='Fallback price in KES. Prefer setting prices on variants below.'
+    )
     compare_at_price = models.DecimalField(
         max_digits=8, decimal_places=2, blank=True, null=True,
-        help_text='Optional "was" price shown struck through, e.g. 1500 when price is 1000 — auto-shows a "33% off" badge. Leave blank for no discount badge.'
+        help_text='Optional "was" price. Shows a discount badge when higher than price.'
     )
+    stock = models.PositiveIntegerField(default=0, help_text='Fallback stock if no variants.')
+    volume_ml = models.PositiveIntegerField(
+        blank=True, null=True,
+        help_text='Legacy single-size field. Use variants for multi-size products.'
+    )
+
     wholesale_quantity_threshold = models.PositiveIntegerField(
         blank=True, null=True,
         help_text='Buying this many or more automatically switches to the wholesale unit price below.'
@@ -163,10 +213,6 @@ class Product(models.Model):
         max_digits=8, decimal_places=2, blank=True, null=True,
         help_text='Per-unit price applied automatically once the quantity threshold is met.'
     )
-    volume_ml = models.PositiveIntegerField(
-        blank=True, null=True, help_text='e.g. 500 for a 500ml bottle'
-    )
-    stock = models.PositiveIntegerField(default=0)
     is_alcoholic = models.BooleanField(
         default=False,
         help_text='Alcoholic drinks may be restricted from online sale/delivery.',
@@ -194,12 +240,26 @@ class Product(models.Model):
 
     class Meta:
         ordering = ['name']
+        indexes = [
+            models.Index(fields=['department', 'is_active', 'is_approved']),
+            models.Index(fields=['category', 'is_active', 'is_approved']),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.category_id and self.category.department_id:
+            if self.department_id and self.department_id != self.category.department_id:
+                raise ValidationError({
+                    'department': (
+                        f'Category "{self.category.name}" belongs to '
+                        f'"{self.category.department.name}", not to the department you selected.'
+                    )
+                })
 
     def save(self, *args, **kwargs):
+        if not self.department_id and self.category_id:
+            self.department_id = self.category.department_id
         if self.vendor_id and not self.pk:
-            # New vendor listings need an admin look before going live —
-            # products with no vendor (the platform's own) skip this since
-            # the default is_approved=True already covers them.
             self.is_approved = False
         super().save(*args, **kwargs)
 
@@ -209,8 +269,13 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse('store:product_detail', args=[self.slug])
 
+    # ---- availability & stock ----
     @property
     def in_stock(self):
+        """True if anything is purchasable — a variant with stock, or
+        fallback stock for legacy products."""
+        if self.has_variants:
+            return self.variants.filter(is_active=True, stock__gt=0).exists()
         return self.stock > 0
 
     @property
@@ -222,21 +287,55 @@ class Product(models.Model):
         return True
 
     @property
+    def is_available(self):
+        """False when discontinued/unavailable, or when nothing is in stock."""
+        if self.availability in (self.Availability.DISCONTINUED, self.Availability.UNAVAILABLE):
+            return False
+        return self.in_stock
+
+    # ---- variants ----
+    @property
+    def has_variants(self):
+        return self.variants.exists()
+
+    @property
+    def available_variants(self):
+        return self.variants.filter(is_active=True).order_by('sort_order', 'price')
+
+    @property
+    def price_range(self):
+        """Lowest–highest active variant price, or (price, price) fallback."""
+        prices = list(
+            self.variants.filter(is_active=True).values_list('price', flat=True)
+        )
+        if prices:
+            return min(prices), max(prices)
+        return (self.price or 0), (self.price or 0)
+
+    # ---- images ----
+    @property
+    def primary_image(self):
+        """First ProductImage by sort_order, or fall back to the legacy field."""
+        img = self.images.order_by('sort_order', 'id').first()
+        return img.image if img else self.image
+
+    # ---- ratings ----
+    @property
     def average_rating(self):
         agg = self.reviews.aggregate(avg=models.Avg('rating'), count=models.Count('id'))
         return agg['avg'], agg['count']
 
     @property
     def rating_rounded(self):
-        """Nearest whole star (0-5) — used to render a filled/empty 5-star row."""
         avg, count = self.average_rating
         if not count:
             return 0
         return round(avg)
 
+    # ---- pricing ----
     @property
     def discount_percent(self):
-        if self.compare_at_price and self.compare_at_price > self.price:
+        if self.compare_at_price and self.price and self.compare_at_price > self.price:
             return round((1 - (self.price / self.compare_at_price)) * 100)
         return None
 
@@ -245,12 +344,117 @@ class Product(models.Model):
         return bool(self.wholesale_quantity_threshold and self.wholesale_price is not None)
 
     def unit_price_for_quantity(self, quantity):
-        """The per-unit price a customer actually pays at this quantity —
-        automatically drops to the wholesale rate once they hit the
-        threshold, straight from the product's own pricing fields."""
         if self.has_wholesale_price and quantity >= self.wholesale_quantity_threshold:
             return self.wholesale_price
         return self.price
+
+
+class ProductVariant(models.Model):
+    """One purchasable size/version of a product — a TV in 32"/40"/43",
+    a drink in 500ml/1L/2L, a bag of rice in 1kg/5kg/25kg. Each variant
+    has its own price, stock and SKU. The cart stores the variant, not
+    the product, so different sizes are priced independently."""
+
+    class SizeUnit(models.TextChoices):
+        NONE = '', '— (no unit)'
+        INCH = 'in', 'Inches'
+        ML = 'ml', 'Millilitres'
+        L = 'l', 'Litres'
+        G = 'g', 'Grams'
+        KG = 'kg', 'Kilograms'
+        CM = 'cm', 'Centimetres'
+        PACK = 'pack', 'Pack'
+
+    product = models.ForeignKey(
+        Product, related_name='variants', on_delete=models.CASCADE
+    )
+    size_label = models.CharField(
+        max_length=40,
+        help_text='Shown on the size selector button, e.g. 32", 500ml, 1kg.'
+    )
+    size_value = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True,
+        help_text='Optional numeric value for sorting/filtering, e.g. 500 for 500ml.'
+    )
+    size_unit = models.CharField(
+        max_length=10, choices=SizeUnit.choices, blank=True, default='',
+        help_text='Unit that size_value is expressed in.'
+    )
+    sku = models.CharField(
+        max_length=64, blank=True,
+        help_text='Optional stock-keeping unit for this exact size.'
+    )
+    price = models.DecimalField(max_digits=8, decimal_places=2, help_text='Price in KES')
+    compare_at_price = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True,
+        help_text='Optional "was" price for this size.'
+    )
+    stock = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Turn off to hide this size without deleting it.'
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'price']
+        unique_together = [('product', 'size_label')]
+
+    def __str__(self):
+        return f'{self.product.name} — {self.size_label}'
+
+    @property
+    def discount_percent(self):
+        if self.compare_at_price and self.compare_at_price > self.price:
+            return round((1 - (self.price / self.compare_at_price)) * 100)
+        return None
+
+
+class ProductImage(models.Model):
+    """Extra photos shown in the product gallery — the main hero image
+    plus thumbnails. The first image by sort_order is treated as primary."""
+
+    product = models.ForeignKey(
+        Product, related_name='images', on_delete=models.CASCADE
+    )
+    image = models.ImageField(upload_to='products/gallery/')
+    alt_text = models.CharField(
+        max_length=150, blank=True,
+        help_text='Short description of what the photo shows, for screen readers.'
+    )
+    sort_order = models.PositiveIntegerField(
+        default=0, help_text='Lower numbers show first. 0 = main photo.'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return f'{self.product.name} — image #{self.pk}'
+
+
+class ProductOffer(models.Model):
+    """A per-product special offer line — e.g. "Save 20% off TV Wall Mounts
+    when you buy a TV". Rendered in the highlighted offers box on the
+    product page."""
+
+    product = models.ForeignKey(
+        Product, related_name='offers', on_delete=models.CASCADE
+    )
+    text = models.CharField(max_length=200, help_text='e.g. "Save 20% off TV Wall Mounts when you buy a TV"')
+    url = models.CharField(
+        max_length=300, blank=True,
+        help_text='Optional link. Leave blank for plain text.'
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return self.text
 
 
 class BundleOffer(models.Model):
@@ -309,12 +513,8 @@ class SiteLogo(models.Model):
 class BackgroundImage(models.Model):
     """A sitewide ambient background photo. Upload as many as you like from
     /admin/ — they form a gallery you can pick from; exactly one is ever
-    "active" (shown on the site) at a time.
+    "active" (shown on the site) at a time."""
 
-    Upload only images you have the rights to use (your own photography, a
-    properly licensed stock photo, etc.) — they're stored on Cloudinary
-    like product images.
-    """
     label = models.CharField(
         max_length=100, blank=True, help_text='Just a label for you, e.g. "Festive season".'
     )
@@ -337,8 +537,6 @@ class BackgroundImage(models.Model):
         return self.label or f'Background #{self.pk}'
 
     def save(self, *args, **kwargs):
-        # The very first image ever uploaded becomes active automatically,
-        # so a fresh install shows *something* without an extra admin step.
         is_new = self._state.adding
         if is_new and not BackgroundImage.objects.filter(is_active=True).exists():
             self.is_active = True
@@ -352,12 +550,7 @@ class BackgroundImage(models.Model):
 
 
 class DeliveryZone(models.Model):
-    """A neighbourhood/estate with its own delivery fee and ETA.
-
-    Matching is done by case-insensitive substring against
-    DeliveryAddress.area — e.g. a zone named "Kilimani" matches an address
-    with area "Kilimani" or "Kilimani, near Yaya Centre".
-    """
+    """A neighbourhood/estate with its own delivery fee and ETA."""
 
     name = models.CharField(max_length=150, unique=True, help_text='e.g. Kilimani, Westlands')
     delivery_fee = models.DecimalField(max_digits=8, decimal_places=2, help_text='Fee in KES')

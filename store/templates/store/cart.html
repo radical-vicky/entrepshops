@@ -11,49 +11,103 @@
     {% if cart|length == 0 %}
         <div class="form-card">
             <p>Your cart is empty.</p>
-            <a href="{% url 'store:home' %}" class="btn btn-small">Browse drinks</a>
+            <a href="{% url 'store:home' %}" class="btn btn-small">Browse products</a>
         </div>
     {% else %}
         <div class="form-card wide">
             <table class="cart-table">
                 <thead>
-                    <tr><th></th><th>Product</th><th>Unit price</th><th>Quantity</th><th>Subtotal</th><th></th></tr>
+                    <tr>
+                        <th></th>
+                        <th>Product</th>
+                        <th>Unit price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                        <th></th>
+                    </tr>
                 </thead>
                 <tbody>
                 {% for line in cart %}
                     <tr>
+                        {# ---------- thumbnail ---------- #}
                         <td class="cart-thumb-cell">
-                            {% if line.product.image %}
-                                <img src="{{ line.product.image.url }}" alt="" class="cart-thumb">
-                            {% else %}
-                                <div class="cart-thumb cart-thumb-placeholder"><svg style="width:18px;height:18px;color:#45D68A"><use href="#icon-bottle"/></svg></div>
-                            {% endif %}
+                            {% with img=line.product.primary_image %}
+                                {% if img %}
+                                    <img src="{{ img.url }}" alt="" class="cart-thumb">
+                                {% else %}
+                                    <div class="cart-thumb cart-thumb-placeholder">
+                                        <svg style="width:18px;height:18px;color:#45D68A"><use href="#icon-bottle"/></svg>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
                         </td>
+
+                        {# ---------- name + variant + badges ---------- #}
                         <td>
                             {{ line.product.name }}
+                            {% if line.variant %}
+                                <br><span class="muted cart-variant-label">{{ line.variant.size_label }}</span>
+                            {% elif line.product.volume_ml %}
+                                <br><span class="muted cart-variant-label">{{ line.product.volume_ml }}ml</span>
+                            {% endif %}
+
                             {% if line.is_bonus %}
                                 <br><span class="badge badge-success">FREE gift</span>
                                 <span class="muted" style="font-size:0.78rem">{{ line.bundle_label }}</span>
                             {% endif %}
-                            {% if not line.product.in_stock and not line.is_bonus %}<span class="badge badge-warning">Out of stock</span>{% endif %}
+
+                            {% if not line.is_bonus and line.variant and line.variant.stock == 0 %}
+                                <span class="badge badge-warning">Out of stock</span>
+                            {% elif not line.is_bonus and not line.variant and not line.product.in_stock %}
+                                <span class="badge badge-warning">Out of stock</span>
+                            {% endif %}
+
+                            {% if not line.is_bonus and not line.product.is_deliverable %}
+                                <span class="badge badge-warning">Not deliverable</span>
+                            {% endif %}
                         </td>
-                        <td>KES {{ line.unit_price }}</td>
+
+                        {# ---------- unit price ---------- #}
+                        <td>
+                            KES {{ line.unit_price }}
+                            {% if line.is_wholesale %}
+                                <br><span class="badge badge-success">Wholesale</span>
+                            {% endif %}
+                        </td>
+
+                        {# ---------- quantity / update form ---------- #}
                         <td>
                             {% if line.is_bonus %}
                                 <span class="muted">{{ line.quantity }} (bonus)</span>
                             {% else %}
-                                <form action="{% url 'store:cart_update' line.product.id %}" method="post" class="inline-form">
+                                <form action="{% url 'store:cart_update' line.product.id %}"
+                                      method="post"
+                                      class="inline-form">
                                     {% csrf_token %}
-                                    <input type="number" name="quantity" value="{{ line.quantity }}" min="1" max="{{ line.product.stock }}">
+                                    <input type="hidden" name="variant_id"
+                                           value="{{ line.variant.id|default:'' }}">
+                                    <input type="number"
+                                           name="quantity"
+                                           value="{{ line.quantity }}"
+                                           min="1"
+                                           max="{% if line.variant %}{{ line.variant.stock }}{% else %}{{ line.product.stock }}{% endif %}">
                                     <button type="submit" class="btn btn-small btn-outline">Update</button>
                                 </form>
                             {% endif %}
                         </td>
+
+                        {# ---------- subtotal ---------- #}
                         <td>KES {{ line.subtotal }}</td>
+
+                        {# ---------- remove form ---------- #}
                         <td>
                             {% if not line.is_bonus %}
-                                <form action="{% url 'store:cart_remove' line.product.id %}" method="post" class="inline-form">
+                                <form action="{% url 'store:cart_remove' line.product.id %}"
+                                      method="post"
+                                      class="inline-form">
                                     {% csrf_token %}
+                                    <input type="hidden" name="variant_id"
+                                           value="{{ line.variant.id|default:'' }}">
                                     <button type="submit" class="btn btn-small btn-danger">Remove</button>
                                 </form>
                             {% endif %}

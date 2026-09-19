@@ -697,11 +697,323 @@ main .container { padding-top: 28px; }
 .in-stock-badge { margin-bottom: 8px; }
 .muted { color: var(--text-mute); font-weight: 400; }
 
+/* Legacy simple product-detail row — used by any page still on the old
+   two-column layout. The new store product page uses .pd-layout below,
+   which is a proper CSS grid and will not be affected by these rules. */
 .product-detail { display: flex; gap: 40px; flex-wrap: wrap; }
 .add-form { display: flex; align-items: center; margin-top: 20px; }
 .add-form label { color: var(--text-dim); font-size: 0.88rem; }
 .product-detail > div { flex: 1; min-width: 280px; }
 .detail-img { width: 100%; max-width: 380px; border-radius: var(--radius); object-fit: cover; border: 1px solid var(--border-glass); }
+
+/* =========================================================================
+   Product detail — gallery, variants, offers  (NEW)
+   Layout: 2-column grid on wide screens, single column on mobile. Built on
+   the same --green/--green-bright/--orange slots as the rest of the site,
+   so the size buttons, price and offers accent automatically re-skin
+   under [data-dept="blue"] / "violet" / etc.
+   ========================================================================= */
+.pd-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+    margin-top: 8px;
+}
+
+/* ---- Gallery ---- */
+.pd-gallery {
+    position: sticky;
+    top: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pd-main-image {
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+    background: var(--panel-solid);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    display: block;
+}
+
+.pd-gallery .img-placeholder.large {
+    height: 460px;
+    border-radius: var(--radius);
+}
+
+.pd-thumbs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pd-thumb {
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    background: var(--panel-solid);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.pd-thumb:hover { border-color: var(--border-glass-strong); transform: translateY(-2px); }
+
+.pd-thumb.is-active {
+    border-color: var(--green-bright);
+    box-shadow: 0 0 0 1px var(--green-bright) inset;
+}
+
+.pd-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* ---- Info column ---- */
+.pd-info { min-width: 0; }
+
+.pd-info h1 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin: 0 0 12px;
+    line-height: 1.15;
+}
+
+.pd-availability {
+    display: block;
+    margin: 12px 0;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    border-radius: var(--radius-sm);
+}
+
+/* ---- Size / variant selector ---- */
+.pd-sizes { margin: 24px 0 8px; }
+
+.pd-sizes-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-bottom: 10px;
+}
+
+.pd-size-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pd-size-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--panel-solid);
+    color: var(--text-dim);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.15s var(--ease);
+}
+
+.pd-size-btn:hover:not(:disabled) {
+    border-color: var(--border-glass-strong);
+    color: var(--text);
+    transform: translateY(-1px);
+}
+
+.pd-size-btn.is-active {
+    background: rgba(47, 166, 107, 0.14);
+    border-color: var(--green-bright);
+    color: var(--green-bright);
+    font-weight: 600;
+}
+
+.pd-size-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+
+.pd-size-badge {
+    background: linear-gradient(135deg, var(--orange-deep), var(--orange));
+    color: var(--void);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+/* ---- Price block ---- */
+.pd-price {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 18px 0 4px;
+}
+
+.pd-price-current {
+    font-family: var(--font-mono);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--green-bright);
+    letter-spacing: -0.02em;
+}
+
+.pd-price-compare {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--text-mute);
+    text-decoration: line-through;
+}
+
+.pd-price-compare:empty { display: none; }
+
+/* ---- Description ---- */
+.pd-description {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin: 14px 0 22px;
+    max-width: 60ch;
+}
+
+/* ---- Add to cart ---- */
+.pd-add-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-glass);
+}
+
+.pd-add-form label {
+    color: var(--text-mute);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.pd-add-form input[type="number"] {
+    width: 72px;
+    padding: 9px 10px;
+    background: var(--panel-solid);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.pd-add-form .btn {
+    flex: 1;
+    min-width: 180px;
+}
+
+/* ---- Special offers ---- */
+.pd-offers {
+    margin-top: 32px;
+    padding: 20px 22px;
+    background: var(--panel);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--border-glass);
+    border-left: 3px solid var(--orange);
+    border-radius: var(--radius);
+}
+
+.pd-offers-heading {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin: 0 0 12px;
+    font-weight: 600;
+}
+
+.pd-offers ul { list-style: none; padding: 0; margin: 0; }
+
+.pd-offers li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 10px;
+    font-size: 0.92rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+}
+
+.pd-offers li:last-child { margin-bottom: 0; }
+
+.pd-offers li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.15);
+}
+
+.pd-offers a {
+    color: var(--text);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--border-glass-strong);
+    transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.pd-offers a:hover {
+    color: var(--green-bright);
+    border-bottom-color: var(--green-bright);
+}
+
+/* ---- Cart variant label ---- */
+.cart-variant-label {
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 860px) {
+    .pd-layout {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+    .pd-gallery { position: static; }
+    .pd-main-image { max-height: 380px; }
+    .pd-gallery .img-placeholder.large { height: 320px; }
+    .pd-price-current { font-size: 1.5rem; }
+}
+
+@media (max-width: 520px) {
+    .pd-thumb { width: 56px; height: 56px; }
+    .pd-size-btn { padding: 9px 13px; font-size: 0.85rem; }
+    .pd-add-form { flex-direction: column; align-items: stretch; }
+    .pd-add-form input[type="number"] { width: 100%; }
+    .pd-add-form .btn { width: 100%; }
+}
 
 /* =========================================================================
    Buttons
@@ -1172,4 +1484,38 @@ main .container { padding-top: 28px; }
     .sidebar .category-list li { margin-bottom: 0; flex-shrink: 0; }
     .cart-summary { margin-left: 0; max-width: none; text-align: left; }
     .product-detail { flex-direction: column; }
+}
+
+
+
+/* =========================================================================
+   Logo wordmark — the text beside the logo icon/image
+   ========================================================================= */
+.logo {
+    /* already set up as inline-flex with gap: 9px in your header rules */
+}
+
+.logo-wordmark {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--text);
+}
+
+.logo-wordmark .accent {
+    color: var(--green-bright);
+}
+
+/* When a custom logo image is uploaded, keep the wordmark slightly
+   smaller so the combination doesn't dominate the header. */
+.logo-image + .logo-wordmark {
+    font-size: 1.05rem;
+}
+
+@media (max-width: 480px) {
+    /* On very small screens, the icon + short name is enough. */
+    .logo-wordmark { font-size: 1.05rem; }
 }

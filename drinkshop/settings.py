@@ -228,7 +228,7 @@ LOGOUT_REDIRECT_URL = 'store:home'
 # (not just email) since existing accounts/migrations use it; allauth will
 # ask for one on signup unless you flip ACCOUNT_USERNAME_REQUIRED off.
 # ---------------------------------------------------------------------------
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', '')
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get('ACCOUNT_EMAIL_VERIFICATION', 'optional')  # 'none', 'optional', or 'mandatory'
 ACCOUNT_LOGIN_METHODS = {'username', 'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 ACCOUNT_UNIQUE_EMAIL = True
