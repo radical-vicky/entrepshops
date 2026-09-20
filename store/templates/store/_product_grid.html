@@ -1,19 +1,48 @@
 {% for product in products %}
     <article class="product-card">
         <a href="{{ product.get_absolute_url }}">
-            {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}">
-            {% else %}
-                <div class="img-placeholder"><svg viewBox="0 0 24 24" style="color:#45D68A"><use href="#icon-bottle"/></svg></div>
+            {% with img=product.primary_image %}
+                {% if img %}
+                    <img src="{{ img.url }}" alt="{{ product.name }}">
+                {% else %}
+                    <div class="img-placeholder">
+                        <svg viewBox="0 0 24 24" style="color:#45D68A">
+                            <use href="#icon-{{ product.department.icon_kind|default:'bottle' }}"/>
+                        </svg>
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {# Discount badge: use variant discount if multi-size, else product discount #}
+            {% if product.has_variants %}
+                {% with v=product.available_variants.first %}
+                    {% if v.discount_percent %}
+                        <span class="badge badge-warning discount-flag">-{{ v.discount_percent }}%</span>
+                    {% endif %}
+                {% endwith %}
+            {% elif product.discount_percent %}
+                <span class="badge badge-warning discount-flag">-{{ product.discount_percent }}%</span>
             {% endif %}
-            {% if product.discount_percent %}<span class="badge badge-warning discount-flag">-{{ product.discount_percent }}%</span>{% endif %}
+
             <h4>{{ product.name }}</h4>
         </a>
+
         {% include "includes/star_rating.html" with product=product %}
+
+        {# Price: show range when there are multiple variants, otherwise single #}
         <p class="price">
-            KES {{ product.price }}
-            {% if product.compare_at_price %}<span class="was-price">KES {{ product.compare_at_price }}</span>{% endif %}
+            {% if product.has_variants %}
+                {% with lo=product.price_range.0 hi=product.price_range.1 %}
+                    KES {{ lo }}{% if lo != hi %}–{{ hi }}{% endif %}
+                {% endwith %}
+            {% else %}
+                KES {{ product.price }}
+                {% if product.compare_at_price %}
+                    <span class="was-price">KES {{ product.compare_at_price }}</span>
+                {% endif %}
+            {% endif %}
         </p>
+
         {% if not product.is_deliverable %}
             <p class="badge badge-warning">Delivery unavailable</p>
         {% elif not product.in_stock %}
@@ -24,10 +53,13 @@
                 {% csrf_token %}
                 <input type="hidden" name="quantity" value="1">
                 <input type="hidden" name="next" value="{{ request.path }}">
+                {# No variant_id — Cart.add() auto-picks the first active
+                   variant when the product has any. Buyers who want a
+                   specific size click through to the product page. #}
                 <button type="submit" class="btn btn-small">Add to cart</button>
             </form>
         {% endif %}
     </article>
 {% empty %}
-    <p>No drinks available in this category yet.</p>
+    <p>No {% if selected_department %}{{ selected_department.name|lower }}{% else %}products{% endif %} available{% if selected_category %} in this category{% endif %} yet.</p>
 {% endfor %}
