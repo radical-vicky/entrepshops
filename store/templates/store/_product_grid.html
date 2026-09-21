@@ -13,7 +13,6 @@
                 {% endif %}
             {% endwith %}
 
-            {# Discount badge: use variant discount if multi-size, else product discount #}
             {% if product.has_variants %}
                 {% with v=product.available_variants.first %}
                     {% if v.discount_percent %}
@@ -29,7 +28,6 @@
 
         {% include "includes/star_rating.html" with product=product %}
 
-        {# Price: show range when there are multiple variants, otherwise single #}
         <p class="price">
             {% if product.has_variants %}
                 {% with lo=product.price_range.0 hi=product.price_range.1 %}
@@ -53,9 +51,6 @@
                 {% csrf_token %}
                 <input type="hidden" name="quantity" value="1">
                 <input type="hidden" name="next" value="{{ request.path }}">
-                {# No variant_id — Cart.add() auto-picks the first active
-                   variant when the product has any. Buyers who want a
-                   specific size click through to the product page. #}
                 <button type="submit" class="btn btn-small">Add to cart</button>
             </form>
         {% endif %}
