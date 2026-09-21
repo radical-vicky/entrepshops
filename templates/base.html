@@ -89,21 +89,47 @@
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
 
     <script>
-        // Scroll-reveal for elements marked .reveal
-        const revealEls = document.querySelectorAll('.reveal');
-        if (revealEls.length && 'IntersectionObserver' in window) {
-            const io = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('in-view');
-                        io.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.15 });
-            revealEls.forEach(el => io.observe(el));
-        } else {
-            revealEls.forEach(el => el.classList.add('in-view'));
-        }
+        // Scroll-reveal for elements marked .reveal.
+        //
+        // FAIL-SAFE: This used to leave product cards permanently at
+        // opacity:0 on mobile (they were tappable but invisible) because
+        // the IntersectionObserver never fired for elements inside the
+        // scroll-heavy product grid. Now:
+        //   1. Lower intersection threshold (5% instead of 15%).
+        //   2. Hard timeout — anything still hidden at 1.5s gets revealed.
+        //   3. The CSS also force-disables .reveal on ≤700px screens.
+        // Any one of those three would fix it; all three together mean
+        // this bug can never come back.
+        (function () {
+            const revealEls = document.querySelectorAll('.reveal');
+            if (!revealEls.length) return;
+
+            function reveal(el) {
+                el.classList.add('in-view');
+            }
+
+            if ('IntersectionObserver' in window) {
+                const io = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            reveal(entry.target);
+                            io.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.05, rootMargin: '0px 0px -5% 0px' });
+
+                revealEls.forEach(el => io.observe(el));
+
+                // Fail-safe #2: after 1.5 seconds, reveal anything still hidden.
+                setTimeout(() => {
+                    revealEls.forEach(el => {
+                        if (!el.classList.contains('in-view')) reveal(el);
+                    });
+                }, 1500);
+            } else {
+                revealEls.forEach(reveal);
+            }
+        })();
 
         // Toasts for AJAX feedback (add-to-cart etc.) — Django's message
         // banners only render on a full page load, so anything that skips
