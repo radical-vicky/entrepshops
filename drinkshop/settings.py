@@ -344,4 +344,4 @@ VENDOR_SUBSCRIPTION_FEE_KES = int(os.environ.get('VENDOR_SUBSCRIPTION_FEE_KES', 
 VENDOR_SUBSCRIPTION_DAYS = int(os.environ.get('VENDOR_SUBSCRIPTION_DAYS', '30'))
 # Shared secret for the /marketing/internal/process-proofs/ cron endpoint.
 # Set CRON_SECRET in Vercel's environment variables to a random string.
-CRON_SECRET = os.environ.get('CRON_SECRET', 'change-me-before-deploying')
+CRON_SECRET = os.environ.get('CRON_SECRET', '')
