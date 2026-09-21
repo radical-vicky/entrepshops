@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ product.name }} — Entrep - Shop{% endblock %}
 
 {% block content %}
@@ -7,7 +8,6 @@
         <span class="eyebrow">{{ product.category.name }}</span>
     </div>
 
-    
     <div class="pd-layout">
 
         {# ---------------- Left column: gallery ---------------- #}
@@ -17,7 +17,9 @@
                     <img id="pd-main-image"
                          src="{{ primary.url }}"
                          alt="{{ product.name }}"
-                         class="pd-main-image">
+                         class="pd-main-image"
+                         data-lightbox
+                         data-lightbox-group="product-gallery">
                 {% else %}
                     <div class="img-placeholder large">
                         <svg viewBox="0 0 24 24" style="color:#45D68A">
@@ -33,6 +35,10 @@
                     <button type="button"
                             class="pd-thumb {% if forloop.first %}is-active{% endif %}"
                             data-full="{{ img.image.url }}"
+                            data-lightbox
+                            data-lightbox-group="product-gallery"
+                            data-lightbox-src="{{ img.image.url }}"
+                            data-lightbox-alt="{{ img.alt_text|default:product.name }}"
                             aria-label="View image {{ forloop.counter }}">
                         <img src="{{ img.image.url }}"
                              alt="{{ img.alt_text|default:product.name }}">
@@ -48,7 +54,6 @@
 
             {% include "includes/star_rating.html" with product=product %}
 
-            {# Availability banners #}
             {% if product.availability == 'discontinued' %}
                 <p class="badge badge-muted pd-availability">
                     Sorry, this product is no longer available online.
@@ -69,7 +74,6 @@
                 </p>
             {% endif %}
 
-            {# ------------- Size / variant selector ------------- #}
             {% if product.has_variants %}
             <div class="pd-sizes">
                 <span class="pd-sizes-label">
@@ -97,7 +101,6 @@
             </div>
             {% endif %}
 
-            {# ------------- Price ------------- #}
             <div class="pd-price" id="pd-price">
                 <span class="pd-price-current" id="pd-price-current">
                     KES {{ product.available_variants.first.price|default:product.price }}{% if product.volume_ml and not product.has_variants %} <span class="muted">/ {{ product.volume_ml }}ml</span>{% endif %}
@@ -109,12 +112,10 @@
                 </span>
             </div>
 
-            {# ------------- Description ------------- #}
             {% if product.description %}
                 <p class="pd-description">{{ product.description }}</p>
             {% endif %}
 
-            {# ------------- Add to cart ------------- #}
             {% if not product.is_available %}
                 <p class="badge badge-muted">Currently unavailable</p>
             {% else %}
@@ -137,7 +138,6 @@
                 </form>
             {% endif %}
 
-            {# ------------- Special offers ------------- #}
             {% if product.offers.exists %}
             <div class="pd-offers">
                 <h3 class="pd-offers-heading">Special offers</h3>
@@ -174,7 +174,7 @@
         });
     });
 
-    // ---- Size buttons → price, hidden variant_id, quantity max ----
+    // ---- Size buttons → price + hidden variant_id ----
     const sizeButtons = document.querySelectorAll('#pd-size-buttons .pd-size-btn');
     const priceCurrent = document.getElementById('pd-price-current');
     const priceCompare = document.getElementById('pd-price-compare');
@@ -185,17 +185,9 @@
         btn.addEventListener('click', () => {
             sizeButtons.forEach(b => b.classList.remove('is-active'));
             btn.classList.add('is-active');
-
             if (variantInput) variantInput.value = btn.dataset.variantId;
-
-            if (priceCurrent) {
-                priceCurrent.textContent = 'KES ' + btn.dataset.price;
-            }
-            if (priceCompare) {
-                priceCompare.textContent = btn.dataset.compareAt
-                    ? 'KES ' + btn.dataset.compareAt
-                    : '';
-            }
+            if (priceCurrent) priceCurrent.textContent = 'KES ' + btn.dataset.price;
+            if (priceCompare) priceCompare.textContent = btn.dataset.compareAt ? 'KES ' + btn.dataset.compareAt : '';
             if (qtyInput) {
                 qtyInput.max = btn.dataset.stock;
                 if (parseInt(qtyInput.value, 10) > parseInt(btn.dataset.stock, 10)) {
@@ -204,6 +196,44 @@
             }
         });
     });
+
+    // ---- Lightbox wiring ----
+    // Only the thumbnails carry data-lightbox-src; the main image uses
+    // whatever its current src is at click time (which changes when the
+    // user clicks a thumb). That way "click main image" opens whichever
+    // photo is on screen.
+    const lightboxImages = Array.from(
+        document.querySelectorAll('[data-lightbox-src]')
+    ).map(el => ({
+        src: el.dataset.lightboxSrc,
+        alt: el.dataset.lightboxAlt || '',
+        thumb: el,
+    }));
+
+    if (lightboxImages.length && window.Lightbox) {
+        // Click a thumbnail → if it's already the active one, open the
+        // lightbox. If it's a different one, just switch the main image
+        // (normal behavior). This matches what users expect: tap once to
+        // preview, tap the preview to enlarge.
+        thumbs.forEach((thumb, i) => {
+            thumb.addEventListener('click', (e) => {
+                if (thumb.classList.contains('is-active')) {
+                    e.preventDefault();
+                    window.Lightbox.open(lightboxImages, i);
+                }
+            });
+        });
+
+        // Click the big image → open the lightbox at whichever image
+        // currently matches main.src.
+        if (main) {
+            main.addEventListener('click', () => {
+                const currentSrc = main.getAttribute('src');
+                const idx = lightboxImages.findIndex(img => currentSrc && currentSrc.endsWith(img.src.split('/').pop()));
+                window.Lightbox.open(lightboxImages, idx >= 0 ? idx : 0);
+            });
+        }
+    }
 })();
 </script>
 {% endblock %}
