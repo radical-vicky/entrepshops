@@ -5,118 +5,169 @@
 <div class="container">
     <div class="page-head">
         <span class="eyebrow">Share &amp; earn</span>
-        <h1>Post today's product, earn per view</h1>
+        <h1>Post today's product. Earn every view.</h1>
+        <p class="lede">
+            Copy your unique link, post it to WhatsApp Status with the campaign image,
+            then upload a screenshot of your view count. We credit your earnings within
+            24 hours.
+        </p>
     </div>
 
     {% if not campaign %}
         <div class="form-card">
-            <p>No active campaign right now — check back soon.</p>
+            <h3>No active campaign</h3>
+            <p class="muted">There's nothing to share right now. Check back soon — new campaigns are published daily.</p>
         </div>
     {% else %}
         <div class="marketing-layout">
 
             {# ---------------- Left: campaign media ---------------- #}
-            <div class="marketing-media form-card wide">
+            <section class="marketing-media glass">
                 {% if campaign.media_type == 'video' and campaign.video %}
-                    <video controls preload="metadata" class="marketing-video">
-                        <source src="{{ campaign.video.url }}">
-                    </video>
+                    <div class="marketing-media-frame">
+                        <video controls preload="metadata" class="marketing-video">
+                            <source src="{{ campaign.video.url }}">
+                        </video>
+                    </div>
                 {% elif campaign.image %}
-                    <img src="{{ campaign.image.url }}"
-                         alt="{{ campaign.title }}"
-                         class="marketing-image"
-                         id="marketing-image">
+                    <div class="marketing-media-frame">
+                        <img src="{{ campaign.image.url }}"
+                             alt="{{ campaign.title }}"
+                             class="marketing-image"
+                             id="marketing-image">
+                    </div>
                 {% endif %}
 
-                <h2>{{ campaign.title }}</h2>
-                {% if campaign.description %}<p>{{ campaign.description }}</p>{% endif %}
+                <div class="marketing-media-body">
+                    <span class="eyebrow">Today's campaign</span>
+                    <h2>{{ campaign.title }}</h2>
+                    {% if campaign.description %}
+                        <p class="muted">{{ campaign.description }}</p>
+                    {% endif %}
 
-                {% if campaign.image %}
-                    <a href="{{ campaign.image.url }}" download class="btn btn-outline btn-small">
-                        Download media
-                    </a>
-                {% elif campaign.video %}
-                    <a href="{{ campaign.video.url }}" download class="btn btn-outline btn-small">
-                        Download media
-                    </a>
-                {% endif %}
-            </div>
+                    <div class="marketing-media-meta">
+                        <span class="muted">
+                            <strong>{{ campaign.payout_per_view }}</strong> KES per view credited
+                        </span>
+                        <a href="{% if campaign.image %}{{ campaign.image.url }}{% else %}{{ campaign.video.url }}{% endif %}"
+                           download
+                           class="btn btn-outline btn-small">
+                            Download media
+                        </a>
+                    </div>
+                </div>
+            </section>
 
             {# ---------------- Right: share + earn panel ---------------- #}
-            <div class="marketing-panel form-card">
-                <h3>Your share link</h3>
+            <section class="marketing-panel glass">
+                <header class="marketing-panel-head">
+                    <span class="eyebrow">Your earning panel</span>
+                    <h2>Share &amp; get paid</h2>
+                </header>
 
                 {% if not user.is_authenticated %}
                     <p class="muted">
                         Please <a href="{% url 'account_login' %}?next={{ request.path }}">log in</a>
-                        to generate a share link and start earning.
+                        to generate your share link and start earning.
                     </p>
-                {% else %}
-                    {% if not share %}
+
+                {% elif not share %}
+                    <div class="marketing-empty">
                         <p>
-                            Generate a unique link — you earn
-                            <strong>KES {{ campaign.payout_per_view }}</strong>
-                            for every view credited to it.
+                            You'll get a unique link to post on WhatsApp. Every view
+                            credited to your link earns you
+                            <strong>{{ campaign.payout_per_view }} KES</strong>.
                         </p>
                         <form method="post" action="{% url 'marketing:create_share' campaign.id %}">
                             {% csrf_token %}
-                            <button class="btn" type="submit">Generate my link</button>
+                            <button class="btn btn-full" type="submit">Generate my share link</button>
                         </form>
-                    {% else %}
-                        {# ---- Step 1: copy the link ---- #}
-                        <p class="muted">Step 1 — copy your link and post it to WhatsApp.</p>
-                        <div class="referral-link-box">
-                            <code id="share-url">{{ request.scheme }}://{{ request.get_host }}{{ share.share_url_path }}</code>
-                            <button type="button" class="btn btn-small" data-copy-target="#share-url">Copy</button>
-                        </div>
+                    </div>
 
-                        {# ---- Step 2: copy the caption ---- #}
-                        {% if campaign.caption_suggestion %}
-                            <h4>Suggested caption</h4>
-                            <div class="referral-link-box">
-                                <code id="share-caption">{{ campaign.caption_suggestion }}</code>
-                                <button type="button" class="btn btn-small" data-copy-target="#share-caption">Copy</button>
+                {% else %}
+                    <ol class="marketing-steps">
+
+                        {# ---- Step 1 ---- #}
+                        <li class="marketing-step">
+                            <div class="marketing-step-label">
+                                <span class="marketing-step-num">01</span>
+                                <span>Copy your share link</span>
                             </div>
+                            <div class="share-input">
+                                <code id="share-url">{{ request.scheme }}://{{ request.get_host }}{{ share.share_url_path }}</code>
+                                <button type="button"
+                                        class="btn btn-small"
+                                        data-copy-target="#share-url">Copy</button>
+                            </div>
+                        </li>
+
+                        {# ---- Step 2 ---- #}
+                        {% if campaign.caption_suggestion %}
+                        <li class="marketing-step">
+                            <div class="marketing-step-label">
+                                <span class="marketing-step-num">02</span>
+                                <span>Copy the caption</span>
+                            </div>
+                            <div class="share-input share-input-multiline">
+                                <code id="share-caption">{{ campaign.caption_suggestion }}</code>
+                                <button type="button"
+                                        class="btn btn-small"
+                                        data-copy-target="#share-caption">Copy</button>
+                            </div>
+                        </li>
                         {% endif %}
 
-                        {# ---- Stats ---- #}
-                        <div class="marketing-stats">
-                            <div><strong>{{ share.views }}</strong><span>link clicks</span></div>
-                            <div><strong>KES {{ share.earnings }}</strong><span>earned</span></div>
-                        </div>
-
-                        {# ---- Step 3: upload proof ---- #}
-                        <div class="marketing-actions">
+                        {# ---- Step 3 ---- #}
+                        <li class="marketing-step">
+                            <div class="marketing-step-label">
+                                <span class="marketing-step-num">03</span>
+                                <span>Upload your WhatsApp screenshot</span>
+                            </div>
                             <a href="{% url 'marketing:upload_proof' share.id %}"
                                class="btn btn-full">
-                                📸 Upload screenshot of my WhatsApp views
+                                Upload screenshot
                             </a>
-                            <a href="{% url 'marketing:earnings' %}"
-                               class="btn btn-outline btn-small">
-                                View full earnings
-                            </a>
-                        </div>
+                            <p class="marketing-step-hint">
+                                Post the image + link to WhatsApp Status first. When views start
+                                coming in, take a screenshot showing the view count and upload
+                                it here.
+                            </p>
+                        </li>
+                    </ol>
 
-                        <p class="muted marketing-howto">
-                            <strong>How you get paid:</strong>
-                            post the image + your link on WhatsApp Status, wait for views,
-                            take a screenshot showing the view count, and upload it with the
-                            button above. We credit your earnings
-                            <strong>24 hours</strong> after each upload and email you
-                            the moment the money lands.
-                        </p>
-                    {% endif %}
+                    {# ---- Stats ---- #}
+                    <div class="marketing-stats">
+                        <div class="marketing-stat">
+                            <strong>{{ share.views }}</strong>
+                            <span>Link clicks</span>
+                        </div>
+                        <div class="marketing-stat">
+                            <strong>KES {{ share.earnings }}</strong>
+                            <span>Credited</span>
+                        </div>
+                    </div>
+
+                    <div class="marketing-panel-footer">
+                        <a href="{% url 'marketing:earnings' %}" class="btn btn-outline btn-small">
+                            View full earnings history
+                        </a>
+                    </div>
+
+                    <p class="marketing-terms">
+                        Earnings are credited <strong>24 hours</strong> after each screenshot
+                        is uploaded, so we can review submissions. You'll receive an email the
+                        moment the credit lands.
+                    </p>
                 {% endif %}
-            </div>
+            </section>
         </div>
     {% endif %}
 </div>
 
 <script>
-// Copy-to-clipboard with {{LINK}} substitution.
-// If the caption contains the placeholder {{LINK}}, replace it with the
-// user's unique share URL before copying — so what lands in the WhatsApp
-// status contains the actual tracked link, not the literal placeholder.
+// Copy-to-clipboard with {{LINK}} substitution. If the caption contains the
+// placeholder {{LINK}}, it's replaced with the user's unique share URL before
+// copying — so what lands in their WhatsApp contains the actual tracked link.
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-copy-target]');
     if (!btn) return;
@@ -124,7 +175,6 @@ document.addEventListener('click', (e) => {
     if (!target) return;
 
     let text = target.textContent.trim();
-
     const shareUrlEl = document.getElementById('share-url');
     if (shareUrlEl) {
         text = text.replace(/\{\{LINK\}\}/g, shareUrlEl.textContent.trim());
@@ -132,27 +182,23 @@ document.addEventListener('click', (e) => {
 
     const restore = () => {
         const old = btn.textContent;
-        btn.textContent = 'Copied!';
+        btn.textContent = 'Copied';
         setTimeout(() => { btn.textContent = old; }, 1600);
     };
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(restore).catch(() => {
-            // Fallback for old browsers / insecure contexts.
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); restore(); } catch (_) {}
-            document.body.removeChild(ta);
-        });
-    } else {
+    const fallback = () => {
         const ta = document.createElement('textarea');
         ta.value = text;
         document.body.appendChild(ta);
         ta.select();
         try { document.execCommand('copy'); restore(); } catch (_) {}
         document.body.removeChild(ta);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(restore).catch(fallback);
+    } else {
+        fallback();
     }
 });
 </script>

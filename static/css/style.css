@@ -1746,3 +1746,270 @@ main .container { padding-top: 28px; }
 @media (max-width: 860px) {
     .marketing-layout { grid-template-columns: 1fr; }
 }
+
+
+/* =========================================================================
+   Marketing — Share & earn
+   ========================================================================= */
+
+.marketing-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+/* ---------- Left: campaign media card ---------- */
+.marketing-media {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.marketing-media-frame {
+    background: var(--void-2);
+    border-bottom: 1px solid var(--border-glass);
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.marketing-media-frame img,
+.marketing-media-frame video,
+.marketing-image,
+.marketing-video {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.marketing-media-body {
+    padding: 24px 26px 26px;
+}
+
+.marketing-media-body .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green-bright);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.marketing-media-body h2 {
+    font-size: 1.4rem;
+    margin: 0 0 10px;
+    line-height: 1.2;
+}
+
+.marketing-media-body p {
+    font-size: 0.92rem;
+    margin: 0 0 16px;
+    max-width: 55ch;
+}
+
+.marketing-media-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-glass);
+    font-size: 0.85rem;
+}
+
+.marketing-media-meta strong {
+    color: var(--green-bright);
+    font-family: var(--font-mono);
+}
+
+/* ---------- Right: share & earn panel ---------- */
+.marketing-panel {
+    padding: 26px 26px 22px;
+}
+
+.marketing-panel-head {
+    margin-bottom: 20px;
+}
+
+.marketing-panel-head .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.marketing-panel-head h2 {
+    font-size: 1.25rem;
+    margin: 0;
+}
+
+.marketing-empty p {
+    margin: 0 0 18px;
+    color: var(--text-dim);
+}
+
+/* ---------- Numbered steps ---------- */
+.marketing-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.marketing-step {
+    position: relative;
+}
+
+.marketing-step-label {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.marketing-step-num {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--green-bright);
+    font-weight: 700;
+}
+
+.marketing-step-label > span:last-child {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.marketing-step-hint {
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-mute);
+    line-height: 1.55;
+}
+
+/* ---------- Share input rows ---------- */
+.share-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel-solid);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px 8px 14px;
+}
+
+.share-input code {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--green-bright);
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+
+.share-input-multiline {
+    align-items: flex-start;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.share-input-multiline code {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+}
+
+.share-input .btn {
+    flex-shrink: 0;
+}
+
+/* ---------- Stats ---------- */
+.marketing-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 18px 0 4px;
+    border-top: 1px solid var(--border-glass);
+}
+
+.marketing-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.marketing-stat strong {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    color: var(--green-bright);
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.marketing-stat span {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+}
+
+.marketing-panel-footer {
+    margin-top: 18px;
+}
+
+.marketing-terms {
+    margin: 18px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-glass);
+    font-size: 0.8rem;
+    color: var(--text-mute);
+    line-height: 1.55;
+}
+
+/* ---------- Full-width button ---------- */
+.btn-full {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    padding: 14px 22px;
+    font-size: 0.92rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+    .marketing-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .marketing-media-frame {
+        aspect-ratio: 4 / 3;
+    }
+    .marketing-panel {
+        padding: 22px 20px 20px;
+    }
+    .marketing-media-body {
+        padding: 20px 22px 22px;
+    }
+}
+
+@media (max-width: 520px) {
+    .marketing-media-body h2 { font-size: 1.15rem; }
+    .marketing-panel-head h2 { font-size: 1.1rem; }
+    .marketing-stat strong { font-size: 1.25rem; }
+    .share-input { flex-direction: column; align-items: stretch; }
+    .share-input .btn { width: 100%; }
+}
