@@ -40,6 +40,7 @@
                     {% endif %}
                     <a href="{% url 'orders:order_history' %}"><svg><use href="#icon-order"/></svg>Orders</a>
                     <a href="{% url 'store:address_list' %}"><svg><use href="#icon-pin"/></svg>Addresses</a>
+                    <a href="{% url 'marketing:list' %}"><svg><use href="#icon-gift"/></svg>Earn</a>
                     <a href="{% url 'accounts:spin' %}"><svg><use href="#icon-gift"/></svg>Spin</a>
                     {% if user.rider_profile %}
                         <a href="{% url 'orders:rider_dashboard' %}"><svg><use href="#icon-truck"/></svg>Rider</a>

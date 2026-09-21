@@ -1687,3 +1687,62 @@ main .container { padding-top: 28px; }
 .pd-thumb img {
     cursor: zoom-in;
 }
+
+
+
+/* =========================================================================
+   Marketing / share-and-earn
+   ========================================================================= */
+.marketing-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.marketing-media img,
+.marketing-media video,
+.marketing-image,
+.marketing-video {
+    width: 100%;
+    max-height: 460px;
+    object-fit: contain;
+    background: var(--panel-solid);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+
+.marketing-panel h3 { margin-top: 0; }
+.marketing-panel h4 { font-size: 0.95rem; margin: 18px 0 8px; }
+
+.marketing-stats {
+    display: flex;
+    gap: 32px;
+    margin: 20px 0;
+}
+
+.marketing-stats > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.marketing-stats strong {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    color: var(--green-bright);
+    letter-spacing: -0.02em;
+}
+
+.marketing-stats span {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-mute);
+}
+
+@media (max-width: 860px) {
+    .marketing-layout { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}My earnings — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Earnings</span>
+        <h1>Your share earnings</h1>
+    </div>
+
+    <div class="form-card wide">
+        <div class="marketing-stats">
+            <div><strong>{{ total_views }}</strong><span>total views</span></div>
+            <div><strong>KES {{ total_earnings }}</strong><span>total earned</span></div>
+        </div>
+
+        <table class="cart-table">
+            <thead>
+                <tr><th>Campaign</th><th>Views</th><th>Earned</th><th>Since</th></tr>
+            </thead>
+            <tbody>
+                {% for s in shares %}
+                    <tr>
+                        <td>{{ s.campaign.title }}</td>
+                        <td>{{ s.views }}</td>
+                        <td>KES {{ s.earnings }}</td>
+                        <td>{{ s.created_at|date:"j M Y" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="muted">No shares yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="muted">Payouts are processed manually — once your balance reaches KES 1,000 you can request a payout from your profile.</p>
+    </div>
+</div>
+{% endblock %}

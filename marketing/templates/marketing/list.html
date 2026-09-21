@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Share & earn — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Share &amp; earn</span>
+        <h1>Post today's product, earn per view</h1>
+    </div>
+
+    {% if not campaign %}
+        <div class="form-card">
+            <p>No active campaign right now — check back soon.</p>
+        </div>
+    {% else %}
+        <div class="marketing-layout">
+            <div class="marketing-media form-card wide">
+                {% if campaign.media_type == 'video' and campaign.video %}
+                    <video controls preload="metadata" class="marketing-video">
+                        <source src="{{ campaign.video.url }}">
+                    </video>
+                {% elif campaign.image %}
+                    <img src="{{ campaign.image.url }}" alt="{{ campaign.title }}" class="marketing-image" id="marketing-image">
+                {% endif %}
+
+                <h2>{{ campaign.title }}</h2>
+                {% if campaign.description %}<p>{{ campaign.description }}</p>{% endif %}
+
+                <a href="{{ campaign.image.url }}" download class="btn btn-outline btn-small">Download media</a>
+            </div>
+
+            <div class="marketing-panel form-card">
+                <h3>Your share link</h3>
+                {% if not user.is_authenticated %}
+                    <p class="muted">Please <a href="{% url 'account_login' %}?next={{ request.path }}">log in</a> to generate a share link and start earning.</p>
+                {% else %}
+                    {% if not share %}
+                        <p>Generate a unique link — every view of it credits you <strong>KES {{ campaign.payout_per_view }}</strong>.</p>
+                        <form method="post" action="{% url 'marketing:create_share' campaign.id %}">
+                            {% csrf_token %}
+                            <button class="btn" type="submit">Generate my link</button>
+                        </form>
+                    {% else %}
+                        <p class="muted">Copy your link and post it to WhatsApp.</p>
+                        <div class="referral-link-box">
+                            <code id="share-url">{{ request.scheme }}://{{ request.get_host }}{{ share.share_url_path }}</code>
+                            <button type="button" class="btn btn-small" data-copy-target="#share-url">Copy</button>
+                        </div>
+
+                        {% if campaign.caption_suggestion %}
+                            <h4>Suggested caption</h4>
+                            <div class="referral-link-box">
+                                <code id="share-caption">{{ campaign.caption_suggestion }}</code>
+                                <button type="button" class="btn btn-small" data-copy-target="#share-caption">Copy</button>
+                            </div>
+                        {% endif %}
+
+                        <div class="marketing-stats">
+                            <div><strong>{{ share.views }}</strong><span>views</span></div>
+                            <div><strong>KES {{ share.earnings }}</strong><span>earned</span></div>
+                        </div>
+
+                        <a href="{% url 'marketing:earnings' %}" class="btn btn-outline btn-small">View full earnings</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-copy-target]');
+    if (!btn) return;
+    const target = document.querySelector(btn.dataset.copyTarget);
+    if (!target) return;
+    const text = target.textContent.trim();
+    navigator.clipboard.writeText(text).then(() => {
+        const old = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = old; }, 1600);
+    });
+});
+</script>
+{% endblock %}
