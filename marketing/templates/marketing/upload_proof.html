@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Upload proof — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Upload proof</span>
+        <h1>{{ share.campaign.title }}</h1>
+        <p class="muted">
+            Send us a screenshot of your WhatsApp Status view count for this campaign.
+        </p>
+    </div>
+
+    <div class="form-card wide">
+        <form method="post" enctype="multipart/form-data" class="auth-form">
+            {% csrf_token %}
+
+            <p>
+                <label for="{{ form.screenshot.id_for_label }}">Screenshot</label>
+                {{ form.screenshot }}
+                <span class="helptext">
+                    Open WhatsApp → Status → tap your posted Status → take a screenshot
+                    showing the view count. PNG or JPG, under 5 MB.
+                </span>
+                {% if form.screenshot.errors %}
+                    <ul class="errorlist">{% for e in form.screenshot.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.reported_views.id_for_label }}">Number of views shown</label>
+                {{ form.reported_views }}
+                <span class="helptext">Type the exact number you see in the screenshot.</span>
+                {% if form.reported_views.errors %}
+                    <ul class="errorlist">{% for e in form.reported_views.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                {% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.note.id_for_label }}">Notes (optional)</label>
+                {{ form.note }}
+            </p>
+
+            <button type="submit" class="btn">Send for review</button>
+        </form>
+
+        <p class="muted" style="margin-top:18px; font-size:0.82rem">
+            You can upload any time. Earnings are credited <strong>24 hours after upload</strong>,
+            so we can run anti-fraud checks. You'll get an email the moment the credit lands.
+        </p>
+    </div>
+</div>
+{% endblock %}

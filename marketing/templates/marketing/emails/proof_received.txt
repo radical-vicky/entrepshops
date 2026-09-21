@@ -1,0 +1,18 @@
+Hi {{ user.username }},
+
+We received your screenshot for the campaign:
+
+  {{ campaign.title }}
+
+Number of views you reported: {{ proof.reported_views }}
+Payout rate: KES {{ payout_per_view }} per view
+Estimated credit: KES {{ estimated_amount }}
+
+We'll verify it and credit your earnings within 24 hours. You don't need to
+do anything else — we'll email you the moment your balance updates.
+
+Uploaded at: {{ proof.uploaded_at|date:"j M Y, H:i" }}
+
+Thanks for sharing.
+
+— The {{ site_name }} team

@@ -11,12 +11,21 @@
     <div class="form-card wide">
         <div class="marketing-stats">
             <div><strong>{{ total_views }}</strong><span>total views</span></div>
-            <div><strong>KES {{ total_earnings }}</strong><span>total earned</span></div>
+            <div><strong>KES {{ total_earnings }}</strong><span>credited</span></div>
+            {% if pending_total %}
+                <div><strong>KES {{ pending_total }}</strong><span>pending 24h hold</span></div>
+            {% endif %}
         </div>
 
         <table class="cart-table">
             <thead>
-                <tr><th>Campaign</th><th>Views</th><th>Earned</th><th>Since</th></tr>
+                <tr>
+                    <th>Campaign</th>
+                    <th>Views</th>
+                    <th>Earned</th>
+                    <th>Since</th>
+                    <th>Proof</th>
+                </tr>
             </thead>
             <tbody>
                 {% for s in shares %}
@@ -25,14 +34,42 @@
                         <td>{{ s.views }}</td>
                         <td>KES {{ s.earnings }}</td>
                         <td>{{ s.created_at|date:"j M Y" }}</td>
+                        <td>
+                            <a href="{% url 'marketing:upload_proof' s.id %}"
+                               class="btn btn-small btn-outline">Upload proof</a>
+                        </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4" class="muted">No shares yet.</td></tr>
+                    <tr><td colspan="5" class="muted">No shares yet.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
 
-        <p class="muted">Payouts are processed manually — once your balance reaches KES 1,000 you can request a payout from your profile.</p>
+        {% if pending_proofs %}
+            <h3>Pending payouts</h3>
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Campaign</th>
+                        <th>Reported views</th>
+                        <th>Credits on</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pending_proofs %}
+                        <tr>
+                            <td>{{ p.share.campaign.title }}</td>
+                            <td>{{ p.reported_views }}</td>
+                            <td>{{ p.payout_due_at|date:"j M Y, H:i" }}</td>
+                            <td><span class="badge badge-warning">24h hold</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        <p class="muted">Payouts are processed manually — once your credited balance reaches KES 1,000 you can request a payout from your profile.</p>
     </div>
 </div>
 {% endblock %}

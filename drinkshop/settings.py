@@ -342,3 +342,6 @@ WALLET_MIN_WITHDRAWAL_KES = int(os.environ.get('WALLET_MIN_WITHDRAWAL_KES', '100
 # to list their own products (see the "vendors" app).
 VENDOR_SUBSCRIPTION_FEE_KES = int(os.environ.get('VENDOR_SUBSCRIPTION_FEE_KES', '5000'))
 VENDOR_SUBSCRIPTION_DAYS = int(os.environ.get('VENDOR_SUBSCRIPTION_DAYS', '30'))
+# Shared secret for the /marketing/internal/process-proofs/ cron endpoint.
+# Set CRON_SECRET in Vercel's environment variables to a random string.
+CRON_SECRET = os.environ.get('CRON_SECRET', 'change-me-before-deploying')

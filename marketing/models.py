@@ -26,19 +26,21 @@ class MarketingCampaign(models.Model):
     video = models.FileField(upload_to='marketing/videos/', blank=True, null=True)
     caption_suggestion = models.TextField(
         blank=True,
-        help_text='Suggested WhatsApp caption. Users can copy this with one tap.',
+        help_text='Suggested WhatsApp caption. Users can copy this with one tap. Use {{LINK}} as a placeholder for the share URL.',
     )
     payout_per_view = models.DecimalField(
         max_digits=6, decimal_places=2, default=50,
-        help_text='KES paid to the sharer for each unique view of their link.',
+        help_text='KES paid to the sharer for each view credited to their share.',
     )
     is_active = models.BooleanField(
         default=True,
         help_text='Turn off to stop new shares and stop counting views.',
     )
     starts_at = models.DateTimeField(default=timezone.now)
-    ends_at = models.DateTimeField(null=True, blank=True,
-        help_text='Leave blank to keep it running until you turn it off.')
+    ends_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Leave blank to keep it running until you turn it off.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -98,7 +100,7 @@ class MarketingShare(models.Model):
     @staticmethod
     def _generate_code():
         while True:
-            code = secrets.token_urlsafe(6)  # 8 chars
+            code = secrets.token_urlsafe(6)
             if not MarketingShare.objects.filter(code=code).exists():
                 return code
 
@@ -124,6 +126,60 @@ class MarketingView(models.Model):
         unique_together = [('share', 'fingerprint')]
         ordering = ['-created_at']
         indexes = [models.Index(fields=['share', 'fingerprint'])]
+
+
+class MarketingProof(models.Model):
+    """A user-uploaded screenshot of their WhatsApp Status view count for
+    a campaign. Users can upload any time; the payout runs 24 hours after
+    upload so admins have a window to spot obvious fraud in the review
+    queue (comparing reported_views against the share's real click count)."""
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending (24h hold)'
+        APPROVED = 'approved', 'Approved & credited'
+        REJECTED = 'rejected', 'Rejected'
+
+    share = models.ForeignKey(
+        MarketingShare, on_delete=models.CASCADE, related_name='proofs',
+    )
+    screenshot = models.ImageField(upload_to='marketing/proofs/%Y/%m/')
+    reported_views = models.PositiveIntegerField(
+        help_text='Type the number you see in your screenshot.'
+    )
+    note = models.TextField(blank=True)
+
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING,
+    )
+    payout_due_at = models.DateTimeField(
+        db_index=True,
+        help_text='When the 24-hour hold expires and the payout can run.',
+    )
+    credited_at = models.DateTimeField(null=True, blank=True)
+    credited_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+    )
+
+    confirmation_sent_at = models.DateTimeField(null=True, blank=True)
+    congrats_sent_at = models.DateTimeField(null=True, blank=True)
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['status', 'payout_due_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.share.user} — {self.reported_views} views ({self.status})'
+
+    @property
+    def is_due(self):
+        return (
+            self.status == self.Status.PENDING
+            and self.payout_due_at <= timezone.now()
+        )
 
 
 class MarketingPayout(models.Model):
