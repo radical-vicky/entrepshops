@@ -2013,3 +2013,96 @@ main .container { padding-top: 28px; }
     .share-input { flex-direction: column; align-items: stretch; }
     .share-input .btn { width: 100%; }
 }
+
+
+/* =========================================================================
+   Withdrawals
+   ========================================================================= */
+.withdraw-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.withdraw-card {
+    padding: 28px 26px;
+}
+
+.withdraw-head {
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+.withdraw-head .eyebrow,
+.withdraw-info .eyebrow,
+.withdraw-cta .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.withdraw-balance,
+.withdraw-balance-small {
+    font-family: var(--font-mono);
+    color: var(--green-bright);
+    letter-spacing: -0.02em;
+}
+
+.withdraw-balance { font-size: 2rem; font-weight: 700; line-height: 1; }
+.withdraw-balance-small { font-size: 1.25rem; font-weight: 700; }
+
+.withdraw-note {
+    margin: 16px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+.withdraw-info {
+    padding: 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.withdraw-steps {
+    padding-left: 18px;
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.withdraw-steps li { margin-bottom: 6px; }
+
+.withdraw-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-glass);
+    flex-wrap: wrap;
+}
+
+.withdraw-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    margin: 24px 0;
+    border: 1px solid var(--border-glass);
+    background: var(--panel);
+    flex-wrap: wrap;
+}
+
+.withdraw-cta > div { display: flex; flex-direction: column; gap: 4px; }
+
+@media (max-width: 860px) {
+    .withdraw-layout { grid-template-columns: 1fr; }
+}
