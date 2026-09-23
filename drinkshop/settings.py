@@ -80,6 +80,8 @@ INSTALLED_APPS = [
     'careers',
     'vendors',
     'marketing',
+    'rest_framework',
+    'api',
 ]
 
 SITE_ID = 1
