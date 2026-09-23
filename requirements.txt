@@ -11,3 +11,4 @@ psycopg[binary]>=3.1
 reportlab>=4.0
 cryptography>=42.0
 whitenoise==6.7.0
+djangorestframework>=3.15
