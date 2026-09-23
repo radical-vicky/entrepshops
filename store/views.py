@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -75,10 +76,20 @@ def home(request):
             Q(name__icontains=search_query) | Q(description__icontains=search_query)
         )
 
+    # Paginate — 16 items per page fits the 4x4 grid exactly.
+    paginator = Paginator(products, 16)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    products = page_obj.object_list
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         grid_html = render_to_string(
             'store/_product_grid.html',
-            {'products': products, 'selected_department': selected_department},
+            {
+                'products': products,
+                'selected_department': selected_department,
+                'page_obj': page_obj,
+            },
             request=request,
         )
         if search_query:
@@ -129,6 +140,7 @@ def home(request):
         'categories': categories,
         'selected_category': selected_category,
         'products': products,
+        'page_obj': page_obj,
         'hero_slides': hero_slides,
         'promotions': promotions,
         'search_query': search_query,
@@ -181,7 +193,6 @@ def cart_add(request, product_id):
 
     quantity = _parse_quantity(request)
 
-    # Stock check — against the variant if there is one, else the product.
     available_stock = variant.stock if variant else product.stock
     if quantity > available_stock:
         message = f'Only {available_stock} left in stock.'
