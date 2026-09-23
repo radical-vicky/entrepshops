@@ -56,5 +56,30 @@
         {% endif %}
     </article>
 {% empty %}
-    <p>No {% if selected_department %}{{ selected_department.name|lower }}{% else %}products{% endif %} available{% if selected_category %} in this category{% endif %} yet.</p>
+    <p class="product-grid-empty">
+        No {% if selected_department %}{{ selected_department.name|lower }}{% else %}products{% endif %}
+        available{% if selected_category %} in this category{% endif %} yet.
+    </p>
 {% endfor %}
+
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="Product pages">
+    {% if page_obj.has_previous %}
+        <a href="?{% if request.GET.department %}department={{ request.GET.department }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}#shop"
+           class="pagination-link" data-page-link>&larr; Prev</a>
+    {% else %}
+        <span class="pagination-link is-disabled">&larr; Prev</span>
+    {% endif %}
+
+    <span class="pagination-info">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+        <a href="?{% if request.GET.department %}department={{ request.GET.department }}&{% endif %}{% if request.GET.category %}category={{ request.GET.category }}&{% endif %}{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}#shop"
+           class="pagination-link" data-page-link>Next &rarr;</a>
+    {% else %}
+        <span class="pagination-link is-disabled">Next &rarr;</span>
+    {% endif %}
+</nav>
+{% endif %}
