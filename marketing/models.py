@@ -2,6 +2,7 @@ import secrets
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q, Sum
 from django.urls import reverse
 from django.utils import timezone
 
@@ -60,16 +61,13 @@ class MarketingCampaign(models.Model):
 
     @property
     def landing_url(self):
-        """Where the shared link ultimately lands — the product page if
-        there is one, otherwise the shop home."""
         if self.product:
             return self.product.get_absolute_url()
         return reverse('store:home')
 
 
 class MarketingShare(models.Model):
-    """A single user's tracked share of a single campaign. The unique code
-    is what goes in the short link they post to WhatsApp."""
+    """A single user's tracked share of a single campaign."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
@@ -110,9 +108,7 @@ class MarketingShare(models.Model):
 
 
 class MarketingView(models.Model):
-    """One row per unique view of a share link. Deduplicated by a hash of
-    IP + user-agent + campaign so refreshing the same visitor doesn't
-    inflate the view count."""
+    """One row per unique view of a share link."""
 
     share = models.ForeignKey(
         MarketingShare, on_delete=models.CASCADE, related_name='view_rows',
@@ -129,10 +125,7 @@ class MarketingView(models.Model):
 
 
 class MarketingProof(models.Model):
-    """A user-uploaded screenshot of their WhatsApp Status view count for
-    a campaign. Users can upload any time; the payout runs 24 hours after
-    upload so admins have a window to spot obvious fraud in the review
-    queue (comparing reported_views against the share's real click count)."""
+    """A user-uploaded screenshot of their WhatsApp Status view count."""
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending (24h hold)'
@@ -183,8 +176,7 @@ class MarketingProof(models.Model):
 
 
 class MarketingPayout(models.Model):
-    """Earnings summary per user, paid out manually (via M-Pesa or wallet
-    credit). One row per (user, campaign)."""
+    """Earnings summary per user, paid out manually. One row per (user, campaign)."""
 
     class Status(models.TextChoices):
         ACCRUING = 'accruing', 'Accruing'
@@ -213,11 +205,11 @@ class MarketingPayout(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.campaign} — KES {self.amount}'
-        
+
+
 class WithdrawalRequest(models.Model):
     """A user's request to withdraw their marketing earnings to a phone
-    number (M-Pesa). One request per submission. Admin processes manually
-    or via the M-Pesa B2C API, then marks paid."""
+    number (M-Pesa). Processed manually by an admin."""
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending review'
@@ -257,20 +249,31 @@ class WithdrawalRequest(models.Model):
     def __str__(self):
         return f'{self.user} — KES {self.amount} ({self.status})'
 
-# In marketing/models.py, at the bottom:
 
 def withdrawable_balance(user):
-    """How much this user can still withdraw right now."""
-    from django.db.models import Sum, Q
+    """How much this user can still withdraw right now. Credited earnings
+    minus anything already locked in pending/approved/paid requests."""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    if isinstance(user, User):
+        user_id = user.pk
+    else:
+        user_id = user
 
     credited = (
-        MarketingShare.objects.filter(user=user).aggregate(s=Sum('earnings'))['s']
-        or 0
+        MarketingShare.objects.filter(user_id=user_id)
+        .aggregate(s=Sum('earnings'))['s'] or 0
     )
     locked = (
         WithdrawalRequest.objects
-        .filter(user=user, status__in=['pending', 'approved', 'paid'])
-        .aggregate(s=Sum('amount'))['s']
-        or 0
+        .filter(
+            user_id=user_id,
+            status__in=[
+                WithdrawalRequest.Status.PENDING,
+                WithdrawalRequest.Status.APPROVED,
+                WithdrawalRequest.Status.PAID,
+            ],
+        )
+        .aggregate(s=Sum('amount'))['s'] or 0
     )
     return credited - locked
