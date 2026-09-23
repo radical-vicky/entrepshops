@@ -5,6 +5,7 @@ from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.db import transaction
@@ -17,16 +18,16 @@ from django.views.decorators.http import require_GET, require_POST
 
 from .models import (
     MarketingCampaign, MarketingPayout, MarketingProof,
-    MarketingShare, MarketingView,
+    MarketingShare, MarketingView, WithdrawalRequest, withdrawable_balance,
 )
+
+User = get_user_model()
 
 
 # ======================================================================
 # Helpers
 # ======================================================================
 def _fingerprint(request, campaign):
-    """Stable per-visitor identifier — IP + user-agent + campaign. Good
-    enough to stop casual refresh spam without being overly aggressive."""
     raw = '|'.join([
         request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', '')),
         request.META.get('HTTP_USER_AGENT', ''),
@@ -42,8 +43,43 @@ class ProofUploadForm(forms.ModelForm):
         widgets = {'note': forms.Textarea(attrs={'rows': 3})}
 
 
+class WithdrawalForm(forms.Form):
+    phone_number = forms.RegexField(
+        regex=r'^2547\d{8}$',
+        error_messages={
+            'invalid': 'Enter a Safaricom number in the format 2547XXXXXXXX '
+                       '(e.g. 254712345678).'
+        },
+        label='M-Pesa phone number',
+        widget=forms.TextInput(attrs={'placeholder': '254712345678'}),
+    )
+    amount = forms.DecimalField(
+        min_value=100, max_digits=10, decimal_places=2,
+        label='Amount (KES)',
+        widget=forms.NumberInput(attrs={'step': '1', 'min': '100'}),
+    )
+
+    def __init__(self, *args, max_amount=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_amount = Decimal(str(max_amount))
+        self.fields['amount'].widget.attrs['max'] = str(self.max_amount)
+        self.fields['amount'].help_text = (
+            f'Available to withdraw: KES {self.max_amount:.2f}'
+        )
+
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount < 100:
+            raise forms.ValidationError('Minimum withdrawal is KES 100.')
+        if amount > self.max_amount:
+            raise forms.ValidationError(
+                f'Your withdrawable balance is KES {self.max_amount:.2f}.'
+            )
+        return amount
+
+
 # ======================================================================
-# Public + user views
+# Campaign + share views
 # ======================================================================
 @require_GET
 def campaign_list(request):
@@ -114,12 +150,14 @@ def redirect_view(request, code):
                         amount=F('amount') + campaign.payout_per_view,
                     )
         except Exception:
-            # Never block the redirect on analytics failure.
             pass
 
     return HttpResponseRedirect(campaign.landing_url)
 
 
+# ======================================================================
+# Earnings
+# ======================================================================
 @login_required
 @require_GET
 def my_earnings(request):
@@ -134,7 +172,6 @@ def my_earnings(request):
         earnings=Sum('earnings'),
     )
 
-    # Pending payouts (proofs uploaded but still inside the 24h hold).
     pending = (
         MarketingProof.objects
         .filter(share__user=request.user, status=MarketingProof.Status.PENDING)
@@ -145,15 +182,26 @@ def my_earnings(request):
     for p in pending:
         pending_total += p.reported_views * p.share.campaign.payout_per_view
 
+    recent_withdrawals = (
+        WithdrawalRequest.objects
+        .filter(user=request.user)
+        .order_by('-requested_at')[:5]
+    )
+
     return render(request, 'marketing/earnings.html', {
         'shares': shares,
         'total_views': totals['views'] or 0,
         'total_earnings': totals['earnings'] or 0,
         'pending_proofs': pending,
         'pending_total': pending_total,
+        'balance': withdrawable_balance(request.user),
+        'recent_withdrawals': recent_withdrawals,
     })
 
 
+# ======================================================================
+# Proof upload + emails
+# ======================================================================
 @login_required
 def upload_proof(request, share_id):
     share = get_object_or_404(MarketingShare, id=share_id, user=request.user)
@@ -175,7 +223,7 @@ def upload_proof(request, share_id):
 
             messages.success(
                 request,
-                "Screenshot received! We'll credit your earnings within 24 hours. "
+                "Screenshot received. We'll credit your earnings within 24 hours. "
                 "Check your email for confirmation."
             )
             return redirect('marketing:earnings')
@@ -188,15 +236,10 @@ def upload_proof(request, share_id):
     })
 
 
-# ======================================================================
-# Email helpers
-# ======================================================================
 def send_proof_received_email(proof):
-    """Acknowledgement sent immediately after upload."""
     user = proof.share.user
     if not user.email:
         return
-
     subject = f'We received your screenshot — {proof.share.campaign.title}'
     body = render_to_string('marketing/emails/proof_received.txt', {
         'user': user,
@@ -211,12 +254,10 @@ def send_proof_received_email(proof):
 
 
 def send_proof_congrats_email(proof):
-    """Congratulations email sent when the 24h hold clears."""
     user = proof.share.user
     if not user.email:
         return
-
-    subject = f'🎉 You earned KES {proof.credited_amount} — {proof.share.campaign.title}'
+    subject = f'You earned KES {proof.credited_amount} — {proof.share.campaign.title}'
     body = render_to_string('marketing/emails/proof_congrats.txt', {
         'user': user,
         'proof': proof,
@@ -230,13 +271,36 @@ def send_proof_congrats_email(proof):
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
 
 
+def send_withdrawal_requested_email(wr):
+    user = wr.user
+    if not user.email:
+        return
+    subject = f'Withdrawal request received — KES {wr.amount}'
+    body = render_to_string('marketing/emails/withdrawal_requested.txt', {
+        'user': user,
+        'wr': wr,
+        'site_name': 'Entrep - Shop',
+    })
+    send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+
+
+def send_withdrawal_paid_email(wr):
+    user = wr.user
+    if not user.email:
+        return
+    subject = f'KES {wr.amount} sent to {wr.phone_number}'
+    body = render_to_string('marketing/emails/withdrawal_paid.txt', {
+        'user': user,
+        'wr': wr,
+        'site_name': 'Entrep - Shop',
+    })
+    send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+
+
 # ======================================================================
-# 24-hour sweep
+# 24-hour proof sweep
 # ======================================================================
 def process_due_proofs():
-    """Credit every pending proof whose 24h hold has expired and send
-    the congratulations email. Idempotent — safe to run as often as you
-    like. Returns {'processed': int, 'credits': Decimal}."""
     now = timezone.now()
     due = (
         MarketingProof.objects
@@ -282,7 +346,74 @@ def process_due_proofs():
 
 
 # ======================================================================
-# Cron endpoint (protected by shared secret in settings.CRON_SECRET)
+# Withdrawals
+# ======================================================================
+@login_required
+def request_withdrawal(request):
+    balance = withdrawable_balance(request.user)
+
+    initial = {}
+    if request.user.addresses.exists():
+        initial['phone_number'] = request.user.addresses.first().phone_number
+
+    if request.method == 'POST':
+        form = WithdrawalForm(request.POST, max_amount=balance)
+        if form.is_valid():
+            with transaction.atomic():
+                locked_user = User.objects.select_for_update().get(pk=request.user.pk)
+                current_balance = withdrawable_balance(locked_user)
+                amount = form.cleaned_data['amount']
+                if amount > current_balance:
+                    messages.error(
+                        request,
+                        f'Your withdrawable balance is KES {current_balance:.2f}.'
+                    )
+                    return render(request, 'marketing/withdraw.html', {
+                        'form': form, 'balance': current_balance,
+                    })
+
+                wr = WithdrawalRequest.objects.create(
+                    user=request.user,
+                    phone_number=form.cleaned_data['phone_number'],
+                    amount=amount,
+                )
+
+            try:
+                send_withdrawal_requested_email(wr)
+            except Exception:
+                pass
+
+            messages.success(
+                request,
+                f'Withdrawal request for KES {wr.amount} received. '
+                f'We will send it to {wr.phone_number} within 24 hours.'
+            )
+            return redirect('marketing:withdrawals')
+    else:
+        form = WithdrawalForm(max_amount=balance, initial=initial)
+
+    return render(request, 'marketing/withdraw.html', {
+        'form': form,
+        'balance': balance,
+    })
+
+
+@login_required
+@require_GET
+def withdrawal_history(request):
+    withdrawals = (
+        WithdrawalRequest.objects
+        .filter(user=request.user)
+        .order_by('-requested_at')
+    )
+    return render(request, 'marketing/withdrawals.html', {
+        'withdrawals': withdrawals,
+        'balance': withdrawable_balance(request.user),
+    })
+
+
+# ======================================================================
+# Cron endpoint
 # ======================================================================
 def process_proofs_endpoint(request):
     secret = request.headers.get('x-cron-secret') or request.GET.get('secret')
