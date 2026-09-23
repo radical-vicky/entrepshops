@@ -163,3 +163,94 @@ class ShopifyImporter(BaseImporter):
             return Decimal(str(value))
         except (InvalidOperation, TypeError):
             return None
+
+
+def run(self, limit=None):
+    """Persist imported products. Returns counts."""
+    from store.models import Category, Department, Product, ProductImage, ProductVariant
+
+    from django.db import transaction
+
+    imported = self.fetch(limit=limit)
+    created = updated = skipped = 0
+
+    default_dept = self.source.default_department
+
+    for item in imported:
+        if not item.name or not item.slug:
+            skipped += 1
+            continue
+
+        # Category: match by name, else create under default_dept.
+        category = None
+        if item.category_name:
+            category = Category.objects.filter(name__iexact=item.category_name).first()
+            if category is None:
+                category = Category.objects.create(
+                    name=item.category_name[:100],
+                    slug=slugify(item.category_name)[:110] or 'uncategorised',
+                    department=default_dept,
+                )
+
+        if category is None:
+            skipped += 1
+            continue
+
+        # Product: match by slug.
+        product = Product.objects.filter(slug=item.slug).first()
+        is_new = product is None
+        if is_new:
+            product = Product(
+                slug=item.slug,
+                category=category,
+                department=category.department or default_dept,
+                name=item.name,
+                description=item.description,
+                is_active=(item.status == 'active'),
+                is_approved=self.source.auto_approve,
+            )
+        else:
+            product.name = item.name
+            product.description = item.description
+            product.category = category
+            if not product.department_id:
+                product.department = category.department or default_dept
+
+        # Variants — delete and recreate for simplicity. In production
+        # you'd want a more careful merge.
+        with transaction.atomic():
+            product.save()
+            if item.variants:
+                product.variants.all().delete()
+                for v in item.variants:
+                    ProductVariant.objects.create(
+                        product=product,
+                        size_label=v.size_label,
+                        price=v.price or Decimal('0.00'),
+                        compare_at_price=v.compare_at_price,
+                        stock=v.stock,
+                        sku=v.sku,
+                    )
+                # Legacy fallback price = cheapest variant.
+                product.price = min(v.price for v in item.variants if v.price)
+                product.save(update_fields=['price'])
+            elif product.price is None:
+                product.price = Decimal('0.00')
+                product.save(update_fields=['price'])
+
+            if item.images:
+                product.images.all().delete()
+                for i, img in enumerate(item.images):
+                    ProductImage.objects.create(
+                        product=product,
+                        image=img.url,  # ImageField accepts a URL string
+                        alt_text=img.alt_text,
+                        sort_order=i,
+                    )
+
+        if is_new:
+            created += 1
+        else:
+            updated += 1
+
+    return {'created': created, 'updated': updated, 'skipped': skipped}
