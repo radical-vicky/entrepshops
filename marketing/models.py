@@ -213,3 +213,46 @@ class MarketingPayout(models.Model):
 
     def __str__(self):
         return f'{self.user} — {self.campaign} — KES {self.amount}'
+        
+class WithdrawalRequest(models.Model):
+    """A user's request to withdraw their marketing earnings to a phone
+    number (M-Pesa). One request per submission. Admin processes manually
+    or via the M-Pesa B2C API, then marks paid."""
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending review'
+        APPROVED = 'approved', 'Approved (ready to pay)'
+        PAID = 'paid', 'Paid'
+        REJECTED = 'rejected', 'Rejected'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='marketing_withdrawals',
+    )
+    phone_number = models.CharField(
+        max_length=20,
+        help_text='Safaricom number in the format 2547XXXXXXXX.',
+    )
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING,
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='marketing_withdrawals_reviewed',
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
+    mpesa_receipt = models.CharField(
+        max_length=40, blank=True,
+        help_text='M-Pesa confirmation code after payment.',
+    )
+    admin_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-requested_at']
+
+    def __str__(self):
+        return f'{self.user} — KES {self.amount} ({self.status})'
