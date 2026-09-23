@@ -347,3 +347,26 @@ VENDOR_SUBSCRIPTION_DAYS = int(os.environ.get('VENDOR_SUBSCRIPTION_DAYS', '30'))
 # Shared secret for the /marketing/internal/process-proofs/ cron endpoint.
 # Set CRON_SECRET in Vercel's environment variables to a random string.
 CRON_SECRET = os.environ.get('CRON_SECRET', '')
+
+
+# ---------------------------------------------------------------------------
+# Shopify integration
+# ---------------------------------------------------------------------------
+SHOPIFY_STORE_DOMAIN = os.environ.get('SHOPIFY_STORE_DOMAIN', '')
+SHOPIFY_ACCESS_TOKEN = os.environ.get('SHOPIFY_ACCESS_TOKEN', '')
+SHOPIFY_API_VERSION = os.environ.get('SHOPIFY_API_VERSION', '2024-10')
+
+# ---------------------------------------------------------------------------
+# Django REST Framework
+# ---------------------------------------------------------------------------
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 24,
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+}
