@@ -5,8 +5,9 @@ from django.utils.html import format_html
 
 from .models import (
     MarketingCampaign, MarketingPayout, MarketingProof,
-    MarketingShare, MarketingView,
+    MarketingShare, MarketingView, WithdrawalRequest,
 )
+from .views import send_withdrawal_paid_email
 
 
 # ======================================================================
@@ -55,7 +56,7 @@ class MarketingCampaignAdmin(admin.ModelAdmin):
 
 
 # ======================================================================
-# Proof review (audit trail — the sweep handles crediting)
+# Proof review
 # ======================================================================
 @admin.register(MarketingProof)
 class MarketingProofAdmin(admin.ModelAdmin):
@@ -102,8 +103,6 @@ class MarketingProofAdmin(admin.ModelAdmin):
         for proof in queryset.select_related('share__campaign'):
             if proof.status == 'rejected':
                 continue
-            # If it was already credited, subtract the amount from the share
-            # and the payout summary before marking rejected.
             if proof.credited_amount:
                 MarketingShare.objects.filter(pk=proof.share_id).update(
                     views=models.F('views') - proof.reported_views,
@@ -129,6 +128,63 @@ class MarketingProofAdmin(admin.ModelAdmin):
             request,
             f'{count} proof(s) rejected. KES {refunded} deducted from affected shares.',
         )
+
+
+# ======================================================================
+# Withdrawal requests
+# ======================================================================
+@admin.register(WithdrawalRequest)
+class WithdrawalRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        'user', 'amount', 'phone_number', 'status',
+        'requested_at', 'reviewed_at', 'paid_at', 'mpesa_receipt',
+    )
+    list_filter = ('status', 'requested_at')
+    search_fields = ('user__username', 'user__email', 'phone_number', 'mpesa_receipt')
+    readonly_fields = ('user', 'amount', 'phone_number', 'requested_at')
+    fields = (
+        'user', 'amount', 'phone_number', 'requested_at',
+        'status', 'reviewed_at', 'reviewed_by',
+        'paid_at', 'mpesa_receipt', 'admin_note',
+    )
+    actions = ['mark_approved', 'mark_paid', 'mark_rejected']
+
+    @admin.action(description='Mark selected as APPROVED (ready to pay)')
+    def mark_approved(self, request, queryset):
+        updated = queryset.filter(status='pending').update(
+            status='approved',
+            reviewed_at=timezone.now(),
+            reviewed_by=request.user,
+        )
+        self.message_user(request, f'{updated} request(s) approved.')
+
+    @admin.action(description='Mark selected as PAID and email the user')
+    def mark_paid(self, request, queryset):
+        count = 0
+        for wr in queryset.filter(status__in=['pending', 'approved']):
+            wr.status = 'paid'
+            wr.paid_at = timezone.now()
+            wr.reviewed_at = wr.reviewed_at or timezone.now()
+            wr.reviewed_by = wr.reviewed_by or request.user
+            wr.save(update_fields=['status', 'paid_at', 'reviewed_at', 'reviewed_by'])
+
+            try:
+                send_withdrawal_paid_email(wr)
+            except Exception:
+                pass
+
+            count += 1
+
+        self.message_user(request, f'{count} request(s) marked paid.')
+
+    @admin.action(description='Mark selected as REJECTED')
+    def mark_rejected(self, request, queryset):
+        updated = queryset.filter(status__in=['pending', 'approved']).update(
+            status='rejected',
+            reviewed_at=timezone.now(),
+            reviewed_by=request.user,
+        )
+        self.message_user(request, f'{updated} request(s) rejected.')
 
 
 # ======================================================================
