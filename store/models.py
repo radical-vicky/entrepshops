@@ -624,3 +624,72 @@ class DeliveryAddress(models.Model):
             self.city,
         ]
         return ', '.join(p for p in parts if p)
+
+
+class SupplierSource(models.Model):
+    """A Shopify store you sync products from. Supports multiple stores —
+    one for each supplier. Each source keeps its own last-sync timestamp
+    and status so the admin can see the health of each connection."""
+
+    class Provider(models.TextChoices):
+        SHOPIFY = 'shopify', 'Shopify'
+
+    class Status(models.TextChoices):
+        OK = 'ok', 'OK'
+        ERROR = 'error', 'Error'
+        NEVER = 'never', 'Never synced'
+
+    name = models.CharField(
+        max_length=100, unique=True,
+        help_text='A label for you, e.g. "Main Shopify Store".'
+    )
+    provider = models.CharField(
+        max_length=20, choices=Provider.choices, default=Provider.SHOPIFY,
+    )
+    store_domain = models.CharField(
+        max_length=200,
+        help_text='e.g. your-store.myshopify.com (no https://).'
+    )
+    access_token = models.CharField(
+        max_length=200,
+        help_text='Shopify Admin API access token (shpat_...). Stored as-is; '
+                  'consider using a secrets manager in production.'
+    )
+    api_version = models.CharField(
+        max_length=20, default='2024-10',
+        help_text='Shopify Admin API version, e.g. 2024-10.'
+    )
+
+    # How incoming Shopify products map onto your existing departments /
+    # categories. Leave blank to auto-create them by name.
+    default_department = models.ForeignKey(
+        'store.Department', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='supplier_sources',
+        help_text='Department to assign when the Shopify product has no match.'
+    )
+
+    # Sync behaviour.
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Disable to stop this source from being synced.'
+    )
+    auto_approve = models.BooleanField(
+        default=True,
+        help_text='If off, imported products land in "pending approval" and '
+                  'you review them in Products admin before they go live.'
+    )
+
+    # Status tracking.
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    last_status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.NEVER,
+    )
+    last_error = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.name} ({self.store_domain})'
