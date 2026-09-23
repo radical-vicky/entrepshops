@@ -256,3 +256,21 @@ class WithdrawalRequest(models.Model):
 
     def __str__(self):
         return f'{self.user} — KES {self.amount} ({self.status})'
+
+# In marketing/models.py, at the bottom:
+
+def withdrawable_balance(user):
+    """How much this user can still withdraw right now."""
+    from django.db.models import Sum, Q
+
+    credited = (
+        MarketingShare.objects.filter(user=user).aggregate(s=Sum('earnings'))['s']
+        or 0
+    )
+    locked = (
+        WithdrawalRequest.objects
+        .filter(user=user, status__in=['pending', 'approved', 'paid'])
+        .aggregate(s=Sum('amount'))['s']
+        or 0
+    )
+    return credited - locked
