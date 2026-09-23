@@ -1,0 +1,14 @@
+Hi {{ user.username }},
+
+Your withdrawal has been sent.
+
+  Amount: KES {{ wr.amount }}
+  Phone:  {{ wr.phone_number }}
+{% if wr.mpesa_receipt %}  M-Pesa receipt: {{ wr.mpesa_receipt }}
+{% endif %}
+Check your M-Pesa messages for the confirmation. If you don't see the money
+within a few minutes, reply to this email and we'll investigate.
+
+Thanks for sharing with us.
+
+— The {{ site_name }} team
