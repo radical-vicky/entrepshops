@@ -10,13 +10,31 @@
 
     <div class="form-card wide">
         <div class="marketing-stats">
-            <div><strong>{{ total_views }}</strong><span>total views</span></div>
-            <div><strong>KES {{ total_earnings }}</strong><span>credited</span></div>
+            <div class="marketing-stat">
+                <strong>{{ total_views }}</strong>
+                <span>total views</span>
+            </div>
+            <div class="marketing-stat">
+                <strong>KES {{ total_earnings }}</strong>
+                <span>credited</span>
+            </div>
             {% if pending_total %}
-                <div><strong>KES {{ pending_total }}</strong><span>pending 24h hold</span></div>
+                <div class="marketing-stat">
+                    <strong>KES {{ pending_total }}</strong>
+                    <span>pending 24h hold</span>
+                </div>
             {% endif %}
         </div>
 
+        <div class="withdraw-cta">
+            <div>
+                <span class="eyebrow">Available to withdraw</span>
+                <div class="withdraw-balance-small">KES {{ balance }}</div>
+            </div>
+            <a href="{% url 'marketing:withdraw' %}" class="btn">Withdraw to M-Pesa</a>
+        </div>
+
+        <h3>Your shares</h3>
         <table class="cart-table">
             <thead>
                 <tr>
@@ -69,7 +87,44 @@
             </table>
         {% endif %}
 
-        <p class="muted">Payouts are processed manually — once your credited balance reaches KES 1,000 you can request a payout from your profile.</p>
+        {% if recent_withdrawals %}
+            <h3>Recent withdrawals</h3>
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in recent_withdrawals %}
+                        <tr>
+                            <td>{{ w.requested_at|date:"j M Y" }}</td>
+                            <td>KES {{ w.amount }}</td>
+                            <td>{{ w.phone_number }}</td>
+                            <td>
+                                {% if w.status == 'paid' %}
+                                    <span class="badge badge-success">Paid</span>
+                                {% elif w.status == 'approved' %}
+                                    <span class="badge badge-warning">Approved</span>
+                                {% elif w.status == 'rejected' %}
+                                    <span class="badge badge-muted">Rejected</span>
+                                {% else %}
+                                    <span class="badge">Pending</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="withdraw-footer">
+                <a href="{% url 'marketing:withdrawals' %}" class="btn btn-outline btn-small">
+                    View full withdrawal history
+                </a>
+            </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
