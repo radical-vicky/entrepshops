@@ -146,3 +146,89 @@ class DeliveryAddressAdmin(admin.ModelAdmin):
     list_filter = ('is_default', 'city')
     search_fields = ('user__username', 'building_name', 'area', 'phone_number')
     raw_id_fields = ('user',)
+
+
+
+
+@admin.register(SupplierSource)
+class SupplierSourceAdmin(admin.ModelAdmin):
+    list_display = (
+        'name', 'provider', 'store_domain',
+        'is_active', 'auto_approve',
+        'last_status', 'last_synced_at',
+        'preview_button',
+    )
+    list_filter = ('provider', 'is_active', 'last_status')
+    search_fields = ('name', 'store_domain')
+    readonly_fields = ('last_synced_at', 'last_status', 'last_error')
+    fieldsets = (
+        (None, {'fields': ('name', 'provider', 'is_active')}),
+        ('Connection', {'fields': ('store_domain', 'access_token', 'api_version')}),
+        ('Mapping', {
+            'fields': ('default_department',),
+            'description': 'Where imported products land if they don\'t match an existing category.'
+        }),
+        ('Behaviour', {'fields': ('auto_approve',)}),
+        ('Status', {'fields': ('last_synced_at', 'last_status', 'last_error')}),
+    )
+    change_list_template = 'admin/store/suppliersource/change_list.html'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        extra = [
+            path(
+                '<int:pk>/preview/',
+                self.admin_site.admin_view(self.preview_view),
+                name='store_suppliersource_preview',
+            ),
+            path(
+                '<int:pk>/run-import/',
+                self.admin_site.admin_view(self.run_import_view),
+                name='store_suppliersource_run_import',
+            ),
+        ]
+        return extra + urls
+
+    def preview_button(self, obj):
+        from django.utils.html import format_html
+        url = reverse('admin:store_suppliersource_preview', args=[obj.pk])
+        return format_html('<a class="button" href="{}">Preview</a>', url)
+    preview_button.short_description = 'Actions'
+
+    def preview_view(self, request, pk):
+        from .importers.shopify import ShopifyImporter
+        source = get_object_or_404(SupplierSource, pk=pk)
+        try:
+            importer = ShopifyImporter(source)
+            preview = importer.preview(limit=50)
+            return render(request, 'admin/store/suppliersource/preview.html', {
+                'source': source,
+                'preview': preview,
+                'title': f'Preview: {source.name}',
+                **self.admin_site.each_context(request),
+            })
+        except Exception as exc:
+            messages.error(request, f'Preview failed: {exc}')
+            return redirect('admin:store_suppliersource_changelist')
+
+    def run_import_view(self, request, pk):
+        from .importers.shopify import ShopifyImporter
+        source = get_object_or_404(SupplierSource, pk=pk)
+        try:
+            importer = ShopifyImporter(source)
+            result = importer.run(limit=None)
+            source.last_synced_at = timezone.now()
+            source.last_status = 'ok'
+            source.last_error = ''
+            source.save(update_fields=['last_synced_at', 'last_status', 'last_error'])
+            messages.success(
+                request,
+                f'Imported {result["created"]} new, updated {result["updated"]}, '
+                f'skipped {result["skipped"]}.'
+            )
+        except Exception as exc:
+            source.last_status = 'error'
+            source.last_error = str(exc)[:2000]
+            source.save(update_fields=['last_status', 'last_error'])
+            messages.error(request, f'Import failed: {exc}')
+        return redirect('admin:store_suppliersource_changelist')
