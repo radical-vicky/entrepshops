@@ -1,0 +1,64 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='store' %}">Store</a>
+    &rsaquo; <a href="{% url 'admin:store_suppliersource_changelist' %}">Supplier sources</a>
+    &rsaquo; Preview: {{ source.name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Preview: {{ source.name }}</h1>
+    <p class="help">
+        This is what the next import would look like. Nothing has been written
+        to the database yet.
+    </p>
+
+    <div class="module">
+        <table style="width:100%">
+            <thead>
+                <tr>
+                    <th>Shopify ID</th>
+                    <th>Name</th>
+                    <th>Category (Shopify)</th>
+                    <th>Variants</th>
+                    <th>Images</th>
+                    <th>Price range</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in preview %}
+                    <tr>
+                        <td><code>{{ p.external_id }}</code></td>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.category_name|default:"—" }}</td>
+                        <td>{{ p.variants|length }}</td>
+                        <td>{{ p.images|length }}</td>
+                        <td>
+                            {% if p.variants %}
+                                {% with first=p.variants.0 last=p.variants|last %}
+                                    {{ first.price }}{% if first.price != last.price %} – {{ last.price }}{% endif %}
+                                {% endwith %}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6">No products returned from Shopify.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top:20px; display:flex; gap:10px;">
+        <a href="{% url 'admin:store_suppliersource_changelist' %}" class="button">Back</a>
+        <a href="{% url 'admin:store_suppliersource_run_import' source.pk %}" class="button default">
+            Run this import
+        </a>
+    </div>
+</div>
+{% endblock %}
