@@ -2,6 +2,7 @@ import logging
 from decimal import Decimal, InvalidOperation
 
 import requests
+from django.core.cache import cache
 from django.utils.text import slugify
 
 from .base import BaseImporter, ImportedImage, ImportedProduct, ImportedVariant
@@ -9,30 +10,114 @@ from .base import BaseImporter, ImportedImage, ImportedProduct, ImportedVariant
 log = logging.getLogger(__name__)
 
 
+class ShopifyAuthError(Exception):
+    """Raised when Shopify rejects our credentials or the token request fails."""
+
+
 class ShopifyImporter(BaseImporter):
     """Fetches products from a Shopify store's REST Admin API.
 
-    Docs: https://shopify.dev/docs/api/admin-rest/latest/resources/product
+    Uses the Client Credentials Grant:
+      - We store client_id + client_secret on the SupplierSource.
+      - On every import, we POST them to /admin/oauth/access_token and get
+        back an access_token valid for ~24 hours.
+      - The token is cached in Django's cache for 23 hours so subsequent
+        imports the same day don't re-authenticate.
+
+    Docs:
+      https://shopify.dev/docs/apps/auth/get-access-tokens
+      https://shopify.dev/docs/api/admin-rest/latest/resources/product
     """
 
-    PAGE_SIZE = 250  # Shopify max for REST product listing
+    PAGE_SIZE = 250
+    TOKEN_CACHE_SECONDS = 60 * 60 * 23  # 23 hours — 1h safety margin
 
     def __init__(self, source):
         super().__init__(source)
         if not source.store_domain:
-            raise ValueError('store_domain is empty — set it in admin.')
-        if not source.access_token:
-            raise ValueError('access_token is empty — set it in admin.')
+            raise ShopifyAuthError('store_domain is empty — set it in admin.')
+        if not source.client_id or not source.client_secret:
+            raise ShopifyAuthError(
+                'client_id and client_secret are required. Get them from the '
+                'Shopify Dev Dashboard → your app → App settings.'
+            )
 
+        self.domain = source.store_domain.strip().rstrip('/')
         self.base_url = (
-            f'https://{source.store_domain}/admin/api/'
-            f'{source.api_version}/'
+            f'https://{self.domain}/admin/api/{source.api_version}/'
         )
-        self.headers = {
-            'X-Shopify-Access-Token': source.access_token,
+        self._access_token = None
+
+    # ------------------------------------------------------------------
+    # Auth
+    # ------------------------------------------------------------------
+    @property
+    def access_token(self):
+        if self._access_token:
+            return self._access_token
+
+        cache_key = f'shopify_token_{self.source.pk}'
+        cached = cache.get(cache_key)
+        if cached:
+            self._access_token = cached
+            return cached
+
+        token = self._fetch_token()
+        cache.set(cache_key, token, self.TOKEN_CACHE_SECONDS)
+        self._access_token = token
+        return token
+
+    def _fetch_token(self):
+        """Exchange client_id + client_secret for an access token."""
+        url = f'https://{self.domain}/admin/oauth/access_token'
+        body = {
+            'client_id': self.source.client_id,
+            'client_secret': self.source.client_secret,
+            'grant_type': 'client_credentials',
+        }
+        try:
+            response = requests.post(url, json=body, timeout=30)
+        except requests.RequestException as exc:
+            raise ShopifyAuthError(f'Could not reach Shopify: {exc}') from exc
+
+        if response.status_code == 401:
+            raise ShopifyAuthError(
+                'Shopify rejected the client credentials (401). '
+                'Confirm the Client ID and Client Secret, and that the app '
+                'has the read_products scope enabled.'
+            )
+        if response.status_code == 404:
+            raise ShopifyAuthError(
+                f'Shopify returned 404 for {self.domain}. '
+                'The store domain must be your-store.myshopify.com '
+                '(no https://, no trailing slash).'
+            )
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as exc:
+            raise ShopifyAuthError(
+                f'Shopify token endpoint returned {response.status_code}: '
+                f'{response.text[:300]}'
+            ) from exc
+
+        payload = response.json()
+        token = payload.get('access_token')
+        if not token:
+            raise ShopifyAuthError(
+                f'Shopify did not return an access_token. Response: {payload}'
+            )
+        return token
+
+    @property
+    def headers(self):
+        return {
+            'X-Shopify-Access-Token': self.access_token,
             'Content-Type': 'application/json',
         }
 
+    # ------------------------------------------------------------------
+    # Fetch
+    # ------------------------------------------------------------------
     def fetch(self, limit=None):
         raw = self._fetch_raw(limit=limit)
         return [self._normalise(item) for item in raw]
@@ -43,21 +128,28 @@ class ShopifyImporter(BaseImporter):
         params = {'limit': self.PAGE_SIZE}
 
         while url:
-            response = requests.get(
-                url, headers=self.headers,
-                params=params if url == f'{self.base_url}products.json' else None,
-                timeout=30,
-            )
+            try:
+                response = requests.get(
+                    url, headers=self.headers,
+                    params=params if url == f'{self.base_url}products.json' else None,
+                    timeout=30,
+                )
+            except requests.RequestException as exc:
+                raise ShopifyAuthError(f'Request to Shopify failed: {exc}') from exc
 
             if response.status_code == 401:
-                raise PermissionError(
-                    'Shopify rejected the access token (401). '
-                    'Confirm the token has read_products scope.'
+                # Cached token expired mid-run. Clear cache and retry once.
+                cache.delete(f'shopify_token_{self.source.pk}')
+                self._access_token = None
+                response = requests.get(
+                    url, headers=self.headers,
+                    params=params if url == f'{self.base_url}products.json' else None,
+                    timeout=30,
                 )
             if response.status_code == 404:
-                raise LookupError(
-                    'Shopify returned 404 — check the store domain '
-                    '(it must be your-store.myshopify.com).'
+                raise ShopifyAuthError(
+                    f'Shopify returned 404 for {self.domain}. '
+                    'Check the store domain.'
                 )
             response.raise_for_status()
 
@@ -69,7 +161,6 @@ class ShopifyImporter(BaseImporter):
             if limit and len(results) >= limit:
                 return results[:limit]
 
-            # Shopify paginates via the Link header with rel="next".
             url = self._parse_next_link(response.headers.get('Link', ''))
 
         return results
@@ -83,6 +174,9 @@ class ShopifyImporter(BaseImporter):
                 return part.split(';')[0].strip().strip('<>')
         return None
 
+    # ------------------------------------------------------------------
+    # Normalise
+    # ------------------------------------------------------------------
     def _normalise(self, item):
         variants = []
         for v in item.get('variants', []):
@@ -129,8 +223,10 @@ class ShopifyImporter(BaseImporter):
         except (InvalidOperation, TypeError):
             return None
 
+    # ------------------------------------------------------------------
+    # Persist
+    # ------------------------------------------------------------------
     def run(self, limit=None):
-        """Persist imported products. Returns counts."""
         from django.db import transaction
         from store.models import (
             Category, Product, ProductImage, ProductVariant,
@@ -145,7 +241,6 @@ class ShopifyImporter(BaseImporter):
                 skipped += 1
                 continue
 
-            # Category: match by name; create if missing.
             category = None
             if item.category_name:
                 category = Category.objects.filter(
