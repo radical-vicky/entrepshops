@@ -13,15 +13,9 @@ class ShopifyImporter(BaseImporter):
     """Fetches products from a Shopify store's REST Admin API.
 
     Docs: https://shopify.dev/docs/api/admin-rest/latest/resources/product
-
-    Note: this uses the REST Admin API. Shopify has marked it as legacy
-    as of October 2024 in favour of GraphQL, but for a single private
-    store read-only sync it remains fully functional and much simpler
-    to debug. If your store uses products with more than 100 variants,
-    REST will truncate them and you'd need to migrate to GraphQL.
     """
 
-    PAGE_SIZE = 250  # Shopify's max for REST product listing
+    PAGE_SIZE = 250  # Shopify max for REST product listing
 
     def __init__(self, source):
         super().__init__(source)
@@ -40,23 +34,18 @@ class ShopifyImporter(BaseImporter):
         }
 
     def fetch(self, limit=None):
-        """Return a list of ImportedProduct. Shopify paginates with
-        Link headers; we follow them until done or until we hit `limit`."""
         raw = self._fetch_raw(limit=limit)
         return [self._normalise(item) for item in raw]
 
-    # ------------------------------------------------------------------
-    # Raw fetch
-    # ------------------------------------------------------------------
     def _fetch_raw(self, limit=None):
         results = []
+        url = f'{self.base_url}products.json'
         params = {'limit': self.PAGE_SIZE}
 
-        while True:
+        while url:
             response = requests.get(
-                f'{self.base_url}products.json',
-                headers=self.headers,
-                params=params,
+                url, headers=self.headers,
+                params=params if url == f'{self.base_url}products.json' else None,
                 timeout=30,
             )
 
@@ -78,27 +67,10 @@ class ShopifyImporter(BaseImporter):
 
             results.extend(products)
             if limit and len(results) >= limit:
-                results = results[:limit]
-                break
+                return results[:limit]
 
-            # Shopify paginates via the Link header. If there's no
-            # rel="next", we're done.
-            next_url = self._parse_next_link(response.headers.get('Link', ''))
-            if not next_url:
-                break
-
-            # The next URL contains the page_info cursor; drop our params.
-            response = requests.get(
-                next_url, headers=self.headers, timeout=30,
-            )
-            response.raise_for_status()
-            products = response.json().get('products', [])
-            results.extend(products)
-            if limit and len(results) >= limit:
-                results = results[:limit]
-                break
-            if not products:
-                break
+            # Shopify paginates via the Link header with rel="next".
+            url = self._parse_next_link(response.headers.get('Link', ''))
 
         return results
 
@@ -108,22 +80,15 @@ class ShopifyImporter(BaseImporter):
             return None
         for part in link_header.split(','):
             if 'rel="next"' in part:
-                url = part.split(';')[0].strip()
-                return url.strip('<>')
+                return part.split(';')[0].strip().strip('<>')
         return None
 
-    # ------------------------------------------------------------------
-    # Normalise
-    # ------------------------------------------------------------------
     def _normalise(self, item):
         variants = []
         for v in item.get('variants', []):
             title = v.get('title') or ''
-            # Shopify's default variant title is "Default Title" — treat
-            # that as a variant-less product by using the option1 value.
             if title.lower() == 'default title':
                 title = v.get('option1') or 'Default'
-
             variants.append(ImportedVariant(
                 external_id=str(v.get('id')),
                 size_label=title[:40],
@@ -164,93 +129,99 @@ class ShopifyImporter(BaseImporter):
         except (InvalidOperation, TypeError):
             return None
 
+    def run(self, limit=None):
+        """Persist imported products. Returns counts."""
+        from django.db import transaction
+        from store.models import (
+            Category, Product, ProductImage, ProductVariant,
+        )
 
-def run(self, limit=None):
-    """Persist imported products. Returns counts."""
-    from store.models import Category, Department, Product, ProductImage, ProductVariant
+        imported = self.fetch(limit=limit)
+        created = updated = skipped = 0
+        default_dept = self.source.default_department
 
-    from django.db import transaction
+        for item in imported:
+            if not item.name or not item.slug:
+                skipped += 1
+                continue
 
-    imported = self.fetch(limit=limit)
-    created = updated = skipped = 0
+            # Category: match by name; create if missing.
+            category = None
+            if item.category_name:
+                category = Category.objects.filter(
+                    name__iexact=item.category_name
+                ).first()
+                if category is None:
+                    base_slug = slugify(item.category_name)[:110] or 'uncategorised'
+                    slug = base_slug
+                    n = 1
+                    while Category.objects.filter(slug=slug).exists():
+                        n += 1
+                        slug = f'{base_slug}-{n}'[:110]
+                    category = Category.objects.create(
+                        name=item.category_name[:100],
+                        slug=slug,
+                        department=default_dept,
+                    )
 
-    default_dept = self.source.default_department
-
-    for item in imported:
-        if not item.name or not item.slug:
-            skipped += 1
-            continue
-
-        # Category: match by name, else create under default_dept.
-        category = None
-        if item.category_name:
-            category = Category.objects.filter(name__iexact=item.category_name).first()
             if category is None:
-                category = Category.objects.create(
-                    name=item.category_name[:100],
-                    slug=slugify(item.category_name)[:110] or 'uncategorised',
-                    department=default_dept,
+                skipped += 1
+                continue
+
+            product = Product.objects.filter(slug=item.slug).first()
+            is_new = product is None
+            if is_new:
+                product = Product(
+                    slug=item.slug,
+                    category=category,
+                    department=category.department or default_dept,
+                    name=item.name,
+                    description=item.description,
+                    is_active=(item.status == 'active'),
+                    is_approved=self.source.auto_approve,
                 )
+            else:
+                product.name = item.name
+                product.description = item.description
+                product.category = category
+                if not product.department_id:
+                    product.department = category.department or default_dept
 
-        if category is None:
-            skipped += 1
-            continue
+            with transaction.atomic():
+                product.save()
 
-        # Product: match by slug.
-        product = Product.objects.filter(slug=item.slug).first()
-        is_new = product is None
-        if is_new:
-            product = Product(
-                slug=item.slug,
-                category=category,
-                department=category.department or default_dept,
-                name=item.name,
-                description=item.description,
-                is_active=(item.status == 'active'),
-                is_approved=self.source.auto_approve,
-            )
-        else:
-            product.name = item.name
-            product.description = item.description
-            product.category = category
-            if not product.department_id:
-                product.department = category.department or default_dept
+                if item.variants:
+                    product.variants.all().delete()
+                    for v in item.variants:
+                        ProductVariant.objects.create(
+                            product=product,
+                            size_label=v.size_label,
+                            price=v.price or Decimal('0.00'),
+                            compare_at_price=v.compare_at_price,
+                            stock=v.stock,
+                            sku=v.sku,
+                        )
+                    prices = [v.price for v in item.variants if v.price]
+                    if prices:
+                        product.price = min(prices)
+                        product.save(update_fields=['price'])
+                elif product.price is None:
+                    product.price = Decimal('0.00')
+                    product.save(update_fields=['price'])
 
-        # Variants — delete and recreate for simplicity. In production
-        # you'd want a more careful merge.
-        with transaction.atomic():
-            product.save()
-            if item.variants:
-                product.variants.all().delete()
-                for v in item.variants:
-                    ProductVariant.objects.create(
-                        product=product,
-                        size_label=v.size_label,
-                        price=v.price or Decimal('0.00'),
-                        compare_at_price=v.compare_at_price,
-                        stock=v.stock,
-                        sku=v.sku,
-                    )
-                # Legacy fallback price = cheapest variant.
-                product.price = min(v.price for v in item.variants if v.price)
-                product.save(update_fields=['price'])
-            elif product.price is None:
-                product.price = Decimal('0.00')
-                product.save(update_fields=['price'])
+                if item.images:
+                    product.images.all().delete()
+                    for i, img in enumerate(item.images):
+                        ProductImage.objects.create(
+                            product=product,
+                            image=img.url,
+                            alt_text=img.alt_text,
+                            sort_order=i,
+                        )
 
-            if item.images:
-                product.images.all().delete()
-                for i, img in enumerate(item.images):
-                    ProductImage.objects.create(
-                        product=product,
-                        image=img.url,  # ImageField accepts a URL string
-                        alt_text=img.alt_text,
-                        sort_order=i,
-                    )
+            if is_new:
+                created += 1
+            else:
+                updated += 1
 
-        if is_new:
-            created += 1
-        else:
-            updated += 1
-
-    return {'created': created, 'updated': updated, 'skipped': skipped}
+        return {'created': created, 'updated': updated, 'skipped': skipped}
