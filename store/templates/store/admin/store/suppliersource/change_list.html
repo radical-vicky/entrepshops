@@ -1,0 +1,24 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:store_suppliersource_changelist' %}" class="addlink"
+           style="background:var(--body-quiet-color, #417690);">
+            Refresh
+        </a>
+    </li>
+{% endblock %}
+
+{% block content %}
+    <div class="module" style="margin-bottom:20px; padding:14px 16px; border-left:4px solid #417690;">
+        <h2 style="margin-top:0;">How this works</h2>
+        <ol style="margin:0; padding-left:20px;">
+            <li>Create a source below for each Shopify store you want to import from.</li>
+            <li>Click <strong>Preview</strong> on a source to see what it would import — nothing is saved.</li>
+            <li>Click <strong>Run this import</strong> from the preview page, or run <code>python manage.py import_supplier "&lt;name&gt;"</code> from a terminal.</li>
+            <li>Imported products land in <a href="{% url 'admin:store_product_changelist' %}">Products</a>, mixed with your existing ones. They are normal products — you can edit, price, and feature them just like any other.</li>
+        </ol>
+    </div>
+    {{ block.super }}
+{% endblock %}
