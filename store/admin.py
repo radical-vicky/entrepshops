@@ -164,7 +164,14 @@ class SupplierSourceAdmin(admin.ModelAdmin):
     readonly_fields = ('last_synced_at', 'last_status', 'last_error')
     fieldsets = (
         (None, {'fields': ('name', 'provider', 'is_active')}),
-        ('Connection', {'fields': ('store_domain', 'access_token', 'api_version')}),
+        ('Shopify connection', {
+            'fields': ('store_domain', 'api_version', 'client_id', 'client_secret'),
+            'description': (
+                'Get Client ID and Client Secret from the Shopify Dev Dashboard → '
+                'your app → App settings. The importer exchanges them for a '
+                'short-lived access token automatically.'
+            ),
+        }),
         ('Mapping', {
             'fields': ('default_department',),
             'description': 'Where imported products land if they don\'t match an existing category.'
