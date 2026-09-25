@@ -21,10 +21,13 @@
             </header>
 
             {% if balance < 100 %}
-                <p class="muted">
-                    You need at least KES 100 to withdraw. Keep sharing — your
-                    balance updates as soon as screenshots are credited.
-                </p>
+                <div class="withdraw-notice">
+                    <strong>No balance available right now.</strong>
+                    <p class="muted">
+                        You need at least KES 100 to withdraw. Keep sharing —
+                        your balance updates as soon as screenshots are credited.
+                    </p>
+                </div>
                 <a href="{% url 'marketing:list' %}" class="btn btn-outline btn-small">
                     Back to campaigns
                 </a>
@@ -66,7 +69,8 @@
 
                 <p class="muted withdraw-note">
                     You'll receive an email confirming your request, and another
-                    when the money has been sent.
+                    when the money has been sent. Once submitted, the amount is
+                    locked — you'll see it marked as "In progress" until we pay it out.
                 </p>
             {% endif %}
         </section>
