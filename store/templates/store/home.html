@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Entrep - Shop — cold drinks, delivered{% endblock %}
+{% block title %}Entrep - Shop — quality products, delivered{% endblock %}
 
 {% block content %}
 {% if hero_slides %}
@@ -53,6 +53,41 @@
 </div>
 
 <div class="container">
+
+    {# ---------- Trust badges ---------- #}
+    <section class="trust-row reveal">
+        <div class="trust-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 17V7a2 2 0 0 1 2-2h9l3 4h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/>
+                <circle cx="7" cy="17" r="2"/>
+                <circle cx="17" cy="17" r="2"/>
+            </svg>
+            <span class="trust-badge-label">Fast &amp; Reliable<br>Delivery</span>
+        </div>
+        <div class="trust-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+            <span class="trust-badge-label">Secure<br>Payments</span>
+        </div>
+        <div class="trust-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 12a8 8 0 1 1-8-8"/>
+                <path d="M20 4l-8 8-3-3"/>
+            </svg>
+            <span class="trust-badge-label">Great<br>Deals</span>
+        </div>
+        <div class="trust-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M3 12h18"/>
+                <path d="M3 18h12"/>
+            </svg>
+            <span class="trust-badge-label">Wide<br>Selection</span>
+        </div>
+    </section>
+
     <section class="reveal" id="offers">
         <div class="section-head">
             <div>
@@ -182,8 +217,6 @@
 {% block extra_scripts %}
 <script>
 (function () {
-    // Generic slider: works for both the hero and the offers carousel —
-    // just point it at a container plus its slide/dot/arrow elements.
     function initSlider({ container, slideSelector, dotSelector, prevId, nextId, activeClass, autoplayMs }) {
         if (!container) return;
         const slides = container.querySelectorAll(slideSelector);
@@ -233,9 +266,6 @@
 })();
 
 (function () {
-    // Category filtering without a full page reload — fetches just the
-    // product grid and swaps it in, updating the URL so back/forward and
-    // direct links still work normally.
     const grid = document.getElementById('product-grid');
     const heading = document.getElementById('shop-heading');
     const categoryList = document.getElementById('category-list');
@@ -260,7 +290,6 @@
             if (match) match.classList.add('active');
             if (push) history.pushState({}, '', url + '#shop');
         } catch (err) {
-            // Fall back to a normal navigation if anything goes wrong.
             window.location.href = url;
         } finally {
             grid.classList.remove('is-loading');
@@ -295,7 +324,6 @@
         searchTimer = setTimeout(runSearch, 350);
     });
 
-    // Pagination — AJAX-load the grid when a page link is clicked.
     document.addEventListener('click', (e) => {
         const link = e.target.closest('a[data-page-link]');
         if (!link) return;
