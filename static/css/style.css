@@ -462,19 +462,17 @@ main .container { padding-top: 28px; }
 .shop-search-form input::placeholder { color: var(--text-mute); }
 
 /* =========================================================================
-   Department chips — compact horizontal strip
+   Department chips — text-only strip
    ========================================================================= */
 .dept-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 40px;
+    gap: 8px;
+    margin-bottom: 32px;
 }
 
 .dept-card {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: inline-block;
     padding: 8px 16px;
     background: var(--panel);
     backdrop-filter: blur(20px);
@@ -482,42 +480,41 @@ main .container { padding-top: 28px; }
     border: 1px solid var(--border-glass);
     border-radius: 999px;
     text-decoration: none;
-    color: var(--text);
+    color: var(--text-dim);
+    font-family: var(--font-body);
     font-size: 0.88rem;
     font-weight: 500;
-    transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease), color 0.2s var(--ease);
 }
 
 .dept-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     border-color: var(--border-glass-strong);
     background: var(--panel-strong);
+    color: var(--text);
 }
 
-.dept-card svg {
-    width: 16px;
-    height: 16px;
+/* The currently-selected department chip */
+.dept-card.is-active {
+    background: rgba(47, 166, 107, 0.16);
+    border-color: var(--green-bright);
     color: var(--green-bright);
+    font-weight: 600;
 }
 
-.dept-card h4 {
-    margin: 0;
-    font-size: 0.88rem;
-    font-weight: 500;
-    letter-spacing: 0;
+/* The "All departments" chip is slightly distinct */
+.dept-card-all {
+    font-weight: 600;
 }
 
-/* Hide the tagline the template renders — chips only need icon + name. */
-.dept-card p {
-    display: none;
-}
-
-/* Re-skin icons per department theme */
-.dept-card[data-dept-preview="green"] svg { color: #45D68A; }
-.dept-card[data-dept-preview="blue"] svg { color: #4FC3F7; }
-.dept-card[data-dept-preview="crimson"] svg { color: #FF5C5C; }
-.dept-card[data-dept-preview="violet"] svg { color: #C77DFF; }
-.dept-card[data-dept-preview="amber"] svg { color: #E8AC4F; }
+/* Hover accent per theme */
+.dept-card[data-dept-preview="green"]:hover { border-color: #45D68A; color: #45D68A; }
+.dept-card[data-dept-preview="blue"]:hover { border-color: #4FC3F7; color: #4FC3F7; }
+.dept-card[data-dept-preview="crimson"]:hover { border-color: #FF5C5C; color: #FF5C5C; }
+.dept-card[data-dept-preview="violet"]:hover { border-color: #C77DFF; color: #C77DFF; }
+.dept-card[data-dept-preview="amber"]:hover { border-color: #E8AC4F; color: #E8AC4F; }
 
 /* =========================================================================
    Offers / vouchers
@@ -658,13 +655,10 @@ main .container { padding-top: 28px; }
 
 /* =========================================================================
    Product grid — Pinterest-style masonry (multi-column layout).
-   Cards pack into columns based on their natural height. Images render at
-   their real aspect ratio, which produces the staggered column ends that
-   give Pinterest its look. Ordering is column-by-column, not row-by-row.
    ========================================================================= */
 .product-grid {
     flex: 1;
-    column-count: 4;         /* desktop */
+    column-count: 4;
     column-gap: 16px;
 }
 
@@ -675,9 +669,6 @@ main .container { padding-top: 28px; }
     padding: 20px 0;
 }
 
-/* -------------------------------------------------------------------------
-   Product grid pagination
-   ------------------------------------------------------------------------- */
 .pagination {
     column-span: all;
     display: flex;
@@ -710,9 +701,6 @@ main .container { padding-top: 28px; }
     color: var(--text-mute);
 }
 
-/* -------------------------------------------------------------------------
-   Product cards
-   ------------------------------------------------------------------------- */
 .product-card {
     background: var(--panel);
     backdrop-filter: blur(20px);
@@ -1966,15 +1954,20 @@ main .container { padding-top: 28px; }
     .dept-grid {
         flex-wrap: nowrap;
         overflow-x: auto;
-        padding-bottom: 6px;
+        gap: 6px;
+        padding-bottom: 4px;
         scrollbar-width: none;
         -ms-overflow-style: none;
-        margin: 0 -24px 28px;
+        margin: 0 -24px 24px;
         padding-left: 24px;
         padding-right: 24px;
     }
     .dept-grid::-webkit-scrollbar { display: none; }
-    .dept-card { flex-shrink: 0; }
+    .dept-card {
+        flex-shrink: 0;
+        padding: 7px 14px;
+        font-size: 0.82rem;
+    }
 
     .shop-layout { flex-direction: column; gap: 20px; }
     .sidebar { width: 100%; }
