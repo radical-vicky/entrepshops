@@ -14,8 +14,7 @@
     --border-glass: rgba(255, 255, 255, 0.09);
     --border-glass-strong: rgba(255, 255, 255, 0.16);
 
-    /* Brand — amber slots. Kept under the same variable names so the
-       department theme overrides and every existing rule keep working. */
+    /* Brand — amber slots */
     --green: #C88A2E;
     --green-bright: #E8A33D;
     --green-deep: #3D2910;
@@ -45,7 +44,7 @@
 }
 
 /* =========================================================================
-   Department themes — set via [data-dept="..."] on <body>.
+   Department themes
    ========================================================================= */
 [data-dept="blue"] {
     --green: #2F86D6; --green-bright: #4FC3F7; --green-deep: #0F2A40;
@@ -460,7 +459,7 @@ main .container { padding-top: 28px; }
 }
 
 /* =========================================================================
-   Trust badges — the four badge row from the marketing banner
+   Trust badges
    ========================================================================= */
 .trust-row {
     display: grid;
@@ -528,7 +527,7 @@ main .container { padding-top: 28px; }
 .shop-search-form input::placeholder { color: var(--text-mute); }
 
 /* =========================================================================
-   Department chips — text-only strip
+   Department chips
    ========================================================================= */
 .dept-grid {
     display: flex;
@@ -1988,6 +1987,190 @@ main .container { padding-top: 28px; }
 .lightbox.is-zoomed .lightbox-nav { opacity: 0; pointer-events: none; }
 
 /* =========================================================================
+   Vendor / seller pages
+   ========================================================================= */
+.vendor-signup-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.vendor-signup-card { padding: 28px 26px; }
+.vendor-signup-card h2 { font-size: 1.3rem; margin: 0 0 16px; }
+
+.vendor-benefits {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 24px;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+}
+
+.vendor-benefits li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.vendor-benefits li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green-bright);
+}
+
+.vendor-info {
+    padding: 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.vendor-info .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.vendor-steps {
+    padding-left: 18px;
+    margin: 0;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.65;
+}
+
+.vendor-steps li { margin-bottom: 8px; }
+
+.vendor-dash-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.vendor-dash-head h1 { margin: 0; }
+
+.vendor-status {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-glass);
+    white-space: nowrap;
+}
+
+.vendor-status-success {
+    color: var(--success);
+    border-color: rgba(69, 214, 138, 0.35);
+    background: rgba(69, 214, 138, 0.10);
+}
+.vendor-status-warning {
+    color: var(--gold);
+    border-color: rgba(232, 185, 60, 0.35);
+    background: rgba(232, 185, 60, 0.10);
+}
+.vendor-status-danger {
+    color: var(--danger);
+    border-color: rgba(240, 96, 92, 0.35);
+    background: rgba(240, 96, 92, 0.10);
+}
+.vendor-status-muted {
+    color: var(--text-mute);
+}
+
+.vendor-banner {
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    border-left: 3px solid var(--gold);
+    background: rgba(232, 185, 60, 0.08);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.vendor-banner-warning { border-color: var(--gold); background: rgba(232, 185, 60, 0.08); color: var(--text); }
+.vendor-banner-error { border-color: var(--danger); background: rgba(240, 96, 92, 0.08); color: var(--text); }
+.vendor-banner strong { font-weight: 700; }
+
+.vendor-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.vendor-stat {
+    padding: 18px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border-glass);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vendor-stat strong {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    color: var(--green-bright);
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.vendor-stat span {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+}
+
+.vendor-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.vendor-empty {
+    padding: 40px 24px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px solid var(--border-glass);
+}
+
+.vendor-empty p { margin: 0 0 16px; color: var(--text-dim); }
+
+.vendor-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.vendor-form-card {
+    padding: 28px 26px;
+    max-width: 640px;
+}
+
+.vendor-form-card .auth-form { max-width: 100%; }
+
+.vendor-form-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+/* =========================================================================
    Mobile safety: force-disable the scroll-reveal effect on small screens
    ========================================================================= */
 @media (max-width: 700px) {
@@ -2045,6 +2228,9 @@ main .container { padding-top: 28px; }
     .withdraw-layout { grid-template-columns: 1fr; }
 
     .trust-row { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+    .vendor-signup-layout { grid-template-columns: 1fr; }
+    .vendor-stats { grid-template-columns: 1fr; }
 }
 
 /* =========================================================================
