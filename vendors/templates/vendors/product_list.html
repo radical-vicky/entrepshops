@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}My products — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">My Shop</span>
+        <h1>My products</h1>
+    </div>
+
+    <div class="vendor-actions" style="margin-bottom: 20px;">
+        <a href="{% url 'vendors:product_create' %}" class="btn">Add a product</a>
+        <a href="{% url 'vendors:dashboard' %}" class="btn btn-outline btn-small">Back to dashboard</a>
+    </div>
+
+    {% if products %}
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                    <tr>
+                        <td class="cart-thumb-cell">
+                            {% if p.image %}
+                                <img src="{{ p.image.url }}" alt="" class="cart-thumb">
+                            {% endif %}
+                        </td>
+                        <td>{{ p.name }}</td>
+                        <td>KES {{ p.price }}</td>
+                        <td>{{ p.stock }}</td>
+                        <td>
+                            {% if p.is_approved and p.is_active %}
+                                <span class="badge badge-success">Live</span>
+                            {% elif not p.is_approved %}
+                                <span class="badge badge-warning">Awaiting review</span>
+                            {% else %}
+                                <span class="badge badge-muted">Hidden</span>
+                            {% endif %}
+                        </td>
+                        <td class="vendor-row-actions">
+                            <a href="{% url 'vendors:product_edit' p.id %}" class="btn btn-small btn-outline">Edit</a>
+                            <form method="post" action="{% url 'vendors:product_delete' p.id %}" style="display:inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-small btn-danger"
+                                        onclick="return confirm('Delete this product?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="vendor-empty">
+            <p>You haven't listed anything yet.</p>
+            <a href="{% url 'vendors:product_create' %}" class="btn">Add your first product</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
