@@ -1,0 +1,24 @@
+Hi {{ user.username }},
+
+Welcome to {{ site_name }} — your 30-day free trial as a seller has started.
+
+Your shop: {{ vendor.business_name }}
+Trial ends: {{ vendor.trial_ends_at|date:"j M Y" }}
+
+What you can do right now:
+
+  • List products — unlimited during your trial
+  • Set your own prices
+  • Keep 100% of every sale while on trial
+  • Withdraw your earnings to M-Pesa any time
+
+We handle delivery to your customers. When an order is placed, the product
+price is credited to your seller balance.
+
+List your first product:
+/sell/products/new/
+
+After your trial ends, subscribe for KES 5,000/month to keep adding
+products. Your existing listings and orders stay live regardless.
+
+— The {{ site_name }} team
