@@ -4,18 +4,47 @@ from django.utils import timezone
 
 
 class Vendor(models.Model):
-    """A third-party seller renting shelf space on the platform. Needs an
-    active (non-expired) subscription to list or keep products live —
-    see subscription_active below."""
+    """A third-party seller. New vendors get a 30-day free trial during
+    which they can list products without paying a subscription fee. After
+    the trial, they must subscribe to keep adding new listings — existing
+    products and orders remain untouched."""
 
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='vendor_profile', on_delete=models.CASCADE)
-    business_name = models.CharField(max_length=150)
-    phone_number = models.CharField(max_length=20)
-    is_approved = models.BooleanField(
-        default=False,
-        help_text='Admin sign-off before this vendor can list products publicly, even with a paid subscription.'
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='vendor_profile',
     )
-    subscription_expires_at = models.DateTimeField(null=True, blank=True)
+    business_name = models.CharField(max_length=150)
+    phone_number = models.CharField(max_length=20, blank=True)
+    description = models.TextField(blank=True)
+
+    is_approved = models.BooleanField(
+        default=True,
+        help_text='Admin can uncheck to hide all of this vendor\'s products.',
+    )
+
+    # --- Trial ---
+    trial_started_at = models.DateTimeField(null=True, blank=True)
+    trial_ends_at = models.DateTimeField(null=True, blank=True)
+
+    # --- Paid subscription ---
+    subscription_expires_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Set when the vendor pays for a subscription period.',
+    )
+
+    # --- Commission ---
+    commission_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        help_text='Percent of each sale kept by the platform. 0 = vendor keeps everything.'
+    )
+
+    # --- Balances ---
+    balance = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text='Earnings awaiting withdrawal.',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -24,47 +53,74 @@ class Vendor(models.Model):
     def __str__(self):
         return self.business_name
 
+    # ------------------------------------------------------------------
+    # Trial / subscription state
+    # ------------------------------------------------------------------
     @property
-    def subscription_active(self):
-        return bool(self.subscription_expires_at and self.subscription_expires_at > timezone.now())
+    def on_trial(self):
+        if not self.trial_ends_at:
+            return False
+        return timezone.now() < self.trial_ends_at
 
     @property
-    def can_sell(self):
-        """Both gates have to be open: admin approval AND a paid, current subscription."""
-        return self.is_approved and self.subscription_active
+    def has_active_subscription(self):
+        if not self.subscription_expires_at:
+            return False
+        return timezone.now() < self.subscription_expires_at
 
-    def extend_subscription(self, days):
-        """Stacks onto any remaining time rather than resetting it, so
-        renewing a few days early doesn't waste the days still owed."""
-        base = self.subscription_expires_at if self.subscription_active else timezone.now()
-        self.subscription_expires_at = base + timezone.timedelta(days=days)
-        self.save(update_fields=['subscription_expires_at'])
+    @property
+    def can_list_products(self):
+        """True if the vendor can add NEW products right now. Existing
+        products and orders are not gated by this."""
+        if not self.is_approved:
+            return False
+        return self.on_trial or self.has_active_subscription
 
+    @property
+    def trial_days_left(self):
+        if not self.on_trial:
+            return 0
+        delta = self.trial_ends_at - timezone.now()
+        return max(0, delta.days)
 
-class VendorSubscriptionPayment(models.Model):
-    class Status(models.TextChoices):
-        INITIATED = 'initiated', 'Initiated'
-        SUCCESS = 'success', 'Success'
-        FAILED = 'failed', 'Failed'
-        CANCELLED = 'cancelled', 'Cancelled'
+    @property
+    def subscription_days_left(self):
+        if not self.has_active_subscription:
+            return 0
+        delta = self.subscription_expires_at - timezone.now()
+        return max(0, delta.days)
 
-    vendor = models.ForeignKey(Vendor, related_name='subscription_payments', on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    phone_number = models.CharField(max_length=20)
-    days = models.PositiveIntegerField(default=30)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.INITIATED)
-    checkout_request_id = models.CharField(max_length=100, blank=True, db_index=True)
-    mpesa_receipt_number = models.CharField(max_length=50, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    @property
+    def status_label(self):
+        if not self.is_approved:
+            return 'Suspended'
+        if self.has_active_subscription:
+            return f'Subscribed ({self.subscription_days_left}d left)'
+        if self.on_trial:
+            return f'Trial ({self.trial_days_left}d left)'
+        return 'Trial expired'
 
-    class Meta:
-        ordering = ['-created_at']
+    @property
+    def status_tone(self):
+        """CSS tone for the dashboard badge."""
+        if not self.is_approved:
+            return 'danger'
+        if self.has_active_subscription:
+            return 'success'
+        if self.on_trial:
+            return 'warning'
+        return 'muted'
 
-    def __str__(self):
-        return f'{self.vendor.business_name} — KES {self.amount} ({self.status})'
+    # ------------------------------------------------------------------
+    # How many products the vendor has listed (used for the "first 3
+    # reviewed" rule).
+    # ------------------------------------------------------------------
+    @property
+    def product_count(self):
+        return self.products.count()
 
-    def mark_success(self, receipt_number=''):
-        self.status = self.Status.SUCCESS
-        self.mpesa_receipt_number = receipt_number
-        self.save(update_fields=['status', 'mpesa_receipt_number'])
-        self.vendor.extend_subscription(self.days)
+    @property
+    def requires_review(self):
+        """First 3 products a vendor creates need admin approval. After
+        that, new products auto-approve."""
+        return self.product_count < 3
