@@ -179,7 +179,8 @@ class SupplierSourceAdmin(admin.ModelAdmin):
         ('Behaviour', {'fields': ('auto_approve',)}),
         ('Status', {'fields': ('last_synced_at', 'last_status', 'last_error')}),
     )
-    change_list_template = 'admin/store/suppliersource/change_list.html'
+
+    
 
     def get_urls(self):
         urls = super().get_urls()
