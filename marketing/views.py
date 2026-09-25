@@ -171,6 +171,8 @@ def my_earnings(request):
         views=Sum('views'),
         earnings=Sum('earnings'),
     )
+    credited_views = totals['views'] or 0
+    credited_amount = totals['earnings'] or 0
 
     pending = (
         MarketingProof.objects
@@ -178,9 +180,14 @@ def my_earnings(request):
         .select_related('share__campaign')
         .order_by('-uploaded_at')
     )
+    pending_views = 0
     pending_total = Decimal('0.00')
     for p in pending:
+        pending_views += p.reported_views
         pending_total += p.reported_views * p.share.campaign.payout_per_view
+
+    total_views_all = credited_views + pending_views
+    total_earned_all = credited_amount + pending_total
 
     recent_withdrawals = (
         WithdrawalRequest.objects
@@ -188,13 +195,29 @@ def my_earnings(request):
         .order_by('-requested_at')[:5]
     )
 
+    in_progress_total = (
+        WithdrawalRequest.objects
+        .filter(
+            user=request.user,
+            status__in=[
+                WithdrawalRequest.Status.PENDING,
+                WithdrawalRequest.Status.APPROVED,
+            ],
+        )
+        .aggregate(s=Sum('amount'))['s'] or Decimal('0.00')
+    )
+
     return render(request, 'marketing/earnings.html', {
         'shares': shares,
-        'total_views': totals['views'] or 0,
-        'total_earnings': totals['earnings'] or 0,
+        'credited_views': credited_views,
+        'credited_amount': credited_amount,
         'pending_proofs': pending,
+        'pending_views': pending_views,
         'pending_total': pending_total,
+        'total_views': total_views_all,
+        'total_earnings': total_earned_all,
         'balance': withdrawable_balance(request.user),
+        'in_progress_total': in_progress_total,
         'recent_withdrawals': recent_withdrawals,
     })
 
@@ -275,7 +298,7 @@ def send_withdrawal_requested_email(wr):
     user = wr.user
     if not user.email:
         return
-    subject = f'Withdrawal request received — KES {wr.amount}'
+    subject = f'Withdrawal in progress — KES {wr.amount}'
     body = render_to_string('marketing/emails/withdrawal_requested.txt', {
         'user': user,
         'wr': wr,
@@ -351,6 +374,17 @@ def process_due_proofs():
 @login_required
 def request_withdrawal(request):
     balance = withdrawable_balance(request.user)
+    in_progress_total = (
+        WithdrawalRequest.objects
+        .filter(
+            user=request.user,
+            status__in=[
+                WithdrawalRequest.Status.PENDING,
+                WithdrawalRequest.Status.APPROVED,
+            ],
+        )
+        .aggregate(s=Sum('amount'))['s'] or Decimal('0.00')
+    )
 
     initial = {}
     if request.user.addresses.exists():
@@ -369,7 +403,9 @@ def request_withdrawal(request):
                         f'Your withdrawable balance is KES {current_balance:.2f}.'
                     )
                     return render(request, 'marketing/withdraw.html', {
-                        'form': form, 'balance': current_balance,
+                        'form': form,
+                        'balance': current_balance,
+                        'in_progress_total': in_progress_total,
                     })
 
                 wr = WithdrawalRequest.objects.create(
@@ -385,8 +421,9 @@ def request_withdrawal(request):
 
             messages.success(
                 request,
-                f'Withdrawal request for KES {wr.amount} received. '
-                f'We will send it to {wr.phone_number} within 24 hours.'
+                f'Withdrawal in progress. KES {wr.amount} will be sent to '
+                f'{wr.phone_number} within 24 hours. We\'ll email you the '
+                f'M-Pesa receipt when it\'s paid.'
             )
             return redirect('marketing:withdrawals')
     else:
@@ -395,6 +432,7 @@ def request_withdrawal(request):
     return render(request, 'marketing/withdraw.html', {
         'form': form,
         'balance': balance,
+        'in_progress_total': in_progress_total,
     })
 
 
