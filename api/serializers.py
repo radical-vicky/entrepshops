@@ -1,4 +1,4 @@
-from rest_framework import serializers
+﻿from rest_framework import serializers
 
 from store.models import (
     Category, Department, Product, ProductImage, ProductOffer, ProductVariant,
