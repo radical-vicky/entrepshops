@@ -22,10 +22,16 @@
             <a href="{% url 'store:home' %}" class="logo">
                 {% if active_logo %}
                     <img src="{{ active_logo.image.url }}" alt="Entrep - Shop" class="logo-image">
-                    <span class="logo-wordmark">Entrep<span class="accent"> - Shop</span></span>
+                    <span class="logo-stack">
+                        <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
+                        <span class="logo-tagline">Shop · Save · Grow</span>
+                    </span>
                 {% else %}
                     <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
-                    <span class="logo-wordmark">Entrep<span class="accent"> - Shop</span></span>
+                    <span class="logo-stack">
+                        <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
+                        <span class="logo-tagline">Shop · Save · Grow</span>
+                    </span>
                 {% endif %}
             </a>
 
@@ -83,7 +89,7 @@
 
     <footer class="site-footer">
         <div class="container">
-            <span>Entrep - Shop &copy; {% now "Y" %} — cold drinks, delivered to your door.</span>
+            <span>Entrep - Shop &copy; {% now "Y" %} — quality products, delivered to your door.</span>
             <span><a href="{% url 'store:home' %}">Shop</a> &nbsp;&middot;&nbsp; <a href="{% url 'store:address_list' %}">Delivery</a></span>
         </div>
     </footer>
@@ -94,7 +100,6 @@
     <script src="{% static 'js/grid.js' %}" defer></script>
 
     <script>
-        // Scroll-reveal for elements marked .reveal.
         (function () {
             const revealEls = document.querySelectorAll('.reveal');
             if (!revealEls.length) return;
@@ -123,7 +128,6 @@
             }
         })();
 
-        // Toasts for AJAX feedback (add-to-cart etc.)
         function showToast(text, tone) {
             const stack = document.getElementById('toast-stack');
             const el = document.createElement('div');
@@ -137,8 +141,6 @@
             }, 2600);
         }
 
-        // AJAX "add to cart" — no full page reload, just a toast + a bump
-        // on the cart badge in the nav.
         document.addEventListener('submit', async (e) => {
             const form = e.target.closest('.ajax-add-form');
             if (!form) return;
@@ -178,4 +180,4 @@
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>
-                        </html>
+</html>
