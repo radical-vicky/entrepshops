@@ -120,11 +120,9 @@
         </div>
         <div class="dept-grid">
             {% for dept in departments %}
-                <a href="?department={{ dept.slug }}#shop" class="glass dept-card" data-dept-preview="{{ dept.theme }}">
-                    <svg style="width:26px;height:26px"><use href="#icon-{{ dept.icon_kind }}"/></svg>
-                    <h4>{{ dept.name }}</h4>
-                    {% if dept.tagline %}<p class="muted">{{ dept.tagline }}</p>{% endif %}
-                </a>
+                <a href="?department={{ dept.slug }}#shop"
+                   class="dept-card"
+                   data-dept-preview="{{ dept.theme }}">{{ dept.name }}</a>
             {% endfor %}
         </div>
     </section>
