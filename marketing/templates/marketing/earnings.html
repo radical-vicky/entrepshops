@@ -8,6 +8,14 @@
         <h1>Your share earnings</h1>
     </div>
 
+    {% if in_progress_total %}
+        <div class="earnings-banner">
+            <strong>Withdrawal in progress:</strong>
+            KES {{ in_progress_total }} is being processed. You'll get an email
+            when the money is sent.
+        </div>
+    {% endif %}
+
     <div class="form-card wide">
         <div class="marketing-stats">
             <div class="marketing-stat">
@@ -16,22 +24,31 @@
             </div>
             <div class="marketing-stat">
                 <strong>KES {{ total_earnings }}</strong>
-                <span>credited</span>
+                <span>total earned</span>
             </div>
-            {% if pending_total %}
-                <div class="marketing-stat">
-                    <strong>KES {{ pending_total }}</strong>
-                    <span>pending 24h hold</span>
-                </div>
-            {% endif %}
         </div>
+
+        {% if pending_total %}
+            <div class="earnings-pending">
+                <span class="eyebrow">Pending 24h hold</span>
+                <div class="earnings-pending-amount">KES {{ pending_total }}</div>
+                <p class="muted">
+                    {{ pending_views }} view{{ pending_views|pluralize }} awaiting
+                    review. Credits within 24 hours of upload.
+                </p>
+            </div>
+        {% endif %}
 
         <div class="withdraw-cta">
             <div>
                 <span class="eyebrow">Available to withdraw</span>
                 <div class="withdraw-balance-small">KES {{ balance }}</div>
             </div>
-            <a href="{% url 'marketing:withdraw' %}" class="btn">Withdraw to M-Pesa</a>
+            {% if balance > 0 %}
+                <a href="{% url 'marketing:withdraw' %}" class="btn">Withdraw to M-Pesa</a>
+            {% else %}
+                <a href="{% url 'marketing:withdraw' %}" class="btn btn-outline">Withdraw to M-Pesa</a>
+            {% endif %}
         </div>
 
         <h3>Your shares</h3>
@@ -108,11 +125,11 @@
                                 {% if w.status == 'paid' %}
                                     <span class="badge badge-success">Paid</span>
                                 {% elif w.status == 'approved' %}
-                                    <span class="badge badge-warning">Approved</span>
+                                    <span class="badge badge-warning">In progress</span>
                                 {% elif w.status == 'rejected' %}
                                     <span class="badge badge-muted">Rejected</span>
                                 {% else %}
-                                    <span class="badge">Pending</span>
+                                    <span class="badge badge-warning">In progress</span>
                                 {% endif %}
                             </td>
                         </tr>
