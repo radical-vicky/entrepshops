@@ -8,5 +8,8 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "drinkshop/wsgi.py" }
-  ]
+  ],
+  {
+  "buildCommand": "python manage.py collectstatic --noinput"
+}
 }
