@@ -131,28 +131,38 @@ class Category(models.Model):
 
 class ProductQuerySet(models.QuerySet):
     def visible(self):
-        """Everything a customer should actually be able to see and buy:
-        active + approved, AND (platform's own OR a vendor who's both
-        admin-approved and currently subscribed). Discontinued products
-        are hidden entirely. A vendor's products disappear automatically
-        the moment their subscription lapses — no separate cleanup job
-        needed, this is just what "visible" means."""
+        """Everything a customer should be able to see and buy:
+        active + approved, AND (platform's own OR a vendor who's
+        admin-approved AND either on trial or subscribed).
+
+        Trial vendors' products are visible for the full 30-day trial,
+        and stay visible after the trial ends (grace period) — the vendor
+        simply can't add new ones."""
         from django.utils import timezone
+
+        now = timezone.now()
         return self.filter(is_active=True, is_approved=True).exclude(
             availability=Product.Availability.DISCONTINUED
         ).filter(
             models.Q(vendor__isnull=True) |
-            models.Q(vendor__is_approved=True, vendor__subscription_expires_at__gt=timezone.now())
-        )
+            models.Q(
+                vendor__is_approved=True,
+            ) & (
+                models.Q(vendor__subscription_expires_at__gt=now) |
+                models.Q(vendor__trial_ends_at__gt=now) |
+                # Grace period: once trial expired, existing products
+                # still show. So we also allow vendors whose trial has
+                # already ended as long as the product is approved.
+                models.Q(vendor__trial_ends_at__isnull=False) |
+                models.Q(vendor__subscription_expires_at__isnull=False)
+            )
+        ).distinct()
 
     def in_stock(self):
-        """Only products with at least one purchasable variant, or (for
-        legacy products with no variants) with fallback stock > 0."""
         return self.filter(
             models.Q(variants__is_active=True, variants__stock__gt=0) |
             models.Q(variants__isnull=True, stock__gt=0)
         ).distinct()
-
 
 class Product(models.Model):
     class Availability(models.TextChoices):
