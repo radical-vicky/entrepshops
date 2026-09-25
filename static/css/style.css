@@ -462,29 +462,57 @@ main .container { padding-top: 28px; }
 .shop-search-form input::placeholder { color: var(--text-mute); }
 
 /* =========================================================================
-   Department showcase cards
+   Department chips — compact horizontal strip
    ========================================================================= */
 .dept-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-    margin-bottom: 60px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 40px;
 }
+
 .dept-card {
-    padding: 24px 20px;
-    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    border-radius: 999px;
     text-decoration: none;
     color: var(--text);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    transition: transform 0.3s var(--ease), border-color 0.3s var(--ease);
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
 }
-.dept-card:hover { transform: translateY(-4px); }
-.dept-card svg { color: #45D68A; }
-.dept-card h4 { margin: 0; font-size: 1rem; }
-.dept-card p { margin: 0; font-size: 0.8rem; }
+
+.dept-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-glass-strong);
+    background: var(--panel-strong);
+}
+
+.dept-card svg {
+    width: 16px;
+    height: 16px;
+    color: var(--green-bright);
+}
+
+.dept-card h4 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+/* Hide the tagline the template renders — chips only need icon + name. */
+.dept-card p {
+    display: none;
+}
+
+/* Re-skin icons per department theme */
 .dept-card[data-dept-preview="green"] svg { color: #45D68A; }
 .dept-card[data-dept-preview="blue"] svg { color: #4FC3F7; }
 .dept-card[data-dept-preview="crimson"] svg { color: #FF5C5C; }
@@ -651,7 +679,7 @@ main .container { padding-top: 28px; }
    Product grid pagination
    ------------------------------------------------------------------------- */
 .pagination {
-    column-span: all;        /* span every column in multi-column layout */
+    column-span: all;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -695,7 +723,6 @@ main .container { padding-top: 28px; }
     transition: transform 0.35s var(--ease), border-color 0.35s var(--ease);
     position: relative;
     min-width: 0;
-    /* Masonry: keep each card inside one column, add a gap below it. */
     break-inside: avoid;
     -webkit-column-break-inside: avoid;
     page-break-inside: avoid;
@@ -706,7 +733,7 @@ main .container { padding-top: 28px; }
 .product-card a { text-decoration: none; color: var(--text); display: block; }
 .product-card img {
     width: 100%;
-    height: auto;             /* natural aspect ratio = masonry effect */
+    height: auto;
     display: block;
     border-radius: var(--radius-sm);
 }
@@ -1935,12 +1962,26 @@ main .container { padding-top: 28px; }
 
     .marquee { margin-bottom: 32px; }
 
+    /* Department chips: horizontal scroll on phones */
+    .dept-grid {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        margin: 0 -24px 28px;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+    .dept-grid::-webkit-scrollbar { display: none; }
+    .dept-card { flex-shrink: 0; }
+
     .shop-layout { flex-direction: column; gap: 20px; }
     .sidebar { width: 100%; }
     .sidebar .category-list { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
     .sidebar .category-list li { margin-bottom: 0; flex-shrink: 0; }
 
-    /* Masonry on mobile: 2 columns, no fixed image height. */
+    /* Masonry on mobile: 2 columns */
     .product-grid { column-count: 2; column-gap: 10px; }
     .product-card {
         padding: 10px;
@@ -1978,11 +2019,6 @@ main .container { padding-top: 28px; }
     .promo-slide-content { padding: 20px; }
     .promo-slide-content h4 { font-size: 1.15rem; }
     .promo-slide-content p { font-size: 0.85rem; }
-
-    .dept-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 32px; }
-    .dept-card { padding: 16px 12px; }
-    .dept-card h4 { font-size: 0.9rem; }
-    .dept-card p { font-size: 0.72rem; }
 
     .section-head h3 { font-size: 1.3rem; }
     .section-head .sub { font-size: 0.8rem; }
