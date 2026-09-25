@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Edit profile — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">My Shop</span>
+        <h1>Edit your profile</h1>
+    </div>
+
+    <div class="glass vendor-form-card">
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+            <p>
+                <label for="{{ form.business_name.id_for_label }}">Business name</label>
+                {{ form.business_name }}
+            </p>
+            <p>
+                <label for="{{ form.phone_number.id_for_label }}">Phone number</label>
+                {{ form.phone_number }}
+            </p>
+            <p>
+                <label for="{{ form.description.id_for_label }}">About your shop</label>
+                {{ form.description }}
+            </p>
+            <button type="submit" class="btn btn-full">Save changes</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
