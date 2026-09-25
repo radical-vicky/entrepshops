@@ -1,35 +1,82 @@
 {% extends "base.html" %}
-{% block title %}{% if product %}Edit product{% else %}Add product{% endif %} — Entrep - Shop{% endblock %}
+{% block title %}{% if mode == 'edit' %}Edit product{% else %}Add product{% endif %} — Entrep - Shop{% endblock %}
 
 {% block content %}
 <div class="container">
-<div class="page-head">
-    <span class="eyebrow">{{ vendor.business_name }}</span>
-    <h1>{% if product %}Edit product{% else %}Add a product{% endif %}</h1>
-</div>
+    <div class="page-head">
+        <span class="eyebrow">{% if mode == 'edit' %}Edit{% else %}New product{% endif %}</span>
+        <h1>{% if mode == 'edit' %}{{ product.name }}{% else %}Add a product{% endif %}</h1>
+    </div>
 
-<div class="form-card">
-    <form method="post" enctype="multipart/form-data" class="auth-form">
-        {% csrf_token %}
-        <label>Category
-            <select name="category" required>
-                <option value="">Choose a category…</option>
-                {% for dept in departments %}
-                    <optgroup label="{{ dept.name }}">
-                        {% for cat in dept.categories.all %}
-                            <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
-                        {% endfor %}
-                    </optgroup>
-                {% endfor %}
-            </select>
-        </label>
-        <label>Product name<input type="text" name="name" value="{{ product.name|default:'' }}" required></label>
-        <label>Price (KES)<input type="number" name="price" step="0.01" value="{{ product.price|default:'' }}" required></label>
-        <label>Stock quantity<input type="number" name="stock" value="{{ product.stock|default:0 }}"></label>
-        <label>Description<textarea name="description" rows="4">{{ product.description|default:'' }}</textarea></label>
-        <label>Photo{% if product.image %} (leave blank to keep current){% endif %}<input type="file" name="image" accept="image/*"></label>
-        <button type="submit" class="btn">Save product</button>
-    </form>
-</div>
+    <div class="glass vendor-form-card">
+        <form method="post" enctype="multipart/form-data" class="auth-form">
+            {% csrf_token %}
+
+            <p>
+                <label for="{{ form.name.id_for_label }}">Product name</label>
+                {{ form.name }}
+                {% if form.name.errors %}<ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.category.id_for_label }}">Category</label>
+                {{ form.category }}
+                {% if form.category.errors %}<ul class="errorlist">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.image.id_for_label }}">Product photo</label>
+                {{ form.image }}
+                <span class="helptext">JPG or PNG, under 5 MB.</span>
+                {% if form.image.errors %}<ul class="errorlist">{% for e in form.image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.price.id_for_label }}">Price (KES)</label>
+                {{ form.price }}
+                {% if form.price.errors %}<ul class="errorlist">{% for e in form.price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.compare_at_price.id_for_label }}">Compare-at price (optional)</label>
+                {{ form.compare_at_price }}
+                <span class="helptext">Shows a "was KES ___" strike-through.</span>
+                {% if form.compare_at_price.errors %}<ul class="errorlist">{% for e in form.compare_at_price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.stock.id_for_label }}">Stock available</label>
+                {{ form.stock }}
+                {% if form.stock.errors %}<ul class="errorlist">{% for e in form.stock.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.volume_ml.id_for_label }}">Volume (ml, optional)</label>
+                {{ form.volume_ml }}
+            </p>
+
+            {% if vendor.requires_review %}
+                <p class="muted" style="font-size: 0.85rem;">
+                    Your first 3 products are reviewed by our team within 24 hours.
+                    After that, new products go live instantly.
+                </p>
+            {% endif %}
+
+            <div class="vendor-form-actions">
+                <button type="submit" class="btn btn-full">
+                    {% if mode == 'edit' %}Save changes{% else %}Submit product{% endif %}
+                </button>
+                <a href="{% url 'vendors:product_list' %}" class="btn btn-outline btn-small">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
