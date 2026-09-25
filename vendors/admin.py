@@ -58,9 +58,6 @@ class VendorAdmin(admin.ModelAdmin):
     )
     actions = ['extend_trial_30_days', 'suspend_vendors', 'reinstate_vendors']
 
-    # --------------------------------------------------------------
-    # List columns
-    # --------------------------------------------------------------
     def user_link(self, obj):
         return obj.user.username
     user_link.short_description = 'User'
@@ -114,9 +111,6 @@ class VendorAdmin(admin.ModelAdmin):
         return f'Trial ended on {obj.trial_ends_at:%d %b %Y}.'
     trial_status_display.short_description = 'Trial status'
 
-    # --------------------------------------------------------------
-    # Actions
-    # --------------------------------------------------------------
     @admin.action(description='Extend trial by 30 days (from today)')
     def extend_trial_30_days(self, request, queryset):
         from datetime import timedelta
@@ -140,17 +134,3 @@ class VendorAdmin(admin.ModelAdmin):
     def reinstate_vendors(self, request, queryset):
         updated = queryset.update(is_approved=True)
         self.message_user(request, f'{updated} vendor(s) reinstated.')
-
-    # --------------------------------------------------------------
-    # Read-only enforcement: user can't be changed after creation.
-    # --------------------------------------------------------------
-    def has_add_permission(self, request):
-        # Vendors are created via the public trial signup, not from admin.
-        # You can still create one manually if you need to by removing this.
-        return True
-
-    def get_readonly_fields(self, request, obj=None):
-        # If editing an existing vendor, lock the user FK.
-        if obj is not None:
-            return self.readonly_fields + ('user',)
-        return self.readonly_fields
