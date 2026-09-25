@@ -34,11 +34,11 @@
                             {% if w.status == 'paid' %}
                                 <span class="badge badge-success">Paid</span>
                             {% elif w.status == 'approved' %}
-                                <span class="badge badge-warning">Approved</span>
+                                <span class="badge badge-warning">In progress</span>
                             {% elif w.status == 'rejected' %}
                                 <span class="badge badge-muted">Rejected</span>
                             {% else %}
-                                <span class="badge">Pending</span>
+                                <span class="badge badge-warning">In progress</span>
                             {% endif %}
                         </td>
                         <td>{{ w.mpesa_receipt|default:"—" }}</td>
