@@ -112,8 +112,7 @@ class Vendor(models.Model):
         return 'muted'
 
     # ------------------------------------------------------------------
-    # How many products the vendor has listed (used for the "first 3
-    # reviewed" rule).
+    # Product helpers
     # ------------------------------------------------------------------
     @property
     def product_count(self):
