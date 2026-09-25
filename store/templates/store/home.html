@@ -119,9 +119,13 @@
             </div>
         </div>
         <div class="dept-grid">
+            <a href="{% url 'store:home' %}#shop"
+               class="dept-card dept-card-all {% if not selected_department %}is-active{% endif %}"
+               data-dept-preview="">All departments</a>
+
             {% for dept in departments %}
                 <a href="?department={{ dept.slug }}#shop"
-                   class="dept-card"
+                   class="dept-card {% if selected_department == dept %}is-active{% endif %}"
                    data-dept-preview="{{ dept.theme }}">{{ dept.name }}</a>
             {% endfor %}
         </div>
