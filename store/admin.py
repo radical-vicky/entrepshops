@@ -10,7 +10,7 @@ from .models import (
     Department, Product, ProductImage, ProductOffer, ProductVariant,
     Promotion, SiteLogo, SupplierSource,
 )
-from marketing.views import send_withdrawal_paid_email
+from marketing.views import send_withdrawal_paid_email as _send_marketing_paid
 
 
 # ======================================================================
