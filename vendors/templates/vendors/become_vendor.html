@@ -1,22 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Sell on Entrep - Shop{% endblock %}
+{% block title %}Sell with us — Entrep - Shop{% endblock %}
 
 {% block content %}
 <div class="container">
-<div class="page-head">
-    <span class="eyebrow">Sell with us</span>
-    <h1>Start your own shop here</h1>
-    <p class="lede">List wholesale or single items across any of our departments — drinks, electronics, vehicles, fashion, and more. KES {{ fee }} a month, cancel anytime.</p>
-</div>
+    <div class="page-head">
+        <span class="eyebrow">Sell with us</span>
+        <h1>Start selling on Entrep Shop</h1>
+        <p class="lede">
+            List your products free for 30 days. You keep 100% of every sale.
+            We handle delivery. After your trial, subscribe for
+            KES {{ VENDOR_SUBSCRIPTION_FEE_KES|default:"5,000" }} a month to keep adding products.
+        </p>
+    </div>
 
-<div class="form-card">
-    <form method="post" class="auth-form">
-        {% csrf_token %}
-        <label>Business name<input type="text" name="business_name" required></label>
-        <label>Phone number (M-Pesa, for your subscription payments)<input type="text" name="phone_number" placeholder="07XXXXXXXX" required></label>
-        <button type="submit" class="btn">Create seller account</button>
-    </form>
-    <p class="muted" style="margin-top:16px">First payment: KES {{ fee }} for {{ days }} days of listing access. Your account also needs a quick admin approval before your products go live.</p>
-</div>
+    <div class="vendor-signup-layout">
+        <section class="glass vendor-signup-card">
+            <h2>Your free 30-day trial</h2>
+            <ul class="vendor-benefits">
+                <li>Unlimited product listings</li>
+                <li>You set your own prices</li>
+                <li>We deliver to your customers</li>
+                <li>You keep 100% of each sale during trial</li>
+                <li>Withdraw your earnings to M-Pesa any time</li>
+            </ul>
+
+            {% if user.is_authenticated %}
+                {% if user.vendor_profile %}
+                    <a href="{% url 'vendors:dashboard' %}" class="btn btn-full">
+                        Go to your dashboard
+                    </a>
+                {% else %}
+                    <form method="post" action="{% url 'vendors:start_trial' %}" class="auth-form">
+                        {% csrf_token %}
+
+                        <p>
+                            <label for="business_name">Business name</label>
+                            <input type="text" name="business_name" id="business_name"
+                                   placeholder="e.g. Vic's Electronics"
+                                   maxlength="150" required>
+                        </p>
+
+                        <p>
+                            <label for="phone_number">Phone number (optional)</label>
+                            <input type="text" name="phone_number" id="phone_number"
+                                   placeholder="254712345678" maxlength="20">
+                        </p>
+
+                        <button type="submit" class="btn btn-full">
+                            Start my free 30-day trial
+                        </button>
+                    </form>
+                {% endif %}
+            {% else %}
+                <p class="muted">
+                    <a href="{% url 'account_login' %}?next={% url 'vendors:become_vendor' %}">Log in</a>
+                    or <a href="{% url 'account_signup' %}">register</a> to start your trial.
+                </p>
+            {% endif %}
+        </section>
+
+        <aside class="glass vendor-info">
+            <span class="eyebrow">How it works</span>
+            <ol class="vendor-steps">
+                <li>Start your free trial — no card, no deposit.</li>
+                <li>List your products. We review your first 3 within 24 hours.</li>
+                <li>Customers order from your listings.</li>
+                <li>We deliver. You get credited automatically.</li>
+                <li>Withdraw your earnings to M-Pesa.</li>
+                <li>After 30 days, subscribe for KES 5,000/month to keep listing.</li>
+            </ol>
+        </aside>
+    </div>
 </div>
 {% endblock %}
