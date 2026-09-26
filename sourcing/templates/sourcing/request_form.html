@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}New import request — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Import request</span>
+        <h1>Request anything from abroad</h1>
+        <p class="lede">
+            Home appliances, construction materials, electronics, vehicles —
+            if it's not in Kenya, tell us what you need. We research suppliers
+            abroad, quote you a total landed price in KES, and handle the
+            import for you.
+        </p>
+    </div>
+
+    <div class="form-card wide">
+        <form method="post" enctype="multipart/form-data" class="auth-form" novalidate>
+            {% csrf_token %}
+
+            <p>
+                <label for="{{ form.title.id_for_label }}">What do you need?</label>
+                {{ form.title }}
+                {% if form.title.errors %}<ul class="errorlist">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.description.id_for_label }}">Specifications</label>
+                {{ form.description }}
+                <span class="helptext">
+                    Quantity, model number, brand, colour, size, voltage — anything
+                    that helps us find the exact item.
+                </span>
+                {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.reference_url.id_for_label }}">Link (optional)</label>
+                {{ form.reference_url }}
+                <span class="helptext">If you've seen the exact item online, paste the link.</span>
+                {% if form.reference_url.errors %}<ul class="errorlist">{% for e in form.reference_url.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.reference_image.id_for_label }}">Photo (optional)</label>
+                {{ form.reference_image }}
+                <span class="helptext">A photo or screenshot helps us quote faster.</span>
+                {% if form.reference_image.errors %}<ul class="errorlist">{% for e in form.reference_image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.quantity.id_for_label }}">Quantity</label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}<ul class="errorlist">{% for e in form.quantity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.business_name.id_for_label }}">Business name (optional)</label>
+                {{ form.business_name }}
+                <span class="helptext">For bulk orders we may need an invoice in your business name.</span>
+            </p>
+
+            <p>
+                <label for="{{ form.phone_number.id_for_label }}">M-Pesa phone number</label>
+                {{ form.phone_number }}
+                <span class="helptext">Format 2547XXXXXXXX. We'll use this for the deposit STK push.</span>
+                {% if form.phone_number.errors %}<ul class="errorlist">{% for e in form.phone_number.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.delivery_location.id_for_label }}">Delivery location (optional)</label>
+                {{ form.delivery_location }}
+            </p>
+
+            <div class="vendor-form-actions">
+                <button type="submit" class="btn btn-full">Submit request</button>
+                <a href="{% url 'sourcing:request_list' %}" class="btn btn-outline btn-small">Cancel</a>
+            </div>
+
+            <p class="muted" style="font-size: 0.82rem; margin-top: 14px;">
+                We quote within 24–48 hours. Once you approve the quote,
+                you pay a 50% deposit to start the order. The 50% balance
+                is due on arrival.
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}
