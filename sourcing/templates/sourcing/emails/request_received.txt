@@ -1,0 +1,17 @@
+Hi {{ user.username }},
+
+We've received your import request.
+
+  Reference: {{ req.reference }}
+  Item:      {{ req.title }}
+  Quantity:  {{ req.quantity }}
+
+We'll research suppliers and send you a quote within 24–48 hours. When
+the quote is ready, you'll be able to review it here:
+
+/sourcing/{{ req.reference }}/
+
+Once you approve, you pay a 50% deposit to start the order. The 50%
+balance is due on arrival in Kenya.
+
+— The {{ site_name }} team
