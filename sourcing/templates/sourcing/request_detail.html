@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ req.reference }} — Import request — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="vendor-dash-head">
+        <div>
+            <span class="eyebrow">Import request</span>
+            <h1>{{ req.title }}</h1>
+        </div>
+        <span class="vendor-status vendor-status-{{ req.status_tone }}">
+            {{ req.get_status_display }}
+        </span>
+    </div>
+
+    <div class="sourcing-progress">
+        <ol>
+            {% for stage, label in req.Status.choices %}
+                {% if stage in "submitted quoted awaiting_deposit ordered in_transit arrived completed" %}
+                    <li class="{% if req.status == stage %}is-current{% endif %}">{{ label }}</li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </div>
+
+    <div class="sourcing-layout">
+        <section class="glass sourcing-main">
+            <header class="withdraw-head">
+                <span class="eyebrow">Reference</span>
+                <div class="withdraw-balance-small"><code>{{ req.reference }}</code></div>
+            </header>
+
+            <div class="sourcing-meta">
+                <div>
+                    <span class="eyebrow">Quantity</span>
+                    <span>{{ req.quantity }}</span>
+                </div>
+                <div>
+                    <span class="eyebrow">Submitted</span>
+                    <span>{{ req.created_at|date:"j M Y" }}</span>
+                </div>
+                <div>
+                    <span class="eyebrow">Phone</span>
+                    <span>{{ req.phone_number }}</span>
+                </div>
+                {% if req.delivery_location %}
+                <div>
+                    <span class="eyebrow">Delivery</span>
+                    <span>{{ req.delivery_location }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <h3>Specifications</h3>
+            <p>{{ req.description|linebreaksbr }}</p>
+
+            {% if req.reference_url %}
+                <p><strong>Reference link:</strong> <a href="{{ req.reference_url }}" target="_blank" rel="noopener">{{ req.reference_url }}</a></p>
+            {% endif %}
+
+            {% if req.reference_image %}
+                <img src="{{ req.reference_image.url }}" alt="" class="sourcing-image">
+            {% endif %}
+        </section>
+
+        <aside class="glass sourcing-quote">
+            {% if quote %}
+                <header class="withdraw-head">
+                    <span class="eyebrow">Quote v{{ quote.version }}</span>
+                    <div class="withdraw-balance">KES {{ quote.total }}</div>
+                </header>
+
+                <table class="cart-table">
+                    <tbody>
+                        <tr><td>Item cost</td><td>KES {{ quote.item_cost }}</td></tr>
+                        <tr><td>Shipping</td><td>KES {{ quote.shipping_cost }}</td></tr>
+                        <tr><td>Customs</td><td>KES {{ quote.customs_cost }}</td></tr>
+                        <tr><td>Service fee</td><td>KES {{ quote.service_fee }}</td></tr>
+                        <tr class="total-row"><td><strong>Total</strong></td><td><strong>KES {{ quote.total }}</strong></td></tr>
+                    </tbody>
+                </table>
+
+                <p class="muted">
+                    {{ quote.lead_time_days }}-day estimated lead time from deposit.
+                    Deposit: <strong>KES {{ quote.deposit_amount }}</strong>
+                    ({{ quote.deposit_percent }}%). Balance on arrival:
+                    <strong>KES {{ quote.balance_amount }}</strong>.
+                </p>
+
+                {% if quote.notes %}
+                    <p class="muted">{{ quote.notes }}</p>
+                {% endif %}
+
+                {% if req.paid_amount > 0 %}
+                    <p class="muted">Paid so far: <strong>KES {{ req.paid_amount }}</strong></p>
+                {% endif %}
+
+                {% if req.status == 'quoted' or req.status == 'awaiting_deposit' %}
+                    {% if req.paid_amount == 0 %}
+                        <form method="post" action="{% url 'sourcing:pay_deposit' req.reference %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="phone_number" value="{{ req.phone_number }}">
+                            <button type="submit" class="btn btn-full">
+                                Pay deposit — KES {{ quote.deposit_amount }}
+                            </button>
+                        </form>
+                        <p class="muted" style="font-size:0.8rem; margin-top:10px;">
+                            You'll receive an M-Pesa prompt on
+                            <strong>{{ req.phone_number }}</strong>. Enter your PIN to confirm.
+                        </p>
+                    {% else %}
+                        <p class="badge badge-warning">Deposit received — awaiting order.</p>
+                    {% endif %}
+                {% endif %}
+
+            {% else %}
+                <header class="withdraw-head">
+                    <span class="eyebrow">Status</span>
+                    <div class="withdraw-balance-small">Awaiting quote</div>
+                </header>
+                <p class="muted">
+                    We've received your request. We'll research suppliers and
+                    send you a quote within 24–48 hours. You'll get an email
+                    when it's ready.
+                </p>
+            {% endif %}
+
+            {% if req.is_active and req.paid_amount == 0 %}
+                <form method="post" action="{% url 'sourcing:request_cancel' req.reference %}" style="margin-top: 18px;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline btn-small"
+                            onclick="return confirm('Cancel this request?');">
+                        Cancel request
+                    </button>
+                </form>
+            {% endif %}
+        </aside>
+    </div>
+</div>
+{% endblock %}
