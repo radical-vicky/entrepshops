@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}My import requests — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Import requests</span>
+        <h1>My import requests</h1>
+        <p class="lede">Track every item you've asked us to source from abroad.</p>
+    </div>
+
+    <div class="vendor-actions" style="margin-bottom:20px;">
+        <a href="{% url 'sourcing:request_create' %}" class="btn">New import request</a>
+    </div>
+
+    {% if requests %}
+        <table class="cart-table">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Item</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Requested</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in requests %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'sourcing:request_detail' r.reference %}">
+                                <code>{{ r.reference }}</code>
+                            </a>
+                        </td>
+                        <td>{{ r.title }}</td>
+                        <td>
+                            <span class="vendor-status vendor-status-{{ r.status_tone }}">
+                                {{ r.get_status_display }}
+                            </span>
+                        </td>
+                        <td>KES {{ r.total_amount }}</td>
+                        <td>KES {{ r.paid_amount }}</td>
+                        <td>{{ r.created_at|date:"j M Y" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="vendor-empty">
+            <p>You haven't submitted any import requests yet.</p>
+            <a href="{% url 'sourcing:request_create' %}" class="btn">Submit your first request</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
