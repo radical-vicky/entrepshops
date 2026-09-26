@@ -2378,3 +2378,106 @@ main .container { padding-top: 28px; }
     .share-input { flex-direction: column; align-items: stretch; }
     .share-input .btn { width: 100%; }
 }
+
+/* =========================================================================
+   Sourcing / Import requests
+   ========================================================================= */
+.sourcing-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.sourcing-main { padding: 28px 26px; }
+.sourcing-quote { padding: 26px 24px; position: sticky; top: 100px; }
+
+.sourcing-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px;
+    margin: 18px 0;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-glass);
+    border-bottom: 1px solid var(--border-glass);
+}
+
+.sourcing-meta > div { display: flex; flex-direction: column; gap: 4px; }
+.sourcing-meta .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+}
+
+.sourcing-image {
+    display: block;
+    max-width: 100%;
+    border: 1px solid var(--border-glass);
+    margin-top: 14px;
+}
+
+.sourcing-progress {
+    padding: 18px 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-glass);
+    background: var(--panel);
+}
+
+.sourcing-progress ol {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding: 0;
+    margin: 0;
+    counter-reset: stage;
+}
+
+.sourcing-progress li {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    position: relative;
+    padding-left: 18px;
+    counter-increment: stage;
+}
+
+.sourcing-progress li::before {
+    content: counter(stage);
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--border-glass);
+    color: var(--text-mute);
+    font-size: 0.6rem;
+    text-align: center;
+    line-height: 14px;
+}
+
+.sourcing-progress li.is-current {
+    color: var(--green-bright);
+    font-weight: 700;
+}
+
+.sourcing-progress li.is-current::before {
+    background: var(--green-bright);
+    color: var(--void);
+}
+
+.cart-table .total-row td {
+    border-top: 1px solid var(--border-glass-strong);
+    padding-top: 14px;
+}
+
+@media (max-width: 860px) {
+    .sourcing-layout { grid-template-columns: 1fr; }
+    .sourcing-quote { position: static; }
+    .sourcing-progress ol { flex-direction: column; gap: 10px; }
+   }
