@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'careers',
     'vendors',
     'marketing',
+    'sourcing',
     'rest_framework',
     'api',
 ]
