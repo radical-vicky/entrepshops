@@ -13,8 +13,10 @@ urlpatterns = [
     path('orders/', include('orders.urls', namespace='orders')),
     path('payments/', include('payments.urls', namespace='payments')),
     path('marketing/', include('marketing.urls', namespace='marketing')),
+    path('sourcing/', include('sourcing.urls', namespace='sourcing')),
     path('api/v1/', include('api.urls', namespace='api')),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+you
