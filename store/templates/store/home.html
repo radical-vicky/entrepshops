@@ -3,9 +3,6 @@
 
 {% block content %}
 
-{# ============================================================
-   HERO POSTERS — driven by Promotions.
-   ============================================================ #}
 {% if hero_posters %}
 <section class="hero-poster-stack" id="hero">
     {% for promo in hero_posters %}
@@ -58,9 +55,6 @@
 </section>
 {% endif %}
 
-{# ============================================================
-   MARQUEE
-   ============================================================ #}
 <div class="marquee" aria-hidden="true">
     <div class="marquee-track">
         <span>Free delivery on orders over KES 2,000</span>
@@ -78,7 +72,6 @@
 
 <div class="container">
 
-    {# ---------- Trust badges ---------- #}
     <section class="trust-row reveal">
         <div class="trust-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -112,9 +105,6 @@
         </div>
     </section>
 
-    {# ============================================================
-       PROMO POSTERS — the carousel of promotions further down.
-       ============================================================ #}
     <section class="reveal" id="offers">
         <div class="section-head">
             <div>
@@ -184,7 +174,6 @@
         {% endif %}
     </section>
 
-    {# ---------- Departments ---------- #}
     {% if departments|length > 1 or not selected_department %}
     <section class="reveal" id="departments">
         <div class="section-head">
@@ -207,7 +196,6 @@
     </section>
     {% endif %}
 
-    {# ---------- Shop ---------- #}
     <section class="reveal" id="shop">
         <div class="section-head">
             <div>
@@ -258,7 +246,6 @@
 {% block extra_scripts %}
 <script>
 (function () {
-    // Generic slider for the hero posters and the promo poster track.
     function initSlider({ container, slideSelector, dotSelector, prevId, nextId, activeClass, autoplayMs }) {
         if (!container) return;
         const slides = container.querySelectorAll(slideSelector);
