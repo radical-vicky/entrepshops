@@ -2,41 +2,65 @@
 {% block title %}Entrep - Shop — quality products, delivered{% endblock %}
 
 {% block content %}
-{% if hero_slides %}
-<section class="hero" id="hero">
-    {% for slide in hero_slides %}
-    <div class="hero-slide {% if forloop.first %}is-active{% endif %}" data-theme="{{ slide.theme }}">
-        <div class="hero-slide-bg"></div>
-        <div class="hero-content">
-            <span class="hero-badge"><svg style="width:14px;height:14px"><use href="#icon-ticket"/></svg>{{ slide.badge }}</span>
-            <h2>{{ slide.headline }}</h2>
-            <p>{{ slide.description|truncatechars:140 }}</p>
-            <a href="{{ slide.product.get_absolute_url }}" class="btn btn-{{ slide.theme }}">
-                Shop now <svg style="width:16px;height:16px"><use href="#icon-arrow-right"/></svg>
-            </a>
+
+{# ============================================================
+   HERO POSTERS — driven by Promotions.
+   ============================================================ #}
+{% if hero_posters %}
+<section class="hero-poster-stack" id="hero">
+    {% for promo in hero_posters %}
+    <a href="{{ promo.cta_url|default:'#shop' }}"
+       class="hero-poster {% if forloop.first %}is-active{% endif %}"
+       data-tone="{{ promo.tone }}">
+        <div class="hero-poster-media">
+            {% if promo.media_type == 'video' and promo.video_source %}
+                <video autoplay muted loop playsinline preload="metadata">
+                    <source src="{{ promo.video_source }}" type="video/mp4">
+                </video>
+            {% elif promo.image %}
+                <img src="{{ promo.image.url }}" alt="{{ promo.title }}">
+            {% endif %}
+            <div class="hero-poster-scrim"></div>
         </div>
-        {% if slide.product.image %}
-            <img class="hero-art hero-art-photo" src="{{ slide.product.image.url }}" alt="{{ slide.product.name }}">
-        {% else %}
-            <svg class="hero-art hero-art-icon theme-{{ slide.theme }}" viewBox="0 0 24 24"><use href="#icon-bottle"/></svg>
-        {% endif %}
-    </div>
+
+        <div class="hero-poster-body">
+            <span class="hero-poster-kicker">{{ promo.kicker|default:'Featured' }}</span>
+            <h2 class="hero-poster-headline">{{ promo.title }}</h2>
+            {% if promo.description %}
+                <p class="hero-poster-sub">{{ promo.description|truncatechars:160 }}</p>
+            {% endif %}
+
+            <div class="hero-poster-actions">
+                <span class="hero-poster-cta">
+                    {{ promo.cta_label|default:'Shop now' }}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </span>
+                {% if promo.voucher_code %}
+                    <span class="hero-poster-voucher">
+                        <code>{{ promo.voucher_code }}</code>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </a>
     {% endfor %}
 
-    {% if hero_slides|length > 1 %}
-        <div class="hero-nav" id="hero-dots">
-            {% for slide in hero_slides %}
-                <button class="hero-dot {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="Slide {{ forloop.counter }}"></button>
+    {% if hero_posters|length > 1 %}
+        <div class="hero-poster-dots" id="hero-dots">
+            {% for promo in hero_posters %}
+                <button type="button"
+                        class="hero-poster-dot {% if forloop.first %}is-active{% endif %}"
+                        data-slide="{{ forloop.counter0 }}"
+                        aria-label="Slide {{ forloop.counter }}"></button>
             {% endfor %}
-        </div>
-        <div class="hero-arrows">
-            <button class="hero-arrow" id="hero-prev" aria-label="Previous slide"><svg><use href="#icon-chevron-left"/></svg></button>
-            <button class="hero-arrow" id="hero-next" aria-label="Next slide"><svg><use href="#icon-chevron-right"/></svg></button>
         </div>
     {% endif %}
 </section>
 {% endif %}
 
+{# ============================================================
+   MARQUEE
+   ============================================================ #}
 <div class="marquee" aria-hidden="true">
     <div class="marquee-track">
         <span>Free delivery on orders over KES 2,000</span>
@@ -88,6 +112,9 @@
         </div>
     </section>
 
+    {# ============================================================
+       PROMO POSTERS — the carousel of promotions further down.
+       ============================================================ #}
     <section class="reveal" id="offers">
         <div class="section-head">
             <div>
@@ -98,45 +125,57 @@
         </div>
 
         {% if promotions %}
-        <div class="promo-slider" id="promo-slider">
+        <div class="promo-poster-track" id="promo-slider">
             {% for promo in promotions %}
-            <div class="promo-slide {% if forloop.first %}is-active{% endif %}" data-tone="{{ promo.tone }}">
-                <div class="promo-slide-media">
+            <a href="{{ promo.cta_url|default:'#shop' }}"
+               class="promo-poster {% if forloop.first %}is-active{% endif %}"
+               data-tone="{{ promo.tone }}">
+                <div class="promo-poster-media">
                     {% if promo.media_type == 'video' and promo.video_source %}
                         <video autoplay muted loop playsinline preload="metadata">
                             <source src="{{ promo.video_source }}" type="video/mp4">
                         </video>
                     {% elif promo.image %}
-                        <img src="{{ promo.image.url }}" alt="">
+                        <img src="{{ promo.image.url }}" alt="{{ promo.title }}">
                     {% endif %}
-                    <div class="promo-slide-scrim"></div>
+                    <div class="promo-poster-scrim"></div>
                 </div>
-                <div class="promo-slide-content">
-                    <span class="kicker">{{ promo.kicker }}</span>
-                    <h4>{{ promo.title }}</h4>
-                    {% if promo.description %}<p>{{ promo.description }}</p>{% endif %}
-                    <div class="promo-slide-footer">
+
+                <div class="promo-poster-body">
+                    <span class="promo-poster-kicker">{{ promo.kicker }}</span>
+                    <h4 class="promo-poster-title">{{ promo.title }}</h4>
+                    {% if promo.description %}
+                        <p class="promo-poster-sub">{{ promo.description|truncatechars:120 }}</p>
+                    {% endif %}
+
+                    <div class="promo-poster-footer">
+                        <span class="promo-poster-cta">{{ promo.cta_label|default:'Shop now' }}</span>
                         {% if promo.voucher_code %}
-                            <div class="voucher-code">
+                            <span class="promo-poster-voucher">
                                 <code>{{ promo.voucher_code }}</code>
-                                <svg style="width:18px;height:18px"><use href="#icon-ticket"/></svg>
-                            </div>
+                            </span>
                         {% endif %}
-                        <a href="{{ promo.cta_url|default:'#shop' }}" class="btn btn-small btn-{{ promo.tone }}">{{ promo.cta_label }}</a>
                     </div>
                 </div>
-            </div>
+            </a>
             {% endfor %}
 
             {% if promotions|length > 1 %}
-                <div class="hero-nav promo-nav" id="promo-dots">
-                    {% for promo in promotions %}
-                        <button class="hero-dot {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="Offer {{ forloop.counter }}"></button>
-                    {% endfor %}
-                </div>
-                <div class="hero-arrows promo-arrows">
-                    <button class="hero-arrow" id="promo-prev" aria-label="Previous offer"><svg><use href="#icon-chevron-left"/></svg></button>
-                    <button class="hero-arrow" id="promo-next" aria-label="Next offer"><svg><use href="#icon-chevron-right"/></svg></button>
+                <div class="promo-poster-nav">
+                    <button type="button" class="promo-poster-arrow" id="promo-prev" aria-label="Previous offer">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div class="promo-poster-dots" id="promo-dots">
+                        {% for promo in promotions %}
+                            <button type="button"
+                                    class="promo-poster-dot {% if forloop.first %}is-active{% endif %}"
+                                    data-slide="{{ forloop.counter0 }}"
+                                    aria-label="Offer {{ forloop.counter }}"></button>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="promo-poster-arrow" id="promo-next" aria-label="Next offer">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
                 </div>
             {% endif %}
         </div>
@@ -145,6 +184,7 @@
         {% endif %}
     </section>
 
+    {# ---------- Departments ---------- #}
     {% if departments|length > 1 or not selected_department %}
     <section class="reveal" id="departments">
         <div class="section-head">
@@ -167,6 +207,7 @@
     </section>
     {% endif %}
 
+    {# ---------- Shop ---------- #}
     <section class="reveal" id="shop">
         <div class="section-head">
             <div>
@@ -217,6 +258,7 @@
 {% block extra_scripts %}
 <script>
 (function () {
+    // Generic slider for the hero posters and the promo poster track.
     function initSlider({ container, slideSelector, dotSelector, prevId, nextId, activeClass, autoplayMs }) {
         if (!container) return;
         const slides = container.querySelectorAll(slideSelector);
@@ -241,8 +283,8 @@
             timer = setInterval(next, autoplayMs);
         }
 
-        const prevBtn = document.getElementById(prevId);
-        const nextBtn = document.getElementById(nextId);
+        const prevBtn = prevId ? document.getElementById(prevId) : null;
+        const nextBtn = nextId ? document.getElementById(nextId) : null;
         if (prevBtn) prevBtn.addEventListener('click', () => { prev(); restart(); });
         if (nextBtn) nextBtn.addEventListener('click', () => { next(); restart(); });
         dots.forEach(dot => dot.addEventListener('click', () => { show(parseInt(dot.dataset.slide, 10)); restart(); }));
@@ -252,16 +294,16 @@
 
     initSlider({
         container: document.getElementById('hero'),
-        slideSelector: '.hero-slide', dotSelector: '.hero-dot',
-        prevId: 'hero-prev', nextId: 'hero-next',
-        activeClass: 'is-active', autoplayMs: 5500,
+        slideSelector: '.hero-poster', dotSelector: '.hero-poster-dot',
+        prevId: null, nextId: null,
+        activeClass: 'is-active', autoplayMs: 6500,
     });
 
     initSlider({
         container: document.getElementById('promo-slider'),
-        slideSelector: '.promo-slide', dotSelector: '#promo-dots .hero-dot',
+        slideSelector: '.promo-poster', dotSelector: '#promo-dots .promo-poster-dot',
         prevId: 'promo-prev', nextId: 'promo-next',
-        activeClass: 'is-active', autoplayMs: 6000,
+        activeClass: 'is-active', autoplayMs: 5500,
     });
 })();
 
