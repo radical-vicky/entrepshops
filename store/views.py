@@ -31,7 +31,6 @@ def _parse_quantity(request, default=1, minimum=1, maximum=999):
     return max(minimum, min(maximum, q))
 
 
-
 @require_GET
 def home(request):
     department_slug = request.GET.get('department')
@@ -105,7 +104,7 @@ def home(request):
             'dept_theme': selected_department.theme if selected_department else '',
         })
 
-    # ---- Hero posters: driven by Promotions ----
+    # Hero posters: driven by Promotions, not products.
     hero_posters = list(
         Promotion.objects
         .filter(is_active=True)
@@ -113,7 +112,7 @@ def home(request):
         .order_by('sort_order', '-created_at')[:5]
     )
 
-    # ---- Promo carousel: any other active promotions (skip the hero ones) ----
+    # Promo carousel: any other active promotions, excluding the ones in the hero.
     hero_ids = [p.pk for p in hero_posters]
     promotions = list(
         Promotion.objects
@@ -169,7 +168,6 @@ def cart_add(request, product_id):
         messages.error(request, message)
         return redirect(_safe_next(request, product.get_absolute_url()))
 
-    # Resolve the variant the customer picked (or the default one).
     variant = None
     variant_id = request.POST.get('variant_id')
     if variant_id:
