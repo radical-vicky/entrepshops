@@ -31,6 +31,7 @@ def _parse_quantity(request, default=1, minimum=1, maximum=999):
     return max(minimum, min(maximum, q))
 
 
+
 @require_GET
 def home(request):
     department_slug = request.GET.get('department')
@@ -64,7 +65,6 @@ def home(request):
             selected_department = selected_category.department
         products = products.filter(category=selected_category)
 
-    # Sticky department theme.
     if selected_department:
         request.session['current_department_id'] = selected_department.id
     elif not department_slug and not category_slug:
@@ -76,7 +76,6 @@ def home(request):
             Q(name__icontains=search_query) | Q(description__icontains=search_query)
         )
 
-    # Paginate — 16 items per page fits the 4x4 grid exactly.
     paginator = Paginator(products, 16)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -106,42 +105,29 @@ def home(request):
             'dept_theme': selected_department.theme if selected_department else '',
         })
 
-    hero_products = list(
-        Product.objects.visible().filter(is_featured=True)
-        .select_related('category', 'department')
-        .prefetch_related('variants', 'images')[:5]
+    # ---- Hero posters: driven by Promotions ----
+    hero_posters = list(
+        Promotion.objects
+        .filter(is_active=True)
+        .exclude(media_type='image', image='')
+        .order_by('sort_order', '-created_at')[:5]
     )
-    if not hero_products:
-        hero_products = list(
-            Product.objects.visible().filter(stock__gt=0)
-            .exclude(image='').exclude(image__isnull=True)
-            .order_by('-created_at')[:3]
-        ) or list(Product.objects.visible()[:3])
 
-    themes = ['green', 'orange', 'gold']
-    hero_slides = []
-    for i, product in enumerate(hero_products):
-        lo, _hi = product.price_range
-        hero_slides.append({
-            'product': product,
-            'theme': themes[i % len(themes)],
-            'badge': product.hero_tagline or 'Featured',
-            'headline': product.hero_headline or product.name,
-            'description': (
-                product.hero_description
-                or product.description
-                or f'KES {lo} — order now for delivery to your door.'
-            ),
-        })
-
-    promotions = Promotion.objects.filter(is_active=True)[:5]
+    # ---- Promo carousel: any other active promotions (skip the hero ones) ----
+    hero_ids = [p.pk for p in hero_posters]
+    promotions = list(
+        Promotion.objects
+        .filter(is_active=True)
+        .exclude(pk__in=hero_ids)
+        .order_by('sort_order', '-created_at')[:6]
+    )
 
     return render(request, 'store/home.html', {
         'categories': categories,
         'selected_category': selected_category,
         'products': products,
         'page_obj': page_obj,
-        'hero_slides': hero_slides,
+        'hero_posters': hero_posters,
         'promotions': promotions,
         'search_query': search_query,
         'departments': departments,
