@@ -32,6 +32,14 @@
                         {% if form.name.errors %}
                             <ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
                         {% endif %}
+
+                        <div class="shopify-suggestion" id="title-suggestion" style="display:none;">
+                            <span class="shopify-suggestion-label">Suggested category</span>
+                            <button type="button" class="shopify-suggestion-chip" id="title-suggestion-chip">
+                                <span id="title-suggestion-text"></span>
+                                <span class="shopify-suggestion-apply">Apply</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="shopify-field">
@@ -192,10 +200,96 @@
 </div>
 
 <script>
+const KEYWORD_MAP = {
+    'fridge': ['Home Appliances', 'Fridges'],
+    'freezer': ['Home Appliances', 'Fridges'],
+    'refrigerator': ['Home Appliances', 'Fridges'],
+    'washing machine': ['Home Appliances', 'Washing Machines'],
+    'microwave': ['Home Appliances', 'Microwaves'],
+    'cooker': ['Home Appliances', 'Cookers'],
+    'blender': ['Home Appliances', 'Kitchen'],
+
+    'tv': ['Electronics', 'Smart Screens'],
+    'television': ['Electronics', 'Smart Screens'],
+    'smart tv': ['Electronics', 'Smart Screens'],
+    'qled': ['Electronics', 'Smart Screens'],
+    'monitor': ['Electronics', 'Smart Screens'],
+    'phone': ['Electronics', 'Phones'],
+    'smartphone': ['Electronics', 'Phones'],
+    'iphone': ['Electronics', 'Phones'],
+    'samsung': ['Electronics', 'Phones'],
+    'laptop': ['Electronics', 'Computers'],
+    'macbook': ['Electronics', 'Computers'],
+    'computer': ['Electronics', 'Computers'],
+    'speaker': ['Electronics', 'Audio'],
+    'headphone': ['Electronics', 'Audio'],
+    'earbud': ['Electronics', 'Audio'],
+    'earphone': ['Electronics', 'Audio'],
+    'bluetooth': ['Electronics', 'Audio'],
+
+    'coke': ['Drinks', 'Soft drinks'],
+    'coca': ['Drinks', 'Soft drinks'],
+    'sprite': ['Drinks', 'Soft drinks'],
+    'fanta': ['Drinks', 'Soft drinks'],
+    'pepsi': ['Drinks', 'Soft drinks'],
+    'soda': ['Drinks', 'Soft drinks'],
+    'juice': ['Drinks', 'Juices'],
+    'water': ['Drinks', 'Water'],
+    'mineral water': ['Drinks', 'Water'],
+    'milk': ['Drinks', 'Dairy'],
+    'yoghurt': ['Drinks', 'Dairy'],
+    'yogurt': ['Drinks', 'Dairy'],
+
+    'bread': ['Bakery', 'Baked goods'],
+    'cake': ['Bakery', 'Baked goods'],
+    'pastry': ['Bakery', 'Baked goods'],
+
+    'chawarma': ['Restaurant', 'Fast Food'],
+    'shawarma': ['Restaurant', 'Fast Food'],
+    'chicken': ['Restaurant', 'Fast Food'],
+    'pizza': ['Restaurant', 'Fast Food'],
+    'chai': ['Hot Drinks', 'Hot Drinks'],
+    'tea': ['Hot Drinks', 'Hot Drinks'],
+    'coffee': ['Hot Drinks', 'Hot Drinks'],
+
+    'bicycle': ['Sports & Outdoors', 'Bicycles'],
+    'bike': ['Sports & Outdoors', 'Bicycles'],
+    'e-bike': ['Sports & Outdoors', 'Bicycles'],
+    'helmet': ['Sports & Outdoors', 'Cycling gear'],
+
+    'cement': ['Building Materials', 'Building Materials'],
+    'sand': ['Building Materials', 'Building Materials'],
+    'brick': ['Building Materials', 'Building Materials'],
+    'timber': ['Building Materials', 'Building Materials'],
+    'paint': ['Building Materials', 'Paint'],
+
+    'car': ['Vehicles', 'Vehicles'],
+    'motorbike': ['Vehicles', 'Vehicles'],
+    'motorcycle': ['Vehicles', 'Vehicles'],
+    'vehicle': ['Vehicles', 'Vehicles'],
+};
+
 (function () {
     const deptSelect = document.getElementById('{{ form.department.id_for_label }}');
     const catSelect = document.getElementById('id_category');
-    if (!deptSelect || !catSelect) return;
+    const titleInput = document.getElementById('{{ form.name.id_for_label }}');
+    const suggestionBox = document.getElementById('title-suggestion');
+    const suggestionText = document.getElementById('title-suggestion-text');
+    const suggestionChip = document.getElementById('title-suggestion-chip');
+
+    if (!deptSelect || !catSelect || !titleInput) return;
+
+    const deptByName = {};
+    Array.from(deptSelect.options).forEach(o => {
+        if (o.value) deptByName[o.textContent.trim().toLowerCase()] = o.value;
+    });
+
+    const catByName = {};
+    Array.from(catSelect.options).forEach(o => {
+        if (o.value) {
+            catByName[o.textContent.trim().toLowerCase().split(' — ')[0]] = o.value;
+        }
+    });
 
     const allOptions = Array.from(catSelect.options).map(o => ({
         value: o.value,
@@ -230,6 +324,66 @@
 
     deptSelect.addEventListener('change', filterCategories);
     filterCategories();
+
+    let currentSuggestion = null;
+
+    function findSuggestion(title) {
+        const t = (title || '').toLowerCase();
+        if (t.length < 3) return null;
+
+        let bestKey = null;
+        for (const key of Object.keys(KEYWORD_MAP)) {
+            if (t.includes(key) && (!bestKey || key.length > bestKey.length)) {
+                bestKey = key;
+            }
+        }
+        if (!bestKey) return null;
+
+        const pair = KEYWORD_MAP[bestKey];
+        const deptName = pair[0];
+        const catName = pair[1];
+        const deptValue = deptByName[deptName.toLowerCase()];
+        const catValue = catByName[catName.toLowerCase()];
+
+        if (!deptValue || !catValue) return null;
+        return { deptName, catName, deptValue, catValue, keyword: bestKey };
+    }
+
+    function updateSuggestion() {
+        const suggestion = findSuggestion(titleInput.value);
+        currentSuggestion = suggestion;
+
+        if (!suggestion) {
+            suggestionBox.style.display = 'none';
+            return;
+        }
+
+        if (deptSelect.value === suggestion.deptValue && catSelect.value === suggestion.catValue) {
+            suggestionBox.style.display = 'none';
+            return;
+        }
+
+        suggestionText.textContent = suggestion.deptName + ' → ' + suggestion.catName;
+        suggestionBox.style.display = 'block';
+    }
+
+    titleInput.addEventListener('input', updateSuggestion);
+    titleInput.addEventListener('focus', updateSuggestion);
+
+    if (suggestionChip) {
+        suggestionChip.addEventListener('click', () => {
+            if (!currentSuggestion) return;
+
+            deptSelect.value = currentSuggestion.deptValue;
+            filterCategories();
+            catSelect.value = currentSuggestion.catValue;
+
+            suggestionBox.style.display = 'none';
+
+            deptSelect.focus();
+            setTimeout(() => deptSelect.blur(), 200);
+        });
+    }
 })();
 </script>
 {% endblock %}
