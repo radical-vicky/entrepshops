@@ -22,7 +22,7 @@
 
         <div class="shopify-form-grid">
 
-            {# ---------------- Left column: main content ---------------- #}
+            {# ---------------- Left column ---------------- #}
             <div class="shopify-form-main">
 
                 <section class="glass shopify-card">
@@ -118,15 +118,15 @@
 
             </div>
 
-            {# ---------------- Right column: sidebar ---------------- #}
+            {# ---------------- Right column ---------------- #}
             <aside class="shopify-form-side">
 
                 <section class="glass shopify-card">
                     <h3 class="shopify-section-title">Status</h3>
 
                     <div class="shopify-field">
-                        <label for="{{ form.is_active.id_for_label }}">Visibility</label>
-                        <select name="is_active" id="{{ form.is_active.id_for_label }}" class="shopify-select">
+                        <label for="id_status">Visibility</label>
+                        <select name="is_active" id="id_status" class="shopify-select">
                             <option value="True" {% if form.is_active.value %}selected{% endif %}>Active</option>
                             <option value="False" {% if not form.is_active.value %}selected{% endif %}>Draft</option>
                         </select>
@@ -145,8 +145,17 @@
                     </div>
 
                     <div class="shopify-field">
-                        <label for="{{ form.category.id_for_label }}">Category</label>
-                        {{ form.category }}
+                        <label for="id_category">Category</label>
+                        <select name="category" id="id_category" class="shopify-select" required>
+                            <option value="">Choose a category…</option>
+                            {% for cat in all_categories %}
+                                <option value="{{ cat.id }}"
+                                        data-dept="{{ cat.department_id|default:'' }}"
+                                        {% if form.category.value|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cat.name }}{% if cat.department %} — {{ cat.department.name }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
                         {% if form.category.errors %}
                             <ul class="errorlist">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>
                         {% endif %}
@@ -172,7 +181,6 @@
             </aside>
         </div>
 
-        {# ---------------- Sticky action bar ---------------- #}
         <div class="shopify-action-bar">
             <a href="{% url 'vendors:product_list' %}" class="shopify-btn-cancel">Cancel</a>
             <button type="submit" class="btn">
@@ -184,14 +192,11 @@
 </div>
 
 <script>
-// Filter the Category dropdown to only show categories belonging to
-// the selected Department. Shopify does the same kind of cascading.
 (function () {
     const deptSelect = document.getElementById('{{ form.department.id_for_label }}');
-    const catSelect = document.getElementById('{{ form.category.id_for_label }}');
+    const catSelect = document.getElementById('id_category');
     if (!deptSelect || !catSelect) return;
 
-    // Snapshot every option once.
     const allOptions = Array.from(catSelect.options).map(o => ({
         value: o.value,
         label: o.textContent,
@@ -204,14 +209,13 @@
 
         catSelect.innerHTML = '';
 
-        // Keep the placeholder.
         const placeholder = allOptions.find(o => o.value === '');
         if (placeholder) {
             catSelect.appendChild(new Option(placeholder.label, placeholder.value));
         }
 
         allOptions.forEach(o => {
-            if (!o.value) return; // skip placeholder
+            if (!o.value) return;
             if (!deptId || o.deptId === deptId) {
                 const opt = new Option(o.label, o.value);
                 opt.setAttribute('data-dept', o.deptId);
@@ -219,16 +223,12 @@
             }
         });
 
-        // Keep the current selection if it survived the filter.
-        if (currentCat && catSelect.querySelector(`option[value="${currentCat}"]`)) {
+        if (currentCat && catSelect.querySelector('option[value="' + currentCat + '"]')) {
             catSelect.value = currentCat;
         }
     }
 
     deptSelect.addEventListener('change', filterCategories);
-
-    // On page load, run the filter once (handles the case where the
-    // form reloads with errors and a department already selected).
     filterCategories();
 })();
 </script>
