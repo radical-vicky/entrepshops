@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
-from store.models import Product
+from store.models import Category, Product
 
 from .forms import VendorProductForm, VendorProfileForm
 from .models import Vendor
@@ -24,8 +24,6 @@ TRIAL_DAYS = 30
 @login_required
 @require_GET
 def become_vendor(request):
-    """Landing page. If the user already has a vendor profile, redirect
-    to their dashboard."""
     if hasattr(request.user, 'vendor_profile'):
         return redirect('vendors:dashboard')
 
@@ -37,7 +35,6 @@ def become_vendor(request):
 @login_required
 @require_POST
 def start_trial(request):
-    """Create the vendor row and start the 30-day trial."""
     if hasattr(request.user, 'vendor_profile'):
         messages.info(request, 'You already have a vendor account.')
         return redirect('vendors:dashboard')
@@ -139,6 +136,7 @@ def product_list(request):
         'products': products,
     })
 
+
 @login_required
 def product_create(request):
     vendor = get_object_or_404(Vendor, user=request.user)
@@ -157,14 +155,11 @@ def product_create(request):
             product = form.save(commit=False)
             product.vendor = vendor
 
-            # Auto-fill department from category if the vendor left it blank.
             if not product.department_id and product.category_id:
                 product.department = product.category.department
 
-            # First 3 products need admin approval.
             product.is_approved = not vendor.requires_review
 
-            # Slug: build from name and de-dupe.
             base_slug = slugify(product.name)[:150] or 'product'
             slug = base_slug
             n = 1
@@ -187,9 +182,12 @@ def product_create(request):
     else:
         form = VendorProductForm(vendor=vendor)
 
+    all_categories = Category.objects.select_related('department').order_by('name')
+
     return render(request, 'vendors/product_form.html', {
         'vendor': vendor,
         'form': form,
+        'all_categories': all_categories,
         'mode': 'create',
     })
 
@@ -208,10 +206,13 @@ def product_edit(request, product_id):
     else:
         form = VendorProductForm(vendor=vendor, instance=product)
 
+    all_categories = Category.objects.select_related('department').order_by('name')
+
     return render(request, 'vendors/product_form.html', {
         'vendor': vendor,
         'form': form,
         'product': product,
+        'all_categories': all_categories,
         'mode': 'edit',
     })
 
