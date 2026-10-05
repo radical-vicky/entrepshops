@@ -29,7 +29,7 @@ You MUST return pure JSON matching this schema exactly:
 {
   "title": "<a clear, specific product name, e.g. 'HP Pavilion 15 Intel Core i5 8GB RAM 256GB SSD Laptop'>",
   "description": "<a 2-4 sentence sales description in English. Neutral tone. No emoji. Mention what the product is, who it's for, and 2-3 key features. Do NOT invent specs you don't see.>",
-  "department": "<ONE of these exact names: {departments}>",
+  "department": "<ONE of the exact department names listed below>",
   "category": "<A short category name, 1-3 words, e.g. 'Computers', 'Smart Screens', 'Fridges', 'Audio'>",
   "price_low_kes": <integer, lowest fair retail price in Kenyan Shillings>,
   "price_high_kes": <integer, highest fair retail price in Kenyan Shillings>,
@@ -53,13 +53,18 @@ Existing categories already in the shop (prefer these if the item fits):
 def _build_prompt(text, image_file, departments, categories):
     parts = []
 
-    parts.append(
-        SYSTEM_PROMPT.format(departments=', '.join(departments) if departments else 'General')
-    )
+    parts.append(SYSTEM_PROMPT)
+
+    if departments:
+        parts.append(
+            '\nAvailable departments (you MUST choose one of these exact names):\n'
+            + '\n'.join(f'- {d}' for d in departments)
+        )
 
     if categories:
         parts.append(
-            EXISTING_CATEGORIES_HINT.format(categories='\n'.join(f'- {c}' for c in categories))
+            '\nExisting categories already in the shop (prefer these if the item fits):\n'
+            + '\n'.join(f'- {c}' for c in categories)
         )
 
     if text:
