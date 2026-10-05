@@ -3,80 +3,233 @@
 
 {% block content %}
 <div class="container">
+
     <div class="page-head">
-        <span class="eyebrow">{% if mode == 'edit' %}Edit{% else %}New product{% endif %}</span>
-        <h1>{% if mode == 'edit' %}{{ product.name }}{% else %}Add a product{% endif %}</h1>
+        <span class="eyebrow">{% if mode == 'edit' %}Edit product{% else %}New product{% endif %}</span>
+        <h1>{% if mode == 'edit' %}{{ product.name }}{% else %}Add product{% endif %}</h1>
     </div>
 
-    <div class="glass vendor-form-card">
-        <form method="post" enctype="multipart/form-data" class="auth-form">
-            {% csrf_token %}
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="message {{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 
-            <p>
-                <label for="{{ form.name.id_for_label }}">Product name</label>
-                {{ form.name }}
-                {% if form.name.errors %}<ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+    <form method="post" enctype="multipart/form-data" class="shopify-form" novalidate>
+        {% csrf_token %}
 
-            <p>
-                <label for="{{ form.category.id_for_label }}">Category</label>
-                {{ form.category }}
-                {% if form.category.errors %}<ul class="errorlist">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+        <div class="shopify-form-grid">
 
-            <p>
-                <label for="{{ form.description.id_for_label }}">Description</label>
-                {{ form.description }}
-                {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+            {# ---------------- Left column: main content ---------------- #}
+            <div class="shopify-form-main">
 
-            <p>
-                <label for="{{ form.image.id_for_label }}">Product photo</label>
-                {{ form.image }}
-                <span class="helptext">JPG or PNG, under 5 MB.</span>
-                {% if form.image.errors %}<ul class="errorlist">{% for e in form.image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+                <section class="glass shopify-card">
+                    <div class="shopify-field">
+                        <label for="{{ form.name.id_for_label }}">Title</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
 
-            <p>
-                <label for="{{ form.price.id_for_label }}">Price (KES)</label>
-                {{ form.price }}
-                {% if form.price.errors %}<ul class="errorlist">{% for e in form.price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+                    <div class="shopify-field">
+                        <label for="{{ form.description.id_for_label }}">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+                </section>
 
-            <p>
-                <label for="{{ form.compare_at_price.id_for_label }}">Compare-at price (optional)</label>
-                {{ form.compare_at_price }}
-                <span class="helptext">Shows a "was KES ___" strike-through.</span>
-                {% if form.compare_at_price.errors %}<ul class="errorlist">{% for e in form.compare_at_price.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+                <section class="glass shopify-card">
+                    <h3 class="shopify-section-title">Media</h3>
 
-            <p>
-                <label for="{{ form.stock.id_for_label }}">Stock available</label>
-                {{ form.stock }}
-                {% if form.stock.errors %}<ul class="errorlist">{% for e in form.stock.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
-            </p>
+                    <div class="shopify-media-zone">
+                        {% if form.instance.image %}
+                            <div class="shopify-media-preview">
+                                <img src="{{ form.instance.image.url }}" alt="">
+                            </div>
+                        {% endif %}
 
-            <p>
-                <label for="{{ form.volume_ml.id_for_label }}">Volume (ml, optional)</label>
-                {{ form.volume_ml }}
-            </p>
+                        <label for="{{ form.image.id_for_label }}" class="shopify-media-input">
+                            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <span>{% if form.instance.image %}Replace image{% else %}Add image{% endif %}</span>
+                            <small>JPG or PNG, up to 5 MB</small>
+                            {{ form.image }}
+                        </label>
+                    </div>
 
-            {% if vendor.requires_review %}
-                <p class="muted" style="font-size: 0.85rem;">
-                    Your first 3 products are reviewed by our team within 24 hours.
-                    After that, new products go live instantly.
-                </p>
-            {% endif %}
+                    {% if form.image.errors %}
+                        <ul class="errorlist">{% for e in form.image.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </section>
 
-            <div class="vendor-form-actions">
-                <button type="submit" class="btn btn-full">
-                    {% if mode == 'edit' %}Save changes{% else %}Submit product{% endif %}
-                </button>
-                <a href="{% url 'vendors:product_list' %}" class="btn btn-outline btn-small">
-                    Cancel
-                </a>
+                <section class="glass shopify-card">
+                    <h3 class="shopify-section-title">Pricing</h3>
+
+                    <div class="shopify-row">
+                        <div class="shopify-field">
+                            <label for="{{ form.price.id_for_label }}">Price</label>
+                            {{ form.price }}
+                            {% if form.price.errors %}
+                                <ul class="errorlist">{% for e in form.price.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                            {% endif %}
+                        </div>
+
+                        <div class="shopify-field">
+                            <label for="{{ form.compare_at_price.id_for_label }}">Compare-at price</label>
+                            {{ form.compare_at_price }}
+                            <span class="helptext">{{ form.compare_at_price.help_text }}</span>
+                            {% if form.compare_at_price.errors %}
+                                <ul class="errorlist">{% for e in form.compare_at_price.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+
+                <section class="glass shopify-card">
+                    <h3 class="shopify-section-title">Inventory</h3>
+
+                    <div class="shopify-row">
+                        <div class="shopify-field">
+                            <label for="{{ form.stock.id_for_label }}">Quantity available</label>
+                            {{ form.stock }}
+                            <span class="helptext">{{ form.stock.help_text }}</span>
+                            {% if form.stock.errors %}
+                                <ul class="errorlist">{% for e in form.stock.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                            {% endif %}
+                        </div>
+
+                        <div class="shopify-field">
+                            <label class="shopify-checkbox">
+                                {{ form.is_active }}
+                                <span>{{ form.is_active.label }}</span>
+                            </label>
+                            <span class="helptext">{{ form.is_active.help_text }}</span>
+                        </div>
+                    </div>
+                </section>
+
             </div>
-        </form>
-    </div>
+
+            {# ---------------- Right column: sidebar ---------------- #}
+            <aside class="shopify-form-side">
+
+                <section class="glass shopify-card">
+                    <h3 class="shopify-section-title">Status</h3>
+
+                    <div class="shopify-field">
+                        <label for="{{ form.is_active.id_for_label }}">Visibility</label>
+                        <select name="is_active" id="{{ form.is_active.id_for_label }}" class="shopify-select">
+                            <option value="True" {% if form.is_active.value %}selected{% endif %}>Active</option>
+                            <option value="False" {% if not form.is_active.value %}selected{% endif %}>Draft</option>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="glass shopify-card">
+                    <h3 class="shopify-section-title">Product organization</h3>
+
+                    <div class="shopify-field">
+                        <label for="{{ form.department.id_for_label }}">Department</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}
+                            <ul class="errorlist">{% for e in form.department.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="shopify-field">
+                        <label for="{{ form.category.id_for_label }}">Category</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <ul class="errorlist">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </div>
+
+                    <div class="shopify-field">
+                        <label>Vendor</label>
+                        <input type="text" value="{{ vendor.business_name }}" disabled class="shopify-input-disabled">
+                        <span class="helptext">Products are listed under your shop name.</span>
+                    </div>
+                </section>
+
+                {% if vendor.requires_review %}
+                    <div class="shopify-review-note">
+                        <strong>Review required</strong>
+                        <p>
+                            Your first 3 products are reviewed by our team within 24 hours.
+                            After that, new products go live instantly.
+                        </p>
+                    </div>
+                {% endif %}
+
+            </aside>
+        </div>
+
+        {# ---------------- Sticky action bar ---------------- #}
+        <div class="shopify-action-bar">
+            <a href="{% url 'vendors:product_list' %}" class="shopify-btn-cancel">Cancel</a>
+            <button type="submit" class="btn">
+                {% if mode == 'edit' %}Save changes{% else %}Save product{% endif %}
+            </button>
+        </div>
+    </form>
+
 </div>
+
+<script>
+// Filter the Category dropdown to only show categories belonging to
+// the selected Department. Shopify does the same kind of cascading.
+(function () {
+    const deptSelect = document.getElementById('{{ form.department.id_for_label }}');
+    const catSelect = document.getElementById('{{ form.category.id_for_label }}');
+    if (!deptSelect || !catSelect) return;
+
+    // Snapshot every option once.
+    const allOptions = Array.from(catSelect.options).map(o => ({
+        value: o.value,
+        label: o.textContent,
+        deptId: o.getAttribute('data-dept') || '',
+    }));
+
+    function filterCategories() {
+        const deptId = deptSelect.value;
+        const currentCat = catSelect.value;
+
+        catSelect.innerHTML = '';
+
+        // Keep the placeholder.
+        const placeholder = allOptions.find(o => o.value === '');
+        if (placeholder) {
+            catSelect.appendChild(new Option(placeholder.label, placeholder.value));
+        }
+
+        allOptions.forEach(o => {
+            if (!o.value) return; // skip placeholder
+            if (!deptId || o.deptId === deptId) {
+                const opt = new Option(o.label, o.value);
+                opt.setAttribute('data-dept', o.deptId);
+                catSelect.appendChild(opt);
+            }
+        });
+
+        // Keep the current selection if it survived the filter.
+        if (currentCat && catSelect.querySelector(`option[value="${currentCat}"]`)) {
+            catSelect.value = currentCat;
+        }
+    }
+
+    deptSelect.addEventListener('change', filterCategories);
+
+    // On page load, run the filter once (handles the case where the
+    // form reloads with errors and a department already selected).
+    filterCategories();
+})();
+</script>
 {% endblock %}
