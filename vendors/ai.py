@@ -1,17 +1,14 @@
 """Google Gemini client for AI-powered product suggestions.
 
-Uses the new `google-genai` SDK (the older `google-generativeai` package
-is deprecated). One function: `suggest_product(text, image_file=None)`.
+Uses the new `google-genai` SDK. One function: `suggest_product(text, image_file=None)`.
 
-Returns a dict with keys:
-    title, description, department, category, price_low, price_high, notes
-
-On any failure (missing key, network error, bad response), returns None.
-The calling view decides how to tell the user.
+Includes retry-on-503 and fallback model support so a temporary Google
+spike doesn't break the vendor's add-product flow.
 """
 
 import json
 import logging
+import time
 
 from django.conf import settings
 
@@ -44,16 +41,26 @@ Rules:
 """
 
 
-EXISTING_CATEGORIES_HINT = """
-Existing categories already in the shop (prefer these if the item fits):
-{categories}
-"""
+# Try primary model, then these fallbacks in order.
+# Google rotates models frequently; if one gets retired or is overloaded,
+# the next in the list is tried automatically.
+DEFAULT_MODEL_CHAIN = [
+    'gemini-3.8-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-flash-latest',
+]
+
+
+def _model_chain():
+    """Return the ordered list of models to try."""
+    primary = getattr(settings, 'GEMINI_MODEL', '') or 'gemini-3.8-flash'
+    chain = [primary] + [m for m in DEFAULT_MODEL_CHAIN if m != primary]
+    return chain
 
 
 def _build_prompt(text, image_file, departments, categories):
-    parts = []
-
-    parts.append(SYSTEM_PROMPT)
+    parts = [SYSTEM_PROMPT]
 
     if departments:
         parts.append(
@@ -71,7 +78,10 @@ def _build_prompt(text, image_file, departments, categories):
         parts.append(f'\nSeller typed: "{text.strip()[:400]}"')
 
     if image_file:
-        parts.append('\nAn image of the product is attached. Analyse it to refine the title, description, and pricing.')
+        parts.append(
+            '\nAn image of the product is attached. Analyse it to refine '
+            'the title, description, and pricing.'
+        )
 
     parts.append('\nReturn the JSON object now.')
 
@@ -79,7 +89,11 @@ def _build_prompt(text, image_file, departments, categories):
 
 
 def suggest_product(text, image_file=None):
-    """Call Gemini. Returns a dict, or None on any failure."""
+    """Call Gemini. Returns a dict, or None on any failure.
+
+    Tries each model in the chain. Retries up to 3 times per model on
+    transient errors (503, 500, rate limits).
+    """
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
         log.warning('GEMINI_API_KEY not set — AI suggestions disabled.')
@@ -88,26 +102,26 @@ def suggest_product(text, image_file=None):
     if not text and not image_file:
         return None
 
-    # Import lazily so a missing package doesn't crash Django startup.
     try:
         from google import genai
         from google.genai import types
+        from google.genai import errors as genai_errors
     except ImportError:
         log.exception('google-genai is not installed. Run: pip install google-genai')
         return None
 
-    # Pull the current departments and categories to feed the prompt.
+    # Departments and categories to feed the prompt.
     try:
         from store.models import Category, Department
-        departments = list(Department.objects.filter(is_active=True).values_list('name', flat=True))
+        departments = list(
+            Department.objects.filter(is_active=True).values_list('name', flat=True)
+        )
         categories = list(Category.objects.values_list('name', flat=True))
     except Exception:
         departments = []
         categories = []
 
     prompt = _build_prompt(text, image_file, departments, categories)
-
-    # Build the contents list. Gemini expects a list of Parts.
     contents = [prompt]
 
     if image_file:
@@ -119,30 +133,85 @@ def suggest_product(text, image_file=None):
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
             )
         except Exception:
-            log.exception('Could not read uploaded image')
-            # Continue with text only rather than failing outright.
+            log.exception('Could not read uploaded image; continuing with text only.')
 
     try:
         client = genai.Client(api_key=api_key)
-
-        response = client.models.generate_content(
-            model=getattr(settings, 'GEMINI_MODEL', 'gemini-2.5-flash'),
-            contents=contents,
-            config=types.GenerateContentConfig(
-                response_mime_type='application/json',
-                temperature=0.4,
-            ),
-        )
     except Exception:
-        log.exception('Gemini API call failed')
+        log.exception('Could not create Gemini client')
         return None
 
+    # Try every model in the chain.
+    for model_name in _model_chain():
+        response = _try_model(
+            client=client,
+            types=types,
+            errors_module=genai_errors,
+            model_name=model_name,
+            contents=contents,
+        )
+        if response is not None:
+            parsed = _parse_response(response)
+            if parsed is not None:
+                return parsed
+            # Model returned something but it wasn't valid JSON — try next model.
+            continue
+
+    return None
+
+
+def _try_model(client, types, errors_module, model_name, contents):
+    """Call one model with up to 3 retries on transient errors.
+
+    Returns the response on success, or None if all retries failed.
+    """
+    attempts = 3
+
+    for attempt in range(attempts):
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json',
+                    temperature=0.4,
+                ),
+            )
+            return response
+        except errors_module.ServerError as exc:
+            # 500/503 — Google's server is busy. Back off and retry.
+            wait = (attempt + 1) * 2  # 2, 4, 6 seconds
+            log.warning(
+                'Gemini model %s returned ServerError (attempt %d/%d): %s. '
+                'Retrying in %ds.',
+                model_name, attempt + 1, attempts, str(exc)[:200], wait,
+            )
+            if attempt < attempts - 1:
+                time.sleep(wait)
+            else:
+                log.warning('All retries exhausted for %s; trying next model.', model_name)
+                return None
+        except errors_module.ClientError as exc:
+            # 4xx — bad request, wrong model name, key revoked, quota exhausted.
+            # Retrying will not help, but try the next model in the chain.
+            log.warning(
+                'Gemini model %s returned ClientError: %s. Trying next model.',
+                model_name, str(exc)[:200],
+            )
+            return None
+        except Exception:
+            log.exception('Unexpected error calling Gemini model %s', model_name)
+            return None
+
+    return None
+
+
+def _parse_response(response):
     raw = getattr(response, 'text', '') or ''
     if not raw:
         log.warning('Gemini returned empty response')
         return None
 
-    # Strip markdown fences if the model added them anyway.
     cleaned = raw.strip()
     if cleaned.startswith('```'):
         cleaned = cleaned.strip('`')
@@ -156,7 +225,6 @@ def suggest_product(text, image_file=None):
         log.exception('Gemini returned invalid JSON: %s', cleaned[:500])
         return None
 
-    # Validate the fields we care about.
     required = ('title', 'description', 'department', 'category')
     if not all(data.get(k) for k in required):
         log.warning('Gemini response missing required fields: %s', data)
