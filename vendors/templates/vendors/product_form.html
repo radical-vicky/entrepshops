@@ -17,12 +17,34 @@
         </ul>
     {% endif %}
 
+    <div class="ai-panel" id="ai-panel">
+        <div class="ai-panel-head">
+            <div>
+                <strong>AI auto-fill</strong>
+                <span>Type a short description or upload an image, and we'll draft the rest.</span>
+            </div>
+        </div>
+        <div class="ai-panel-body">
+            <input type="text"
+                   id="ai-prompt"
+                   class="ai-input"
+                   placeholder="e.g. HP laptop i5 8GB"
+                   autocomplete="off">
+            <label class="ai-image-label">
+                <input type="file" id="ai-image" accept="image/*">
+                <span id="ai-image-label-text">Attach image</span>
+            </label>
+            <button type="button" class="btn" id="ai-fill-btn">Auto-fill with AI</button>
+        </div>
+        <div class="ai-panel-status" id="ai-status" style="display:none;"></div>
+        <div class="ai-panel-note" id="ai-price-note" style="display:none;"></div>
+    </div>
+
     <form method="post" enctype="multipart/form-data" class="shopify-form" novalidate>
         {% csrf_token %}
 
         <div class="shopify-form-grid">
 
-            {# ---------------- Left column ---------------- #}
             <div class="shopify-form-main">
 
                 <section class="glass shopify-card">
@@ -32,14 +54,6 @@
                         {% if form.name.errors %}
                             <ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>
                         {% endif %}
-
-                        <div class="shopify-suggestion" id="title-suggestion" style="display:none;">
-                            <span class="shopify-suggestion-label">Suggested category</span>
-                            <button type="button" class="shopify-suggestion-chip" id="title-suggestion-chip">
-                                <span id="title-suggestion-text"></span>
-                                <span class="shopify-suggestion-apply">Apply</span>
-                            </button>
-                        </div>
                     </div>
 
                     <div class="shopify-field">
@@ -126,7 +140,6 @@
 
             </div>
 
-            {# ---------------- Right column ---------------- #}
             <aside class="shopify-form-side">
 
                 <section class="glass shopify-card">
@@ -200,96 +213,10 @@
 </div>
 
 <script>
-const KEYWORD_MAP = {
-    'fridge': ['Home Appliances', 'Fridges'],
-    'freezer': ['Home Appliances', 'Fridges'],
-    'refrigerator': ['Home Appliances', 'Fridges'],
-    'washing machine': ['Home Appliances', 'Washing Machines'],
-    'microwave': ['Home Appliances', 'Microwaves'],
-    'cooker': ['Home Appliances', 'Cookers'],
-    'blender': ['Home Appliances', 'Kitchen'],
-
-    'tv': ['Electronics', 'Smart Screens'],
-    'television': ['Electronics', 'Smart Screens'],
-    'smart tv': ['Electronics', 'Smart Screens'],
-    'qled': ['Electronics', 'Smart Screens'],
-    'monitor': ['Electronics', 'Smart Screens'],
-    'phone': ['Electronics', 'Phones'],
-    'smartphone': ['Electronics', 'Phones'],
-    'iphone': ['Electronics', 'Phones'],
-    'samsung': ['Electronics', 'Phones'],
-    'laptop': ['Electronics', 'Computers'],
-    'macbook': ['Electronics', 'Computers'],
-    'computer': ['Electronics', 'Computers'],
-    'speaker': ['Electronics', 'Audio'],
-    'headphone': ['Electronics', 'Audio'],
-    'earbud': ['Electronics', 'Audio'],
-    'earphone': ['Electronics', 'Audio'],
-    'bluetooth': ['Electronics', 'Audio'],
-
-    'coke': ['Drinks', 'Soft drinks'],
-    'coca': ['Drinks', 'Soft drinks'],
-    'sprite': ['Drinks', 'Soft drinks'],
-    'fanta': ['Drinks', 'Soft drinks'],
-    'pepsi': ['Drinks', 'Soft drinks'],
-    'soda': ['Drinks', 'Soft drinks'],
-    'juice': ['Drinks', 'Juices'],
-    'water': ['Drinks', 'Water'],
-    'mineral water': ['Drinks', 'Water'],
-    'milk': ['Drinks', 'Dairy'],
-    'yoghurt': ['Drinks', 'Dairy'],
-    'yogurt': ['Drinks', 'Dairy'],
-
-    'bread': ['Bakery', 'Baked goods'],
-    'cake': ['Bakery', 'Baked goods'],
-    'pastry': ['Bakery', 'Baked goods'],
-
-    'chawarma': ['Restaurant', 'Fast Food'],
-    'shawarma': ['Restaurant', 'Fast Food'],
-    'chicken': ['Restaurant', 'Fast Food'],
-    'pizza': ['Restaurant', 'Fast Food'],
-    'chai': ['Hot Drinks', 'Hot Drinks'],
-    'tea': ['Hot Drinks', 'Hot Drinks'],
-    'coffee': ['Hot Drinks', 'Hot Drinks'],
-
-    'bicycle': ['Sports & Outdoors', 'Bicycles'],
-    'bike': ['Sports & Outdoors', 'Bicycles'],
-    'e-bike': ['Sports & Outdoors', 'Bicycles'],
-    'helmet': ['Sports & Outdoors', 'Cycling gear'],
-
-    'cement': ['Building Materials', 'Building Materials'],
-    'sand': ['Building Materials', 'Building Materials'],
-    'brick': ['Building Materials', 'Building Materials'],
-    'timber': ['Building Materials', 'Building Materials'],
-    'paint': ['Building Materials', 'Paint'],
-
-    'car': ['Vehicles', 'Vehicles'],
-    'motorbike': ['Vehicles', 'Vehicles'],
-    'motorcycle': ['Vehicles', 'Vehicles'],
-    'vehicle': ['Vehicles', 'Vehicles'],
-};
-
 (function () {
     const deptSelect = document.getElementById('{{ form.department.id_for_label }}');
     const catSelect = document.getElementById('id_category');
-    const titleInput = document.getElementById('{{ form.name.id_for_label }}');
-    const suggestionBox = document.getElementById('title-suggestion');
-    const suggestionText = document.getElementById('title-suggestion-text');
-    const suggestionChip = document.getElementById('title-suggestion-chip');
-
-    if (!deptSelect || !catSelect || !titleInput) return;
-
-    const deptByName = {};
-    Array.from(deptSelect.options).forEach(o => {
-        if (o.value) deptByName[o.textContent.trim().toLowerCase()] = o.value;
-    });
-
-    const catByName = {};
-    Array.from(catSelect.options).forEach(o => {
-        if (o.value) {
-            catByName[o.textContent.trim().toLowerCase().split(' — ')[0]] = o.value;
-        }
-    });
+    if (!deptSelect || !catSelect) return;
 
     const allOptions = Array.from(catSelect.options).map(o => ({
         value: o.value,
@@ -325,63 +252,128 @@ const KEYWORD_MAP = {
     deptSelect.addEventListener('change', filterCategories);
     filterCategories();
 
-    let currentSuggestion = null;
+    // ---------------- AI auto-fill ----------------
+    const aiBtn = document.getElementById('ai-fill-btn');
+    const aiPrompt = document.getElementById('ai-prompt');
+    const aiImage = document.getElementById('ai-image');
+    const aiImageLabel = document.getElementById('ai-image-label-text');
+    const aiStatus = document.getElementById('ai-status');
+    const aiPriceNote = document.getElementById('ai-price-note');
+    const titleInput = document.getElementById('{{ form.name.id_for_label }}');
+    const descriptionInput = document.getElementById('{{ form.description.id_for_label }}');
+    const priceInput = document.getElementById('{{ form.price.id_for_label }}');
 
-    function findSuggestion(title) {
-        const t = (title || '').toLowerCase();
-        if (t.length < 3) return null;
-
-        let bestKey = null;
-        for (const key of Object.keys(KEYWORD_MAP)) {
-            if (t.includes(key) && (!bestKey || key.length > bestKey.length)) {
-                bestKey = key;
+    if (aiImage) {
+        aiImage.addEventListener('change', () => {
+            if (aiImage.files && aiImage.files.length) {
+                aiImageLabel.textContent = aiImage.files[0].name.slice(0, 24);
+            } else {
+                aiImageLabel.textContent = 'Attach image';
             }
-        }
-        if (!bestKey) return null;
-
-        const pair = KEYWORD_MAP[bestKey];
-        const deptName = pair[0];
-        const catName = pair[1];
-        const deptValue = deptByName[deptName.toLowerCase()];
-        const catValue = catByName[catName.toLowerCase()];
-
-        if (!deptValue || !catValue) return null;
-        return { deptName, catName, deptValue, catValue, keyword: bestKey };
+        });
     }
 
-    function updateSuggestion() {
-        const suggestion = findSuggestion(titleInput.value);
-        currentSuggestion = suggestion;
-
-        if (!suggestion) {
-            suggestionBox.style.display = 'none';
-            return;
-        }
-
-        if (deptSelect.value === suggestion.deptValue && catSelect.value === suggestion.catValue) {
-            suggestionBox.style.display = 'none';
-            return;
-        }
-
-        suggestionText.textContent = suggestion.deptName + ' → ' + suggestion.catName;
-        suggestionBox.style.display = 'block';
+    function setStatus(text, tone) {
+        aiStatus.textContent = text;
+        aiStatus.className = 'ai-panel-status' + (tone ? ' ai-status-' + tone : '');
+        aiStatus.style.display = 'block';
     }
 
-    titleInput.addEventListener('input', updateSuggestion);
-    titleInput.addEventListener('focus', updateSuggestion);
+    function applySuggestion(data) {
+        if (data.title && titleInput) titleInput.value = data.title;
+        if (data.description && descriptionInput) descriptionInput.value = data.description;
 
-    if (suggestionChip) {
-        suggestionChip.addEventListener('click', () => {
-            if (!currentSuggestion) return;
+        // Add the department option if it's not in the current select list.
+        if (data.department_id && data.department_name) {
+            let exists = Array.from(deptSelect.options).some(
+                o => String(o.value) === String(data.department_id)
+            );
+            if (!exists) {
+                const opt = new Option(data.department_name, data.department_id);
+                deptSelect.appendChild(opt);
+            }
+            deptSelect.value = String(data.department_id);
+        }
 
-            deptSelect.value = currentSuggestion.deptValue;
-            filterCategories();
-            catSelect.value = currentSuggestion.catValue;
+        // Re-run the cascade so the category list reflects the selected department.
+        filterCategories();
 
-            suggestionBox.style.display = 'none';
+        // Add the category option if it's not present after filtering.
+        if (data.category_id && data.category_name) {
+            let exists = Array.from(catSelect.options).some(
+                o => String(o.value) === String(data.category_id)
+            );
+            if (!exists) {
+                const opt = new Option(data.category_name, data.category_id);
+                opt.setAttribute('data-dept', data.department_id || '');
+                catSelect.appendChild(opt);
+            }
+            catSelect.value = String(data.category_id);
+        }
 
-            deptSelect.focus();
-            setTimeout(() => deptSelect.blur(), 200);
+        // Pre-fill the price with the AI's low-end estimate (user can change).
+        if (data.price_low && priceInput && !priceInput.value) {
+            priceInput.value = data.price_low;
+        }
+
+        // Show the price range note.
+        if (data.price_low && data.price_high) {
+            let note = 'AI suggested price range: KES ' +
+                       data.price_low.toLocaleString() +
+                       ' – ' + data.price_high.toLocaleString() + '.';
+            if (data.price_notes) note += ' ' + data.price_notes;
+            aiPriceNote.textContent = note;
+            aiPriceNote.style.display = 'block';
+        }
+    }
+
+    if (aiBtn) {
+        aiBtn.addEventListener('click', async () => {
+            const text = (aiPrompt.value || '').trim();
+            const imageFile = aiImage && aiImage.files && aiImage.files[0];
+
+            if (!text && !imageFile) {
+                setStatus('Type a short description or attach an image first.', 'error');
+                return;
+            }
+
+            aiBtn.disabled = true;
+            const original = aiBtn.textContent;
+            aiBtn.textContent = 'Thinking…';
+            setStatus('Asking AI to draft the product…', 'loading');
+            aiPriceNote.style.display = 'none';
+
+            try {
+                const fd = new FormData();
+                fd.append('text', text);
+                if (imageFile) fd.append('image', imageFile);
+
+                const csrf = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+                const res = await fetch('{% url "vendors:ai_suggest" %}', {
+                    method: 'POST',
+                    body: fd,
+                    headers: {
+                        'X-CSRFToken': csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                const data = await res.json();
+
+                if (!res.ok || !data.ok) {
+                    setStatus(data.error || 'AI could not generate a suggestion right now.', 'error');
+                    return;
+                }
+
+                applySuggestion(data);
+                setStatus('Done. Review the fields and set your final price.', 'success');
+            } catch (err) {
+                setStatus('Network error. Please fill the fields manually.', 'error');
+            } finally {
+                aiBtn.disabled = false;
+                aiBtn.textContent = original;
+            }
         });
     }
 })();
