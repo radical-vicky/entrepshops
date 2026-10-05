@@ -280,3 +280,31 @@ main .container { padding-top: 28px; }
 .promo-poster[data-tone="green"] .promo-poster-scrim { background: linear-gradient(0deg, rgba(26, 19, 10, 0.94) 0%, rgba(26, 19, 10, 0.5) 55%, rgba(8, 7, 10, 0.1) 100%); }
 .promo-poster[data-tone="orange"] .promo-poster-scrim { background: linear-gradient(0deg, rgba(28, 17, 8, 0.94) 0%, rgba(28, 17, 8, 0.5) 55%, rgba(8, 7, 10, 0.1) 100%); }
 .promo-poster[data-tone="gold"] .promo-poster-scrim { background: linear-gradient(0deg, rgba(26, 22, 10, 0.94
+
+
+@media (max-width: 700px) {
+    .header-inner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .logo {
+        flex-shrink: 0;
+    }
+
+    nav.main-nav {
+        width: 100%;
+        gap: 10px 16px;
+        font-size: 0.82rem;
+        line-height: 1.4;
+    }
+
+    nav.main-nav a {
+        font-size: 0.82rem;
+    }
+
+    .cart-link {
+        padding: 6px 12px !important;
+    }
+                                                                                                                                            }
