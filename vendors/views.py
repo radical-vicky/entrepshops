@@ -139,7 +139,6 @@ def product_list(request):
         'products': products,
     })
 
-
 @login_required
 def product_create(request):
     vendor = get_object_or_404(Vendor, user=request.user)
@@ -158,17 +157,14 @@ def product_create(request):
             product = form.save(commit=False)
             product.vendor = vendor
 
-            # Auto-fill department from category (Product.save handles this
-            # too, but we do it here so the form doesn't need to expose it).
-            if product.category_id and product.category.department_id:
+            # Auto-fill department from category if the vendor left it blank.
+            if not product.department_id and product.category_id:
                 product.department = product.category.department
 
-            # First 3 products need admin approval. After that they
-            # auto-approve if the vendor is trusted.
+            # First 3 products need admin approval.
             product.is_approved = not vendor.requires_review
-            product.is_active = True
 
-            # Slug must be unique. Build from name and de-dupe.
+            # Slug: build from name and de-dupe.
             base_slug = slugify(product.name)[:150] or 'product'
             slug = base_slug
             n = 1
