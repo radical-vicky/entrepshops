@@ -55,9 +55,7 @@ body {
 }
 
 /* =========================================================================
-   Ambient background — image layer + brand scrim.
-   The image comes from Admin → Background images, which sets
-   --site-bg-image on the <body>. The scrim alpha is set at the same time.
+   Ambient background — image layer + brand scrim
    ========================================================================= */
 body::before {
     content: "";
@@ -212,11 +210,7 @@ main .container { padding-top: 28px; }
 
 .hero-poster.is-active { display: block; }
 
-.hero-poster-media {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-}
+.hero-poster-media { position: absolute; inset: 0; z-index: 0; }
 
 .hero-poster-media img,
 .hero-poster-media video {
@@ -381,29 +375,197 @@ main .container { padding-top: 28px; }
 .category-list a.active { background: rgba(200, 138, 46, 0.14); color: var(--green-bright); font-weight: 600; }
 
 /* =========================================================================
-   Product grid — masonry
+   Product grid — dense masonry (AliExpress-inspired)
    ========================================================================= */
-.product-grid { flex: 1; column-count: 4; column-gap: 16px; }
-.product-grid-empty { column-span: all; color: var(--text-mute); font-size: 0.92rem; padding: 20px 0; }
-.pagination { column-span: all; display: flex; align-items: center; justify-content: center; gap: 20px; margin: 32px 0 0; padding-top: 24px; border-top: 1px solid var(--border-glass); }
-.pagination-link { font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.04em; color: var(--green-bright); text-decoration: none; padding: 8px 14px; border: 1px solid var(--border-glass); transition: background 0.2s var(--ease), border-color 0.2s var(--ease); }
+.product-grid {
+    flex: 1;
+    column-count: 5;
+    column-gap: 12px;
+}
+
+.product-grid-empty {
+    column-span: all;
+    color: var(--text-mute);
+    font-size: 0.92rem;
+    padding: 20px 0;
+}
+
+.pagination {
+    column-span: all;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 32px 0 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-glass);
+}
+
+.pagination-link {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    color: var(--green-bright);
+    text-decoration: none;
+    padding: 8px 14px;
+    border: 1px solid var(--border-glass);
+    transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
 .pagination-link:hover { background: rgba(255,255,255,0.06); border-color: var(--border-glass-strong); }
 .pagination-link.is-disabled { color: var(--text-mute); opacity: 0.4; pointer-events: none; }
-.pagination-info { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; color: var(--text-mute); }
 
-.product-card { background: var(--panel); backdrop-filter: blur(20px); border: 1px solid var(--border-glass); border-radius: var(--radius); padding: 16px; text-align: left; transition: transform 0.35s var(--ease), border-color 0.35s var(--ease); position: relative; min-width: 0; break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid; margin-bottom: 16px; display: block; }
-.product-card:hover { transform: translateY(-4px); border-color: var(--border-glass-strong); }
+.pagination-info {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    color: var(--text-mute);
+}
+
+/* ---------- Product card ---------- */
+.product-card {
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius);
+    padding: 10px;
+    text-align: left;
+    transition: transform 0.25s var(--ease), border-color 0.25s var(--ease);
+    position: relative;
+    min-width: 0;
+    break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.product-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-glass-strong);
+}
+
 .product-card a { text-decoration: none; color: var(--text); display: block; }
-.product-card img { width: 100%; height: auto; display: block; border-radius: var(--radius-sm); }
-.img-placeholder { width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: linear-gradient(155deg, rgba(200, 138, 46, 0.18), rgba(217, 116, 50, 0.10)); border: 1px solid var(--border-glass); }
-.img-placeholder svg { width: 44px; height: 44px; opacity: 0.85; }
+
+.product-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-sm);
+}
+
+.img-placeholder {
+    width: 100%;
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(155deg, rgba(200, 138, 46, 0.18), rgba(217, 116, 50, 0.10));
+    border: 1px solid var(--border-glass);
+}
+
+.img-placeholder svg { width: 36px; height: 36px; opacity: 0.85; }
 .img-placeholder.large { height: 300px; }
 .img-placeholder.large svg { width: 76px; height: 76px; }
-.product-card h4 { font-size: 1rem; margin: 12px 0 4px; font-weight: 600; }
-.price { font-family: var(--font-mono); font-weight: 700; color: var(--green-bright); margin: 6px 0 12px; letter-spacing: -0.02em; }
-.price.large { font-size: 1.5rem; }
-.was-price { color: var(--text-mute); text-decoration: line-through; font-weight: 500; font-size: 0.85em; margin-left: 8px; }
-.discount-flag { position: absolute; top: 10px; left: 10px; }
+
+/* ---------- Price (above title, AliExpress-style) ---------- */
+.product-card .price {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--green-bright);
+    margin: 10px 0 4px;
+    letter-spacing: -0.02em;
+    font-size: 1.05rem;
+    line-height: 1.2;
+}
+
+.product-card .was-price {
+    color: var(--text-mute);
+    text-decoration: line-through;
+    font-weight: 500;
+    font-size: 0.72rem;
+    margin-left: 6px;
+}
+
+.discount-flag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    font-weight: 700;
+}
+
+/* ---------- Title ---------- */
+.product-title-link { text-decoration: none; color: inherit; display: block; }
+
+.product-title {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.3;
+    color: var(--text-dim);
+    margin: 0 0 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    letter-spacing: 0;
+}
+
+.product-card:hover .product-title { color: var(--text); }
+
+/* ---------- Rating + stock meta row ---------- */
+.product-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 0.7rem;
+    margin-bottom: 8px;
+    color: var(--text-mute);
+    flex-wrap: wrap;
+}
+
+.product-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--gold);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+}
+
+.product-rating svg { flex-shrink: 0; }
+
+.product-tag {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.tag-success { color: var(--success); background: rgba(69, 214, 138, 0.10); border: 1px solid rgba(69, 214, 138, 0.30); }
+.tag-warning { color: var(--gold); background: rgba(232, 185, 60, 0.10); border: 1px solid rgba(232, 185, 60, 0.30); }
+.tag-muted { color: var(--text-mute); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-glass); }
+
+/* ---------- Quick add ---------- */
+.product-quick-add { margin-top: 4px; }
+
+.btn-quick {
+    width: 100%;
+    padding: 7px 10px;
+    font-size: 0.75rem;
+    box-shadow: none;
+    border-radius: 999px;
+    justify-content: center;
+}
+
+/* ---------- Rating block (shared) ---------- */
 .rating-row { display: flex; align-items: center; gap: 4px; font-size: 0.82rem; color: var(--text-dim); margin-top: 4px; }
 .star-rating { display: flex; align-items: center; gap: 2px; margin: 8px 0; }
 .star-rating .star { width: 14px; height: 14px; color: var(--border-glass-strong); }
@@ -413,7 +575,7 @@ main .container { padding-top: 28px; }
 .muted { color: var(--text-mute); font-weight: 400; }
 
 /* =========================================================================
-   Legacy product detail
+   Legacy product detail (unchanged)
    ========================================================================= */
 .product-detail { display: flex; gap: 40px; flex-wrap: wrap; }
 .add-form { display: flex; align-items: center; margin-top: 20px; }
@@ -919,6 +1081,17 @@ main .container { padding-top: 28px; }
 }
 
 /* =========================================================================
+   Responsive — grid columns
+   ========================================================================= */
+@media (max-width: 1100px) {
+    .product-grid { column-count: 4; }
+}
+
+@media (max-width: 900px) {
+    .product-grid { column-count: 3; }
+}
+
+/* =========================================================================
    Responsive — TABLET (≤ 860px)
    ========================================================================= */
 @media (max-width: 860px) {
@@ -969,15 +1142,18 @@ main .container { padding-top: 28px; }
     .sidebar .category-list { display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
     .sidebar .category-list li { margin-bottom: 0; flex-shrink: 0; }
 
-    .product-grid { column-count: 2; column-gap: 10px; }
-    .product-card { padding: 10px; margin-bottom: 10px; break-inside: avoid; -webkit-column-break-inside: avoid; }
+    .product-grid { column-count: 2; column-gap: 8px; }
+    .product-card { padding: 8px; margin-bottom: 8px; break-inside: avoid; -webkit-column-break-inside: avoid; }
     .product-card img { height: auto; border-radius: 0; }
     .product-card .img-placeholder { height: 100px; border-radius: 0; }
     .product-card .img-placeholder svg { width: 26px; height: 26px; }
-    .product-card h4 { font-size: 0.82rem; line-height: 1.2; margin: 8px 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .product-card .price { font-size: 0.82rem; margin: 4px 0 8px; }
-    .product-card .badge { font-size: 0.68rem; padding: 3px 8px; }
-    .product-card .btn, .product-card .btn-small { font-size: 0.72rem; padding: 6px 10px; min-width: 0; }
+    .product-card .price { font-size: 0.88rem; margin: 8px 0 4px; }
+    .product-card .was-price { font-size: 0.62rem; margin-left: 4px; }
+    .product-title { font-size: 0.72rem; line-height: 1.25; margin-bottom: 6px; }
+    .product-meta-row { font-size: 0.62rem; margin-bottom: 6px; }
+    .product-tag { font-size: 0.56rem; padding: 2px 5px; }
+    .btn-quick { padding: 5px 8px; font-size: 0.68rem; }
+    .discount-flag { font-size: 0.56rem; padding: 2px 5px; top: 6px; left: 6px; }
     .product-card .star-rating { display: none; }
 
     .pagination { gap: 10px; margin-top: 20px; padding-top: 16px; }
@@ -1013,11 +1189,13 @@ main .container { padding-top: 28px; }
     .pd-add-form input[type="number"] { width: 100%; }
     .pd-add-form .btn { width: 100%; }
 
-    .product-grid { column-count: 2; column-gap: 8px; }
-    .product-card { padding: 8px; margin-bottom: 8px; }
-    .product-card .img-placeholder { height: 90px; }
-    .product-card h4 { font-size: 0.76rem; }
-    .product-card .price { font-size: 0.76rem; }
+    .product-grid { column-count: 2; column-gap: 6px; }
+    .product-card { padding: 6px; margin-bottom: 6px; }
+    .product-card .img-placeholder { height: 88px; }
+    .product-card .price { font-size: 0.82rem; }
+    .product-title { font-size: 0.68rem; }
+    .btn-quick { font-size: 0.62rem; padding: 5px 6px; }
+    .product-meta-row { display: none; }
 
     .logo-wordmark { font-size: 1.05rem; }
     .logo-tagline { font-size: 0.54rem; letter-spacing: 0.22em; }
