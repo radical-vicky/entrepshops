@@ -4,23 +4,22 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.conf import settings
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
-from store.models import Category, Product
+from store.models import Category, Department, Product
 
+from . import ai
 from .forms import VendorProductForm, VendorProfileForm
 from .models import Vendor
 
 TRIAL_DAYS = 30
 
 
-# ======================================================================
-# Start / manage vendor
-# ======================================================================
 @login_required
 @require_GET
 def become_vendor(request):
@@ -82,9 +81,6 @@ def send_welcome_email(vendor):
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
 
 
-# ======================================================================
-# Dashboard
-# ======================================================================
 @login_required
 @require_GET
 def dashboard(request):
@@ -123,9 +119,6 @@ def edit_profile(request):
     })
 
 
-# ======================================================================
-# Product upload
-# ======================================================================
 @login_required
 @require_GET
 def product_list(request):
@@ -225,3 +218,74 @@ def product_delete(request, product_id):
     product.delete()
     messages.success(request, 'Product removed.')
     return redirect('vendors:product_list')
+
+
+@login_required
+@require_POST
+def ai_suggest(request):
+    if not hasattr(request.user, 'vendor_profile'):
+        return JsonResponse({'ok': False, 'error': 'Not a vendor.'}, status=403)
+
+    text = (request.POST.get('text') or '').strip()
+    image = request.FILES.get('image')
+
+    if not text and not image:
+        return JsonResponse(
+            {'ok': False, 'error': 'Type something or upload an image first.'},
+            status=400,
+        )
+
+    result = ai.suggest_product(text=text, image_file=image)
+    if not result:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'The AI could not generate a suggestion right now. '
+                         'Please fill in the fields manually.',
+            },
+            status=502,
+        )
+
+    dept_name = result['department'][:100]
+    department = Department.objects.filter(name__iexact=dept_name).first()
+    if not department:
+        department = Department.objects.create(
+            name=dept_name,
+            slug=slugify(dept_name)[:110] or 'general',
+            theme='amber',
+            unit_kind='none',
+            icon_kind='star',
+            is_active=True,
+        )
+
+    cat_name = result['category'][:100]
+    category = Category.objects.filter(
+        name__iexact=cat_name, department=department,
+    ).first()
+    if not category:
+        category = Category.objects.filter(name__iexact=cat_name).first()
+        if not category:
+            base_slug = slugify(cat_name)[:110] or 'general'
+            slug = base_slug
+            n = 1
+            while Category.objects.filter(slug=slug).exists():
+                n += 1
+                slug = f'{base_slug}-{n}'[:110]
+            category = Category.objects.create(
+                name=cat_name,
+                slug=slug,
+                department=department,
+            )
+
+    return JsonResponse({
+        'ok': True,
+        'title': result['title'],
+        'description': result['description'],
+        'department_id': department.id,
+        'department_name': department.name,
+        'category_id': category.id,
+        'category_name': category.name,
+        'price_low': result.get('price_low'),
+        'price_high': result.get('price_high'),
+        'price_notes': result.get('price_notes', ''),
+    })
