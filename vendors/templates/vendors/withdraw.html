@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Withdraw balance — Entrep - Shop{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-head">
+        <span class="eyebrow">Withdraw</span>
+        <h1>Withdraw your balance</h1>
+        <p class="lede">
+            Send your vendor balance to your M-Pesa. Minimum withdrawal is
+            KES 500. Payouts are processed within 24 hours on business days.
+        </p>
+    </div>
+
+    <div class="withdraw-layout">
+        <section class="glass withdraw-card">
+            <header class="withdraw-head">
+                <span class="eyebrow">Available to withdraw</span>
+                <div class="withdraw-balance">KES {{ available }}</div>
+            </header>
+
+            {% if available < 500 %}
+                <div class="withdraw-notice">
+                    <strong>No balance available right now.</strong>
+                    <p class="muted">
+                        You need at least KES 500 to withdraw. Your balance
+                        updates as your products sell.
+                    </p>
+                </div>
+                <a href="{% url 'vendors:dashboard' %}" class="btn btn-outline btn-small">
+                    Back to dashboard
+                </a>
+            {% else %}
+                <form method="post" class="auth-form" novalidate>
+                    {% csrf_token %}
+
+                    <p>
+                        <label for="{{ form.phone_number.id_for_label }}">
+                            {{ form.phone_number.label }}
+                        </label>
+                        {{ form.phone_number }}
+                        <span class="helptext">
+                            Format: 2547XXXXXXXX. This is the Safaricom number
+                            that will receive the M-Pesa transfer.
+                        </span>
+                        {% if form.phone_number.errors %}
+                            <ul class="errorlist">
+                                {% for e in form.phone_number.errors %}<li>{{ e }}</li>{% endfor %}
+                            </ul>
+                        {% endif %}
+                    </p>
+
+                    <p>
+                        <label for="{{ form.amount.id_for_label }}">
+                            {{ form.amount.label }}
+                        </label>
+                        {{ form.amount }}
+                        <span class="helptext">{{ form.amount.help_text }}</span>
+                        {% if form.amount.errors %}
+                            <ul class="errorlist">
+                                {% for e in form.amount.errors %}<li>{{ e }}</li>{% endfor %}
+                            </ul>
+                        {% endif %}
+                    </p>
+
+                    <button type="submit" class="btn btn-full">Request withdrawal</button>
+                </form>
+
+                <p class="muted withdraw-note">
+                    You'll receive an email confirming your request, and another
+                    when the money has been sent. Once submitted, the amount is
+                    locked until we pay it out.
+                </p>
+            {% endif %}
+        </section>
+
+        <aside class="glass withdraw-info">
+            <span class="eyebrow">How it works</span>
+            <ol class="withdraw-steps">
+                <li>Submit the request with your M-Pesa number and amount.</li>
+                <li>We review it and send the money to your phone.</li>
+                <li>You get a confirmation email with the M-Pesa receipt code.</li>
+            </ol>
+            <p class="muted">
+                Only M-Pesa numbers registered in Kenya can receive payouts.
+                If your number isn't registered yet, dial *334# to set it up.
+            </p>
+            <a href="{% url 'vendors:withdrawal_history' %}" class="btn btn-outline btn-small">
+                View withdrawal history
+            </a>
+        </aside>
+    </div>
+</div>
+{% endblock %}
