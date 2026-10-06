@@ -2,9 +2,8 @@
 
 Uses the new `google-genai` SDK. One function: `suggest_product(text, image_file=None)`.
 
-Tries a chain of models so a single overloaded or retired model doesn't
-break the vendor's add-product flow. Retries transient errors (503/500)
-with jittered backoff before moving to the next model.
+Enforces a hard time budget so the request returns before Vercel's
+10-second serverless timeout kills it.
 """
 
 import json
@@ -15,6 +14,18 @@ import time
 from django.conf import settings
 
 log = logging.getLogger(__name__)
+
+
+# Vercel Hobby plan gives functions 10 seconds. Leave headroom for
+# framework overhead, DB queries, and the return trip.
+TOTAL_BUDGET_SECONDS = 7.0
+
+# Per-model: only 2 attempts now, shorter waits.
+ATTEMPTS_PER_MODEL = 2
+BASE_WAIT_SECONDS = 2.0
+
+# Try at most this many models before giving up.
+MAX_MODELS = 2
 
 
 SYSTEM_PROMPT = """You are a product classification assistant for an online shop in Kenya called Entrep Shop.
@@ -43,25 +54,17 @@ Rules:
 """
 
 
-# Model chain — the primary model from settings is tried first, then these
-# in order. Google rotates model names frequently; if one gets retired or
-# is overloaded, the next in the list takes over.
-#
-# `gemini-flash-latest` is a stable alias that always points at whatever
-# Flash model Google considers current, so it's the safest default.
 DEFAULT_MODEL_CHAIN = [
     'gemini-flash-latest',
     'gemini-2.5-flash',
     'gemini-2.0-flash',
-    'gemini-3.8-flash',
 ]
 
 
 def _model_chain():
-    """Return the ordered list of models to try."""
     primary = getattr(settings, 'GEMINI_MODEL', '') or 'gemini-flash-latest'
     chain = [primary] + [m for m in DEFAULT_MODEL_CHAIN if m != primary]
-    return chain
+    return chain[:MAX_MODELS]
 
 
 def _build_prompt(text, image_file, departments, categories):
@@ -96,9 +99,11 @@ def _build_prompt(text, image_file, departments, categories):
 def suggest_product(text, image_file=None):
     """Call Gemini. Returns a dict, or None on any failure.
 
-    Tries each model in the chain. Retries up to 3 times per model on
-    transient errors (503, 500) with jittered backoff before moving on.
+    Enforces a total time budget so the request never exceeds Vercel's
+    function timeout.
     """
+    start = time.monotonic()
+
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
         log.warning('GEMINI_API_KEY not set — AI suggestions disabled.')
@@ -115,7 +120,6 @@ def suggest_product(text, image_file=None):
         log.exception('google-genai is not installed. Run: pip install google-genai')
         return None
 
-    # Departments and categories to feed the prompt.
     try:
         from store.models import Category, Department
         departments = list(
@@ -147,36 +151,53 @@ def suggest_product(text, image_file=None):
         return None
 
     chain = _model_chain()
-    log.info('Gemini: trying model chain %s', chain)
+    log.info('Gemini: chain=%s', chain)
 
     for model_name in chain:
+        elapsed = time.monotonic() - start
+        remaining = TOTAL_BUDGET_SECONDS - elapsed
+        if remaining <= 1.5:
+            log.warning(
+                'Gemini: skipping %s — only %.1fs left in budget.',
+                model_name, remaining,
+            )
+            break
+
         response = _try_model(
             client=client,
             types=types,
             errors_module=genai_errors,
             model_name=model_name,
             contents=contents,
+            deadline=start + TOTAL_BUDGET_SECONDS,
         )
+
         if response is not None:
             parsed = _parse_response(response)
             if parsed is not None:
-                log.info('Gemini: success with %s', model_name)
+                log.info(
+                    'Gemini: success with %s (%.1fs)',
+                    model_name, time.monotonic() - start,
+                )
                 return parsed
-            # Model returned something but it wasn't valid JSON — try next model.
-            log.warning('Gemini: %s returned unparseable output; trying next.', model_name)
+            log.warning('Gemini: %s returned unparseable output.', model_name)
 
-    log.warning('Gemini: all models in the chain failed.')
+    log.warning('Gemini: budget exhausted or all models failed.')
     return None
 
 
-def _try_model(client, types, errors_module, model_name, contents):
-    """Call one model with up to 3 retries on transient errors.
+def _try_model(client, types, errors_module, model_name, contents, deadline):
+    """Call one model with limited retries, respecting an absolute deadline."""
 
-    Returns the response on success, or None if all retries failed.
-    """
-    attempts = 3
+    for attempt in range(ATTEMPTS_PER_MODEL):
+        # Do not start a request we can't finish in time.
+        if time.monotonic() >= deadline - 1.5:
+            log.warning(
+                'Gemini: no time left for %s attempt %d.',
+                model_name, attempt + 1,
+            )
+            return None
 
-    for attempt in range(attempts):
         try:
             response = client.models.generate_content(
                 model=model_name,
@@ -189,33 +210,28 @@ def _try_model(client, types, errors_module, model_name, contents):
             return response
 
         except errors_module.ServerError as exc:
-            # 500/503 — Google's server is busy. Back off and retry.
-            base_wait = (attempt + 1) * 3          # 3, 6, 9 seconds
-            wait = base_wait + random.uniform(0, 1.5)
-
+            # 500/503 — brief backoff, then retry once if budget allows.
+            wait = BASE_WAIT_SECONDS + random.uniform(0, 1.0)
             log.warning(
-                'Gemini model %s returned ServerError (attempt %d/%d): %s. '
-                'Retrying in %.1fs.',
-                model_name, attempt + 1, attempts, str(exc)[:200], wait,
+                'Gemini %s ServerError (attempt %d/%d): %s. '
+                'Backoff %.1fs.',
+                model_name, attempt + 1, ATTEMPTS_PER_MODEL,
+                str(exc)[:200], wait,
             )
-
-            if attempt < attempts - 1:
+            if attempt < ATTEMPTS_PER_MODEL - 1 and time.monotonic() + wait < deadline - 1.5:
                 time.sleep(wait)
             else:
-                log.warning('All retries exhausted for %s; trying next model.', model_name)
                 return None
 
         except errors_module.ClientError as exc:
-            # 4xx — bad request, wrong model name, key revoked, quota exhausted.
-            # Retrying will not help, but the next model in the chain might.
             log.warning(
-                'Gemini model %s returned ClientError: %s. Trying next model.',
+                'Gemini %s ClientError: %s. Moving on.',
                 model_name, str(exc)[:200],
             )
             return None
 
         except Exception:
-            log.exception('Unexpected error calling Gemini model %s', model_name)
+            log.exception('Unexpected error calling %s', model_name)
             return None
 
     return None
