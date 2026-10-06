@@ -1,9 +1,11 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import models, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -11,15 +13,19 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 
+from marketing.models import WithdrawalRequest
 from store.models import Category, Department, Product
 
 from . import ai
-from .forms import VendorProductForm, VendorProfileForm
+from .forms import VendorProductForm, VendorProfileForm, VendorWithdrawalForm
 from .models import Vendor
 
 TRIAL_DAYS = 30
 
 
+# ======================================================================
+# Start / manage vendor
+# ======================================================================
 @login_required
 @require_GET
 def become_vendor(request):
@@ -81,6 +87,9 @@ def send_welcome_email(vendor):
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
 
 
+# ======================================================================
+# Dashboard
+# ======================================================================
 @login_required
 @require_GET
 def dashboard(request):
@@ -119,6 +128,108 @@ def edit_profile(request):
     })
 
 
+# ======================================================================
+# Withdrawals
+# ======================================================================
+@login_required
+def withdraw(request):
+    vendor = get_object_or_404(Vendor, user=request.user)
+
+    available = vendor.balance
+    pending_total = (
+        WithdrawalRequest.objects
+        .filter(
+            vendor=vendor,
+            status__in=[
+                WithdrawalRequest.Status.PENDING,
+                WithdrawalRequest.Status.APPROVED,
+            ],
+        )
+        .aggregate(s=models.Sum('amount'))['s']
+        or Decimal('0.00')
+    )
+
+    if available <= Decimal('0.00'):
+        messages.info(request, 'You have no balance available to withdraw yet.')
+        return redirect('vendors:dashboard')
+
+    initial = {
+        'phone_number': vendor.phone_number,
+        'amount': available,
+    }
+
+    if request.method == 'POST':
+        form = VendorWithdrawalForm(request.POST, max_amount=available)
+        if form.is_valid():
+            amount = form.cleaned_data['amount']
+            phone = form.cleaned_data['phone_number']
+
+            with transaction.atomic():
+                locked = Vendor.objects.select_for_update().get(pk=vendor.pk)
+                if amount > locked.balance:
+                    messages.error(
+                        request,
+                        f'Your withdrawable balance is KES {locked.balance:.2f}.'
+                    )
+                    return render(request, 'vendors/withdraw.html', {
+                        'vendor': vendor,
+                        'form': form,
+                        'available': locked.balance,
+                        'pending_total': pending_total,
+                    })
+
+                locked.balance = locked.balance - amount
+                locked.save(update_fields=['balance'])
+
+                wr = WithdrawalRequest.objects.create(
+                    user=request.user,
+                    vendor=vendor,
+                    phone_number=phone,
+                    amount=amount,
+                )
+
+            try:
+                from marketing.views import send_withdrawal_requested_email
+                send_withdrawal_requested_email(wr)
+            except Exception:
+                pass
+
+            messages.success(
+                request,
+                f'Withdrawal of KES {amount} is now in progress. '
+                f'We will send it to {phone} within 24 hours.'
+            )
+            return redirect('vendors:withdrawal_history')
+    else:
+        form = VendorWithdrawalForm(max_amount=available, initial=initial)
+
+    return render(request, 'vendors/withdraw.html', {
+        'vendor': vendor,
+        'form': form,
+        'available': available,
+        'pending_total': pending_total,
+    })
+
+
+@login_required
+@require_GET
+def withdrawal_history(request):
+    vendor = get_object_or_404(Vendor, user=request.user)
+    withdrawals = (
+        WithdrawalRequest.objects
+        .filter(vendor=vendor)
+        .order_by('-requested_at')
+    )
+    return render(request, 'vendors/withdrawal_history.html', {
+        'vendor': vendor,
+        'withdrawals': withdrawals,
+        'available': vendor.balance,
+    })
+
+
+# ======================================================================
+# Product upload
+# ======================================================================
 @login_required
 @require_GET
 def product_list(request):
@@ -220,6 +331,9 @@ def product_delete(request, product_id):
     return redirect('vendors:product_list')
 
 
+# ======================================================================
+# AI suggest
+# ======================================================================
 @login_required
 @require_POST
 def ai_suggest(request):
