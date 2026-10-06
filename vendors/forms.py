@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 
 from store.models import Category, Department, Product
@@ -65,7 +67,6 @@ class VendorProductForm(forms.ModelForm):
         self.fields['compare_at_price'].required = False
         self.fields['description'].required = False
 
-        # Sensible defaults for new products
         if not self.instance.pk:
             self.fields['stock'].initial = 0
             self.fields['is_active'].initial = True
@@ -116,3 +117,44 @@ class VendorProfileForm(forms.Form):
     description = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}), required=False,
     )
+
+
+class VendorWithdrawalForm(forms.Form):
+    """Vendors withdraw from Vendor.balance. Minimum KES 500."""
+
+    MIN_AMOUNT = 500
+
+    phone_number = forms.RegexField(
+        regex=r'^2547\d{8}$',
+        error_messages={
+            'invalid': 'Enter a Safaricom number in the format 2547XXXXXXXX '
+                       '(e.g. 254712345678).'
+        },
+        label='M-Pesa phone number',
+        widget=forms.TextInput(attrs={'placeholder': '254712345678'}),
+    )
+    amount = forms.DecimalField(
+        min_value=500, max_digits=12, decimal_places=2,
+        label='Amount (KES)',
+        widget=forms.NumberInput(attrs={'step': '1', 'min': '500'}),
+    )
+
+    def __init__(self, *args, max_amount=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_amount = Decimal(str(max_amount))
+        self.fields['amount'].widget.attrs['max'] = str(self.max_amount)
+        self.fields['amount'].help_text = (
+            f'Available to withdraw: KES {self.max_amount:.2f}'
+        )
+
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount < Decimal(self.MIN_AMOUNT):
+            raise forms.ValidationError(
+                f'Minimum withdrawal is KES {self.MIN_AMOUNT}.'
+            )
+        if amount > self.max_amount:
+            raise forms.ValidationError(
+                f'Your withdrawable balance is KES {self.max_amount:.2f}.'
+            )
+        return amount
