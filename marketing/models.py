@@ -208,8 +208,11 @@ class MarketingPayout(models.Model):
 
 
 class WithdrawalRequest(models.Model):
-    """A user's request to withdraw their marketing earnings to a phone
-    number (M-Pesa). Processed manually by an admin."""
+    """A user's request to withdraw their earnings to an M-Pesa number.
+
+    Used by BOTH marketers (via MarketingShare) and vendors (via Vendor).
+    The `vendor` field is set when the request comes from a vendor.
+    Processed manually by an admin."""
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending review'
@@ -220,6 +223,11 @@ class WithdrawalRequest(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='marketing_withdrawals',
+    )
+    vendor = models.ForeignKey(
+        'vendors.Vendor', null=True, blank=True,
+        on_delete=models.CASCADE, related_name='withdrawal_requests',
+        help_text='Set when the request comes from a vendor (seller) rather than a marketer.',
     )
     phone_number = models.CharField(
         max_length=20,
@@ -251,8 +259,7 @@ class WithdrawalRequest(models.Model):
 
 
 def withdrawable_balance(user):
-    """How much this user can still withdraw right now. Credited earnings
-    minus anything already locked in pending/approved/paid requests."""
+    """How much this user can still withdraw from their MARKETING earnings."""
     from django.contrib.auth import get_user_model
     User = get_user_model()
     if isinstance(user, User):
@@ -268,6 +275,7 @@ def withdrawable_balance(user):
         WithdrawalRequest.objects
         .filter(
             user_id=user_id,
+            vendor__isnull=True,
             status__in=[
                 WithdrawalRequest.Status.PENDING,
                 WithdrawalRequest.Status.APPROVED,
