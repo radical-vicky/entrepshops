@@ -130,20 +130,17 @@ class MarketingProofAdmin(admin.ModelAdmin):
         )
 
 
-# ======================================================================
-# Withdrawal requests
-# ======================================================================
 @admin.register(WithdrawalRequest)
 class WithdrawalRequestAdmin(admin.ModelAdmin):
     list_display = (
-        'user', 'amount', 'phone_number', 'status',
+        'user', 'vendor', 'amount', 'phone_number', 'status',
         'requested_at', 'reviewed_at', 'paid_at', 'mpesa_receipt',
     )
-    list_filter = ('status', 'requested_at')
+    list_filter = ('status', 'vendor', 'requested_at')
     search_fields = ('user__username', 'user__email', 'phone_number', 'mpesa_receipt')
-    readonly_fields = ('user', 'amount', 'phone_number', 'requested_at')
+    readonly_fields = ('user', 'vendor', 'amount', 'phone_number', 'requested_at')
     fields = (
-        'user', 'amount', 'phone_number', 'requested_at',
+        'user', 'vendor', 'amount', 'phone_number', 'requested_at',
         'status', 'reviewed_at', 'reviewed_by',
         'paid_at', 'mpesa_receipt', 'admin_note',
     )
@@ -169,6 +166,7 @@ class WithdrawalRequestAdmin(admin.ModelAdmin):
             wr.save(update_fields=['status', 'paid_at', 'reviewed_at', 'reviewed_by'])
 
             try:
+                from .views import send_withdrawal_paid_email
                 send_withdrawal_paid_email(wr)
             except Exception:
                 pass
@@ -177,18 +175,33 @@ class WithdrawalRequestAdmin(admin.ModelAdmin):
 
         self.message_user(request, f'{count} request(s) marked paid.')
 
-    @admin.action(description='Mark selected as REJECTED')
+    @admin.action(description='Mark selected as REJECTED (refund vendor balance)')
     def mark_rejected(self, request, queryset):
-        updated = queryset.filter(status__in=['pending', 'approved']).update(
-            status='rejected',
-            reviewed_at=timezone.now(),
-            reviewed_by=request.user,
+        from django.db import transaction
+
+        count = 0
+        for wr in queryset.filter(status__in=['pending', 'approved']):
+            with transaction.atomic():
+                # Vendor requests lock the money on submission — refund it.
+                if wr.vendor_id:
+                    vendor = wr.vendor
+                    vendor.balance = vendor.balance + wr.amount
+                    vendor.save(update_fields=['balance'])
+
+                wr.status = 'rejected'
+                wr.reviewed_at = timezone.now()
+                wr.reviewed_by = request.user
+                wr.save(update_fields=['status', 'reviewed_at', 'reviewed_by'])
+                count += 1
+
+        self.message_user(
+            request,
+            f'{count} request(s) rejected. Vendor balances refunded.',
         )
-        self.message_user(request, f'{updated} request(s) rejected.')
-
-
 # ======================================================================
-# Payout summary
+# Withdrawal requests
+# ======================================================================
+
 # ======================================================================
 @admin.register(MarketingPayout)
 class MarketingPayoutAdmin(admin.ModelAdmin):
