@@ -14,6 +14,14 @@
         </span>
     </div>
 
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="message {{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
     {% if vendor.on_trial %}
         <div class="vendor-banner vendor-banner-warning">
             <strong>{{ vendor.trial_days_left }} day{{ vendor.trial_days_left|pluralize }} left on your free trial.</strong>
@@ -33,10 +41,11 @@
             <strong>{{ products.count }}</strong>
             <span>products listed</span>
         </div>
-        <div class="vendor-stat">
+
+        <a href="{% url 'vendors:withdraw' %}" class="vendor-stat vendor-stat-clickable">
             <strong>KES {{ vendor.balance }}</strong>
-            <span>balance</span>
-        </div>
+            <span>balance · click to withdraw</span>
+        </a>
     </div>
 
     <div class="vendor-actions">
@@ -50,6 +59,11 @@
         <a href="{% url 'vendors:edit_profile' %}" class="btn btn-outline btn-small">
             Edit profile
         </a>
+        {% if vendor.balance > 0 %}
+            <a href="{% url 'vendors:withdraw' %}" class="btn btn-small">
+                Withdraw balance
+            </a>
+        {% endif %}
     </div>
 
     {% if products %}
