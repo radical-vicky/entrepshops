@@ -379,5 +379,10 @@ REST_FRAMEWORK = {
 # Google Gemini — AI product suggestions for vendors
 # Get a free API key at https://aistudio.google.com/app/apikey
 # ---------------------------------------------------------------------------
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-flash-latest')
+# ---------------------------------------------------------------------------
+# xAI Grok — AI product suggestions for vendors
+# Get an API key at https://console.x.ai
+# ---------------------------------------------------------------------------
+XAI_API_KEY = os.environ.get('XAI_API_KEY', '')
+XAI_MODEL = os.environ.get('XAI_MODEL', 'grok-4.6')
+XAI_BASE_URL = os.environ.get('XAI_BASE_URL', 'https://api.x.ai/v1')
