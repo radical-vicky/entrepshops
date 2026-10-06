@@ -2,12 +2,14 @@
 
 Uses the new `google-genai` SDK. One function: `suggest_product(text, image_file=None)`.
 
-Includes retry-on-503 and fallback model support so a temporary Google
-spike doesn't break the vendor's add-product flow.
+Tries a chain of models so a single overloaded or retired model doesn't
+break the vendor's add-product flow. Retries transient errors (503/500)
+with jittered backoff before moving to the next model.
 """
 
 import json
 import logging
+import random
 import time
 
 from django.conf import settings
@@ -41,20 +43,23 @@ Rules:
 """
 
 
-# Try primary model, then these fallbacks in order.
-# Google rotates models frequently; if one gets retired or is overloaded,
-# the next in the list is tried automatically.
+# Model chain — the primary model from settings is tried first, then these
+# in order. Google rotates model names frequently; if one gets retired or
+# is overloaded, the next in the list takes over.
+#
+# `gemini-flash-latest` is a stable alias that always points at whatever
+# Flash model Google considers current, so it's the safest default.
 DEFAULT_MODEL_CHAIN = [
-    'gemini-3.8-flash',
+    'gemini-flash-latest',
     'gemini-2.5-flash',
     'gemini-2.0-flash',
-    'gemini-flash-latest',
+    'gemini-3.8-flash',
 ]
 
 
 def _model_chain():
     """Return the ordered list of models to try."""
-    primary = getattr(settings, 'GEMINI_MODEL', '') or 'gemini-3.8-flash'
+    primary = getattr(settings, 'GEMINI_MODEL', '') or 'gemini-flash-latest'
     chain = [primary] + [m for m in DEFAULT_MODEL_CHAIN if m != primary]
     return chain
 
@@ -92,7 +97,7 @@ def suggest_product(text, image_file=None):
     """Call Gemini. Returns a dict, or None on any failure.
 
     Tries each model in the chain. Retries up to 3 times per model on
-    transient errors (503, 500, rate limits).
+    transient errors (503, 500) with jittered backoff before moving on.
     """
     api_key = getattr(settings, 'GEMINI_API_KEY', '')
     if not api_key:
@@ -141,8 +146,10 @@ def suggest_product(text, image_file=None):
         log.exception('Could not create Gemini client')
         return None
 
-    # Try every model in the chain.
-    for model_name in _model_chain():
+    chain = _model_chain()
+    log.info('Gemini: trying model chain %s', chain)
+
+    for model_name in chain:
         response = _try_model(
             client=client,
             types=types,
@@ -153,10 +160,12 @@ def suggest_product(text, image_file=None):
         if response is not None:
             parsed = _parse_response(response)
             if parsed is not None:
+                log.info('Gemini: success with %s', model_name)
                 return parsed
             # Model returned something but it wasn't valid JSON — try next model.
-            continue
+            log.warning('Gemini: %s returned unparseable output; trying next.', model_name)
 
+    log.warning('Gemini: all models in the chain failed.')
     return None
 
 
@@ -178,27 +187,33 @@ def _try_model(client, types, errors_module, model_name, contents):
                 ),
             )
             return response
+
         except errors_module.ServerError as exc:
             # 500/503 — Google's server is busy. Back off and retry.
-            wait = (attempt + 1) * 2  # 2, 4, 6 seconds
+            base_wait = (attempt + 1) * 3          # 3, 6, 9 seconds
+            wait = base_wait + random.uniform(0, 1.5)
+
             log.warning(
                 'Gemini model %s returned ServerError (attempt %d/%d): %s. '
-                'Retrying in %ds.',
+                'Retrying in %.1fs.',
                 model_name, attempt + 1, attempts, str(exc)[:200], wait,
             )
+
             if attempt < attempts - 1:
                 time.sleep(wait)
             else:
                 log.warning('All retries exhausted for %s; trying next model.', model_name)
                 return None
+
         except errors_module.ClientError as exc:
             # 4xx — bad request, wrong model name, key revoked, quota exhausted.
-            # Retrying will not help, but try the next model in the chain.
+            # Retrying will not help, but the next model in the chain might.
             log.warning(
                 'Gemini model %s returned ClientError: %s. Trying next model.',
                 model_name, str(exc)[:200],
             )
             return None
+
         except Exception:
             log.exception('Unexpected error calling Gemini model %s', model_name)
             return None
