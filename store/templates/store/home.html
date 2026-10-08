@@ -8,7 +8,7 @@
     {% for promo in hero_posters %}
     <a href="{{ promo.cta_url|default:'#shop' }}"
        class="hero-poster {% if forloop.first %}is-active{% endif %}"
-       data-tone="{{ promo.tone|default:'green' }}">
+       data-tone="{{ promo.tone|default:'orange' }}">
         <div class="hero-poster-media">
             {% if promo.media_type == 'video' and promo.video_source %}
                 <video autoplay muted loop playsinline preload="metadata">
@@ -17,7 +17,6 @@
             {% elif promo.image %}
                 <img src="{{ promo.image.url }}" alt="{{ promo.title }}">
             {% endif %}
-            <div class="hero-poster-scrim"></div>
         </div>
 
         <div class="hero-poster-body">
@@ -43,6 +42,19 @@
     {% endfor %}
 
     {% if hero_posters|length > 1 %}
+        <button type="button" class="hero-poster-arrow hero-poster-arrow--prev"
+                id="hero-prev" aria-label="Previous slide">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button type="button" class="hero-poster-arrow hero-poster-arrow--next"
+                id="hero-next" aria-label="Next slide">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
         <div class="hero-poster-dots" id="hero-dots">
             {% for promo in hero_posters %}
                 <button type="button"
@@ -282,7 +294,7 @@
     initSlider({
         container: document.getElementById('hero'),
         slideSelector: '.hero-poster', dotSelector: '.hero-poster-dot',
-        prevId: null, nextId: null,
+        prevId: 'hero-prev', nextId: 'hero-next',
         activeClass: 'is-active', autoplayMs: 6500,
     });
 
