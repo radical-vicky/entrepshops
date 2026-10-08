@@ -8,7 +8,7 @@
     {% for promo in hero_posters %}
     <a href="{{ promo.cta_url|default:'#shop' }}"
        class="hero-poster {% if forloop.first %}is-active{% endif %}"
-       data-tone="{{ promo.tone }}">
+       data-tone="{{ promo.tone|default:'green' }}">
         <div class="hero-poster-media">
             {% if promo.media_type == 'video' and promo.video_source %}
                 <video autoplay muted loop playsinline preload="metadata">
