@@ -56,7 +56,8 @@ class ProductOfferInline(admin.TabularInline):
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'department', 'category', 'vendor', 'price_range_display',
-        'stock', 'availability', 'is_active', 'is_approved', 'is_featured',
+        'stock', 'availability', 'is_active', 'is_approved',
+        'is_featured', 'hero_slide_preview',
     )
     list_filter = (
         'department', 'category', 'vendor', 'availability', 'is_alcoholic',
@@ -64,7 +65,7 @@ class ProductAdmin(admin.ModelAdmin):
     )
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
-    actions = ['approve_products']
+    actions = ['approve_products', 'feature_in_hero', 'unfeature_from_hero']
     inlines = [ProductVariantInline, ProductImageInline, ProductOfferInline]
     fieldsets = (
         (None, {
@@ -87,7 +88,11 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('Homepage hero slider', {
             'fields': ('is_featured', 'hero_tagline', 'hero_headline', 'hero_description'),
-            'classes': ('collapse',),
+            'description': (
+                'Tick "is featured" to put this product in the rotating hero on '
+                'the homepage. Tagline, headline and description all fall back '
+                'to sensible defaults if left blank.'
+            ),
         }),
     )
 
@@ -98,10 +103,33 @@ class ProductAdmin(admin.ModelAdmin):
         return f'KES {lo}' if lo == hi else f'KES {lo}–{hi}'
     price_range_display.short_description = 'Price'
 
+    def hero_slide_preview(self, obj):
+        if not obj.is_featured:
+            return '—'
+        headline = obj.hero_headline or obj.name
+        tagline = obj.hero_tagline or 'Featured'
+        return format_html(
+            '<span style="display:inline-block;padding:2px 8px;border-radius:10px;'
+            'background:#eef7ee;color:#256b2c;font-size:11px;">{} · {}</span>',
+            tagline, headline,
+        )
+    hero_slide_preview.short_description = 'Hero slide'
+    hero_slide_preview.allow_tags = True
+
     @admin.action(description='Approve selected products (make visible in the shop)')
     def approve_products(self, request, queryset):
         updated = queryset.update(is_approved=True)
         self.message_user(request, f'{updated} product(s) approved.')
+
+    @admin.action(description='Feature selected products in the homepage hero')
+    def feature_in_hero(self, request, queryset):
+        updated = queryset.update(is_featured=True)
+        self.message_user(request, f'{updated} product(s) added to the homepage hero.')
+
+    @admin.action(description='Remove selected products from the homepage hero')
+    def unfeature_from_hero(self, request, queryset):
+        updated = queryset.update(is_featured=False)
+        self.message_user(request, f'{updated} product(s) removed from the homepage hero.')
 
 
 @admin.register(BundleOffer)
