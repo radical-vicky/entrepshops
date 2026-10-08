@@ -13,6 +13,18 @@ from .models import (
 )
 
 
+# Maps each Department.theme into one of the three hero tones the CSS
+# understands: green / orange / gold. This keeps the hero looking correct
+# regardless of how many department themes you add later.
+_THEME_TO_HERO_TONE = {
+    'green':   'green',
+    'amber':   'gold',
+    'blue':    'green',
+    'crimson': 'orange',
+    'violet':  'orange',
+}
+
+
 def _safe_next(request, fallback):
     """Validate ?next= so we never redirect off-site."""
     nxt = request.POST.get('next') or request.GET.get('next')
@@ -51,7 +63,10 @@ class _HeroSlide:
         self.description = product.hero_description or product.description
         self.cta_label = 'Shop now'
         self.cta_url = product.get_absolute_url()
-        self.tone = product.department.theme if product.department else 'green'
+
+        theme = product.department.theme if product.department else 'green'
+        self.tone = _THEME_TO_HERO_TONE.get(theme, 'orange')
+
         self.media_type = 'image'
         self.image = product.primary_image
         self.video_source = None
@@ -131,10 +146,9 @@ def home(request):
             'dept_theme': selected_department.theme if selected_department else '',
         })
 
-    # ---- Hero slider: featured PRODUCTS (RadicalDrinkShop-style) ----
-    # This is what the homepage hero reads from. Tick "is_featured" on a
-    # product in admin and (optionally) fill in hero_tagline / hero_headline
-    # / hero_description, and it appears in the rotating hero.
+    # ---- Hero slider: featured PRODUCTS ----
+    # Tick "is_featured" on a product in admin and (optionally) fill in
+    # hero_tagline / hero_headline / hero_description to control the slide.
     featured_products = (
         Product.objects
         .visible()
