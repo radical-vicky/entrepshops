@@ -383,6 +383,6 @@ REST_FRAMEWORK = {
 # xAI Grok — AI product suggestions for vendors
 # Get an API key at https://console.x.ai
 # ---------------------------------------------------------------------------
-XAI_API_KEY = os.environ.get('XAI_API_KEY', '')
-XAI_MODEL = os.environ.get('XAI_MODEL', 'grok-4.6')
-XAI_BASE_URL = os.environ.get('XAI_BASE_URL', 'https://api.x.ai/v1')
+GEMINI_MODEL=os.environ.get('GEMINI_MODEL', 'gemini-3.8-flash')
+GROQ_MODEL=os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile')
+GROQ_VISION_MODEL=os.environ.get('GROQ_VISION_MODEL', 'qwen/qwen3.8-27b')
