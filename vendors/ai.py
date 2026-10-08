@@ -1,7 +1,7 @@
 """AI client for product suggestions with graceful provider fallback.
 
 Chain:
-  1. Google Gemini (gemini-2.0-flash)  — free tier, best quality
+  1. Google Gemini (gemini-3.8-flash)       — free tier, best quality
   2. Groq          (llama-3.3-70b-versatile) — free tier, fastest fallback
 
 If a provider fails (rate limit, auth, timeout, unparseable response),
@@ -110,7 +110,9 @@ def _call_gemini(prompt, image_file, timeout):
         raise RuntimeError('GEMINI_API_KEY not configured')
 
     genai.configure(api_key=api_key)
-    model_name = getattr(settings, 'GEMINI_MODEL', '') or 'gemini-2.0-flash'
+    # gemini-3.8-flash is the current free-tier model.
+    # Older IDs (gemini-2.0-flash, gemini-1.5-flash) have been retired.
+    model_name = getattr(settings, 'GEMINI_MODEL', '') or 'gemini-3.8-flash'
     model = genai.GenerativeModel(model_name)
 
     # Gemini accepts text + inline image parts.
@@ -158,6 +160,8 @@ def _call_groq(prompt, image_file, timeout):
     if not api_key:
         raise RuntimeError('GROQ_API_KEY not configured')
 
+    # Text-only model: llama-3.3-70b-versatile (fast, free, widely available)
+    # Vision model: qwen/qwen3.8-27b (supports images, free tier)
     model_name = getattr(settings, 'GROQ_MODEL', '') or 'llama-3.3-70b-versatile'
 
     client = Groq(api_key=api_key, timeout=timeout)
@@ -167,17 +171,17 @@ def _call_groq(prompt, image_file, timeout):
         {'role': 'user', 'content': prompt},
     ]
 
-    # Groq's vision-capable models differ from the default. If an image is
-    # supplied, base64-encode it into the message. Text-only is more common.
+    # If an image is supplied, swap to a vision-capable model and attach it.
     if image_file:
         try:
             image_file.seek(0)
             image_bytes = image_file.read()
             mime_type = getattr(image_file, 'content_type', 'image/jpeg') or 'image/jpeg'
             b64 = base64.b64encode(image_bytes).decode('ascii')
-            # Groq vision model — swap to a vision-capable one when needed.
-            model_name = getattr(settings, 'GROQ_VISION_MODEL', '') or \
-                'meta-llama/llama-4-scout-17b-16e-instruct'
+            model_name = (
+                getattr(settings, 'GROQ_VISION_MODEL', '')
+                or 'qwen/qwen3.8-27b'
+            )
             messages[1] = {
                 'role': 'user',
                 'content': [
