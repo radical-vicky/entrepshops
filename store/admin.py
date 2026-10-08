@@ -114,7 +114,6 @@ class ProductAdmin(admin.ModelAdmin):
             tagline, headline,
         )
     hero_slide_preview.short_description = 'Hero slide'
-    hero_slide_preview.allow_tags = True
 
     @admin.action(description='Approve selected products (make visible in the shop)')
     def approve_products(self, request, queryset):
