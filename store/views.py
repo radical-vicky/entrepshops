@@ -31,6 +31,33 @@ def _parse_quantity(request, default=1, minimum=1, maximum=999):
     return max(minimum, min(maximum, q))
 
 
+class _HeroSlide:
+    """Lightweight wrapper so featured Products can be rendered by the same
+    template as Promotion-backed hero slides. Exposes the attributes the
+    template expects: title, kicker, description, cta_label, cta_url, tone,
+    media_type, image, video_source, voucher_code.
+    """
+
+    __slots__ = (
+        'title', 'kicker', 'description', 'cta_label', 'cta_url',
+        'tone', 'media_type', 'image', 'video_source', 'voucher_code',
+        'product',
+    )
+
+    def __init__(self, product):
+        self.product = product
+        self.title = product.hero_headline or product.name
+        self.kicker = product.hero_tagline or 'Featured'
+        self.description = product.hero_description or product.description
+        self.cta_label = 'Shop now'
+        self.cta_url = product.get_absolute_url()
+        self.tone = product.department.theme if product.department else 'green'
+        self.media_type = 'image'
+        self.image = product.primary_image
+        self.video_source = None
+        self.voucher_code = ''
+
+
 @require_GET
 def home(request):
     department_slug = request.GET.get('department')
@@ -104,20 +131,34 @@ def home(request):
             'dept_theme': selected_department.theme if selected_department else '',
         })
 
-    # Hero posters: driven by Promotions, not products.
-    hero_posters = list(
-        Promotion.objects
-        .filter(is_active=True)
-        .exclude(media_type='image', image='')
-        .order_by('sort_order', '-created_at')[:5]
+    # ---- Hero slider: featured PRODUCTS (RadicalDrinkShop-style) ----
+    # This is what the homepage hero reads from. Tick "is_featured" on a
+    # product in admin and (optionally) fill in hero_tagline / hero_headline
+    # / hero_description, and it appears in the rotating hero.
+    featured_products = (
+        Product.objects
+        .visible()
+        .filter(is_featured=True)
+        .select_related('category', 'department')
+        .prefetch_related('images', 'variants')
+        .order_by('-created_at')[:5]
     )
+    hero_posters = [_HeroSlide(p) for p in featured_products]
 
-    # Promo carousel: any other active promotions, excluding the ones in the hero.
-    hero_ids = [p.pk for p in hero_posters]
+    # Fallback: if no products are marked featured, fall back to active
+    # Promotions so the hero isn't completely empty on a fresh install.
+    if not hero_posters:
+        hero_posters = list(
+            Promotion.objects
+            .filter(is_active=True)
+            .exclude(media_type='image', image='')
+            .order_by('sort_order', '-created_at')[:5]
+        )
+
+    # ---- Deals carousel: any other active Promotions ----
     promotions = list(
         Promotion.objects
         .filter(is_active=True)
-        .exclude(pk__in=hero_ids)
         .order_by('sort_order', '-created_at')[:6]
     )
 
