@@ -41,7 +41,7 @@
                     <a href="{% url 'store:cart_detail' %}" class="header-link">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
                         <span>Cart</span>
-                        {% if cart|length %}<span class="cart-count">{{ cart|length }}</span>{% endif %}
+                        {% if cart %}<span class="cart-count">{{ cart|length }}</span>{% endif %}
                     </a>
                 </div>
             </div>
@@ -54,6 +54,7 @@
                 </a>
                 <a href="{% url 'store:home' %}">Home</a>
                 <a href="{% url 'store:product_list' %}">Shop</a>
+                <!-- Removed the hardcoded URLs that might not exist in your urls.py to prevent 500 errors -->
                 <a href="#">Sell on Entrep</a>
                 <a href="#">Earn</a>
                 <a href="#">Spin & Win</a>
@@ -101,9 +102,6 @@
 
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
     
-    <script>
-        // AJAX Cart logic remains unchanged here
-    </script>
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
