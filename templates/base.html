@@ -16,26 +16,34 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
-<body data-dept="{{ current_department.theme|default:'amber' }}">
+<body data-dept="{{ current_department.theme|default:'amber' }}" {% if active_background %}style="background-image: url('{{ active_background.image.url }}'); background-size: cover; background-attachment: fixed; background-position: center;"{% endif %}>
     {% include "includes/icons.html" %}
 
     <!-- HEADER -->
     <header class="site-header">
         <div class="container header-inner">
             <a href="{% url 'store:home' %}" class="logo">
-                <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-glass"/></svg>
-                <span>EntrepShop</span>
+                {% if active_logo %}
+                    <img src="{{ active_logo.image.url }}" alt="EntrepShop" style="height: 32px; width: auto; object-fit: contain;">
+                {% else %}
+                    <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-glass"/></svg>
+                    <span>EntrepShop</span>
+                {% endif %}
             </a>
 
             <div class="header-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input type="text" placeholder="Search for products..." name="q" form="search-form">
+                <input type="text" placeholder="Search for products, brands and more..." name="q" form="search-form">
             </div>
 
             <div class="header-actions">
                 {% if user.is_authenticated %}
                     <a href="{% url 'accounts:profile' %}" class="header-icon-btn" title="Profile">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                        {% else %}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {% endif %}
                     </a>
                 {% else %}
                     <a href="{% url 'account_login' %}" class="header-icon-btn" title="Login">
@@ -92,8 +100,10 @@
         {% endif %}
     </nav>
 
+    <!-- TOASTS -->
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
 
+    <script src="{% static 'js/lightbox.js' %}" defer></script>
     <script>
         // Toast Function
         function showToast(text, tone) {
@@ -128,8 +138,8 @@
                 showToast(data.message, data.ok ? 'success' : 'error');
                 
                 if (data.ok && typeof data.cart_count === 'number') {
-                    const cartLink = document.querySelectorAll('.header-icon-btn[title="Cart"]');
-                    cartLink.forEach(link => {
+                    const cartLinks = document.querySelectorAll('.header-icon-btn[title="Cart"]');
+                    cartLinks.forEach(link => {
                         let countEl = link.querySelector('.cart-count');
                         if (!countEl) {
                             countEl = document.createElement('span');
