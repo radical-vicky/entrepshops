@@ -4,25 +4,23 @@
 {% block content %}
 <div class="container" style="padding-top: 24px;">
 
-    <!-- 1. HERO BANNER -->
-    <section class="hero-banner">
+    <!-- 1. HERO BANNER (Fixed for Mobile & Desktop) -->
+    <section class="hero-banner" style="background: var(--bg-surface);">
+        <!-- Background decorative gradient (No more muddy image) -->
         <div class="hero-bg"></div>
-        {% if active_background %}
-            <img src="{{ active_background.image.url }}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.2; z-index:0;">
-        {% endif %}
         
-        <div class="hero-content">
+        <div class="hero-content" style="position: relative; z-index: 1;">
             <span class="hero-kicker">Welcome to EntrepShop</span>
             <h1 class="hero-title">Your One-Stop<br><span>Online Store</span></h1>
             <p class="hero-sub">Great products. Amazing deals. Fast delivery.<br>Shop smarter, live better.</p>
-            <a href="{% url 'store:product_list' %}" class="btn">
+            <a href="{% url 'store:product_list' %}" class="btn" style="padding: 14px 28px;">
                 Shop Now 
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </a>
         </div>
     </section>
 
-    <!-- 2. TRUST BADGES (Hero bottom) -->
+    <!-- 2. TRUST BADGES (Moved below hero for mobile cleanliness) -->
     <div class="hero-trust">
         <div class="trust-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -38,7 +36,7 @@
         </div>
     </div>
 
-    <!-- 3. CATEGORIES (Icon Strip) -->
+    <!-- 3. CATEGORIES (Fixed for mobile grid) -->
     <div class="category-strip">
         {% for dept in departments %}
             <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="category-card">
@@ -56,15 +54,17 @@
 
     <!-- 4. MAIN SPLIT: SPIN WHEEL + FEATURED PRODUCTS -->
     <div class="home-split">
-        <!-- Spin Card (Left) -->
+        <!-- Spin Card -->
         <div class="spin-card">
             <img src="https://via.placeholder.com/160x160/1A1208/F59E0B?text=SPIN" alt="Spin Wheel" class="spin-wheel-img">
-            <h3>SPIN & <span>WIN</span></h3>
-            <p>Amazing rewards await!</p>
-            <a href="{% url 'accounts:spin' %}" class="btn" style="width: 100%;">Spin Now</a>
+            <div>
+                <h3>SPIN & <span>WIN</span></h3>
+                <p>Amazing rewards await!</p>
+                <a href="{% url 'accounts:spin' %}" class="btn" style="width: 100%;">Spin Now</a>
+            </div>
         </div>
 
-        <!-- Featured Products (Right) -->
+        <!-- Featured Products -->
         <div>
             <div class="section-header">
                 <h2>Featured Products</h2>
@@ -72,23 +72,26 @@
             </div>
             
             <div class="product-grid">
-                {% for product in featured_products|slice:":4" %}
+                <!-- Using 'products' instead of 'featured_products' to match your view logic -->
+                {% for product in products|slice:":4" %}
                     {% include "store/_product_card.html" with product=product %}
+                {% empty %}
+                    <p style="color: var(--text-muted);">No products found.</p>
                 {% endfor %}
             </div>
         </div>
     </div>
 
     <!-- 5. PAY LATER BANNER -->
-    <div class="pay-later-banner">
+    <div class="pay-later-banner" style="flex-direction: column; align-items: flex-start; gap: 16px;">
         <div>
             <h3>Shop Now, Pay Later</h3>
             <p>Flexible payment options for your convenience.</p>
         </div>
-        <div style="display: flex; gap: 16px;">
-            <span style="background: #1A1A1A; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 700; color: #4CAF50;">M-PESA</span>
-            <span style="background: #1A1A1A; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 700; color: #1434CB;">VISA</span>
-            <span style="background: #1A1A1A; padding: 8px 16px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 700; color: #EB001B;">Mastercard</span>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span style="background: #1A1A1A; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 700; color: #4CAF50; font-size: 0.8rem;">M-PESA</span>
+            <span style="background: #1A1A1A; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 700; color: #1434CB; font-size: 0.8rem;">VISA</span>
+            <span style="background: #1A1A1A; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 700; color: #EB001B; font-size: 0.8rem;">Mastercard</span>
         </div>
     </div>
 
