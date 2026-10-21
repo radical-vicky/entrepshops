@@ -4,9 +4,9 @@
 
 {% block content %}
 
+<!-- 1. HERO BANNER -->
 {% if hero_posters %}
-<!-- HERO BANNER -->
-<section class="hero-banner" id="hero">
+<section class="hero-banner" id="hero" style="position: relative; overflow: hidden;">
     {% for promo in hero_posters %}
     <a href="{{ promo.cta_url|default:'/products/' }}"
        class="hero-slide {% if forloop.first %}is-active{% endif %}"
@@ -33,16 +33,18 @@
                 </p>
             {% endif %}
 
-            <span class="btn">
-                {{ promo.cta_label|default:'Shop now' }}
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </span>
-            
-            {% if promo.voucher_code %}
-                <span style="display: inline-block; margin-left: 12px; border: 1px dashed var(--border-strong); padding: 10px 16px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85rem;">
-                    Code: <strong style="color: var(--brand-amber);">{{ promo.voucher_code }}</strong>
+            <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <span class="btn">
+                    {{ promo.cta_label|default:'Shop now' }}
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                 </span>
-            {% endif %}
+                
+                {% if promo.voucher_code %}
+                    <span style="border: 1px dashed var(--border-strong); padding: 10px 16px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85rem;">
+                        Code: <strong style="color: var(--brand-amber);">{{ promo.voucher_code }}</strong>
+                    </span>
+                {% endif %}
+            </div>
         </div>
     </a>
     {% endfor %}
@@ -58,7 +60,7 @@
 </section>
 {% endif %}
 
-<!-- MARQUEE -->
+<!-- 2. MARQUEE -->
 <div class="marquee" aria-hidden="true" style="border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 12px 0; overflow: hidden; margin-bottom: 32px;">
     <div class="marquee-track" style="display: flex; gap: 48px; white-space: nowrap; animation: marquee 26s linear infinite;">
         <span>Thousands of products, one shop</span>
@@ -76,7 +78,7 @@
 
 <div class="container">
 
-    <!-- DEPARTMENTS -->
+    <!-- 3. DEPARTMENTS -->
     <section id="departments">
         <div class="dept-grid">
             <a href="{% url 'store:product_list' %}" class="dept-card {% if not selected_department %}active{% endif %}">
@@ -94,7 +96,42 @@
         </div>
     </section>
 
-    <!-- PRODUCTS GRID (Pulls directly from your original view logic) -->
+    <!-- 4. PROMOTIONS / VOUCHERS (If they exist) -->
+    {% if promotions %}
+    <section style="margin-bottom: 48px;">
+        <div class="section-head">
+            <h3>Deals worth clipping</h3>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">Codes apply automatically at checkout</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            {% for promo in promotions %}
+            <a href="{{ promo.cta_url|default:'/products/' }}" style="background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-md); overflow: hidden; display: flex; flex-direction: column; text-decoration: none; color: inherit; transition: border-color 0.2s;">
+                {% if promo.image %}
+                    <div style="aspect-ratio: 16/9; overflow: hidden; background: var(--bg-elevated);">
+                        <img src="{{ promo.image.url }}" alt="{{ promo.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                {% endif %}
+                <div style="padding: 20px; display: flex; flex-direction: column; flex: 1;">
+                    <span style="font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">{{ promo.kicker }}</span>
+                    <h4 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 8px;">{{ promo.title }}</h4>
+                    {% if promo.description %}
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; flex: 1;">{{ promo.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 16px; border-top: 1px dashed var(--border-light);">
+                        <span style="color: var(--brand-amber); font-weight: 600; font-size: 0.9rem;">{{ promo.cta_label|default:'Shop now' }}</span>
+                        {% if promo.voucher_code %}
+                            <span style="font-family: var(--font-mono); font-size: 0.85rem; background: var(--bg-elevated); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-strong);">{{ promo.voucher_code }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- 5. PRODUCTS GRID -->
     <section id="browse-all">
         <div class="section-head">
             <h3>{% if search_query %}Results for "{{ search_query }}"{% elif selected_category %}{{ selected_category.name }}{% elif selected_department %}{{ selected_department.name }}{% else %}All Products{% endif %}</h3>
@@ -133,7 +170,7 @@
 
 <script>
 (function () {
-    // 1. Hero Slider Logic (Adapted for your original JS)
+    // 1. Hero Slider Logic
     const slides = document.querySelectorAll('.hero-slide');
     if (slides.length > 1) {
         let current = 0;
@@ -180,10 +217,8 @@
                 const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
                 const data = await res.json();
                 
-                // Append new products
                 grid.insertAdjacentHTML('beforeend', data.grid_html);
                 
-                // Update button
                 if (data.has_next) {
                     loadMoreBtn.href = `?page=${data.next_page}{% if selected_department %}&department={{ selected_department.slug }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}`;
                     loadMoreBtn.textContent = 'Load More Products';
