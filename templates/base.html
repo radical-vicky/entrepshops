@@ -5,107 +5,55 @@
     <meta charset="UTF-8">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Entrep - Shop{% endblock %}</title>
+    <title>{% block title %}EntrepShop{% endblock %}</title>
     <link rel="icon" href="{% static 'images/favicon.png' %}" sizes="any">
-    <link rel="preconnect" href="https://api.fontshare.com">
-    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700,900&display=swap">
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
-
-    {# Runs before first paint — sets data-theme so there's no flash of the wrong theme. #}
-    <script>
-        (function () {
-            try {
-                var saved = localStorage.getItem('theme');           // 'dark' | 'light' | null
-                var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-                var theme = saved || (prefersLight ? 'light' : 'dark');
-                document.documentElement.setAttribute('data-theme', theme);
-            } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
     {% block extra_head %}{% endblock %}
 </head>
-<body{% if current_department %} data-dept="{{ current_department.theme }}"{% endif %}{% if active_background %} style="--site-bg-image:url('{{ active_background.image.url }}');--scrim-alpha:0.35"{% endif %}>
+<body data-dept="{{ current_department.theme|default:'amber' }}">
     {% include "includes/icons.html" %}
 
+    <!-- HEADER -->
     <header class="site-header">
         <div class="container header-inner">
             <a href="{% url 'store:home' %}" class="logo">
-                {% if active_logo %}
-                    <img src="{{ active_logo.image.url }}" alt="Entrep - Shop" class="logo-image">
-                    <span class="logo-stack">
-                        <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
-                        <span class="logo-tagline">Shop · Save · Grow</span>
-                    </span>
-                {% else %}
-                    <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
-                    <span class="logo-stack">
-                        <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
-                        <span class="logo-tagline">Shop · Save · Grow</span>
-                    </span>
-                {% endif %}
+                <svg class="logo-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><use href="#icon-glass"/></svg>
+                <span>EntrepShop</span>
             </a>
 
-            <nav class="main-nav">
-                <a href="{% url 'store:product_list' %}">Shop</a>
+            <div class="header-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" placeholder="Search for products..." name="q" form="search-form">
+            </div>
 
-                {% if not user.is_authenticated or not user.vendor_profile %}
-                    <a href="{% url 'vendors:become_vendor' %}">Sell on Entrep</a>
-                {% endif %}
-
-                <a href="{% url 'careers:list' %}">Careers</a>
-
+            <div class="header-actions">
                 {% if user.is_authenticated %}
-                    {% if user.vendor_profile %}
-                        <a href="{% url 'vendors:dashboard' %}"><svg><use href="#icon-gift"/></svg>My Shop</a>
-                    {% endif %}
-                    <a href="{% url 'orders:order_history' %}"><svg><use href="#icon-order"/></svg>Orders</a>
-                    <a href="{% url 'store:address_list' %}"><svg><use href="#icon-pin"/></svg>Addresses</a>
-                    <a href="{% url 'marketing:list' %}"><svg><use href="#icon-share"/></svg>Earn</a>
-                    <a href="{% url 'sourcing:request_list' %}"><svg><use href="#icon-truck"/></svg>Import</a>
-                    <a href="{% url 'marketing:withdrawals' %}"><svg><use href="#icon-cash"/></svg>Withdraw</a>
-                    <a href="{% url 'accounts:spin' %}"><svg><use href="#icon-gift"/></svg>Spin</a>
-                    {% if user.rider_profile %}
-                        <a href="{% url 'orders:rider_dashboard' %}"><svg><use href="#icon-truck"/></svg>Rider</a>
-                    {% endif %}
-                    <a href="{% url 'accounts:profile' %}" class="nav-avatar-link">
-                        {% if user.profile.avatar %}
-                            <img src="{{ user.profile.avatar.url }}" alt="" class="nav-avatar">
-                        {% else %}
-                            <svg><use href="#icon-user"/></svg>
-                        {% endif %}
-                        {{ user.username }}
+                    <a href="{% url 'accounts:profile' %}" class="header-icon-btn" title="Profile">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </a>
-                    <a href="{% url 'account_logout' %}">Logout</a>
                 {% else %}
-                    <a href="{% url 'account_login' %}">Login</a>
-                    <a href="{% url 'account_signup' %}">Register</a>
+                    <a href="{% url 'account_login' %}" class="header-icon-btn" title="Login">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                    </a>
                 {% endif %}
-
-                <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light">
-                    <svg class="theme-toggle-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="4"/>
-                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-                    </svg>
-                    <svg class="theme-toggle-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
-                </button>
-
-                <a href="{% url 'store:cart_detail' %}" class="cart-link">
-                    <svg><use href="#icon-cart"/></svg>
-                    Cart{% if cart|length %}<span class="count">{{ cart|length }}</span>{% endif %}
+                
+                <a href="{% url 'store:cart_detail' %}" class="header-icon-btn" title="Cart">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    {% if cart|length %}<span class="cart-count">{{ cart|length }}</span>{% endif %}
                 </a>
-            </nav>
+            </div>
         </div>
     </header>
 
+    <!-- MAIN CONTENT -->
     <main>
-        <div class="container">
+        <div class="container" style="margin-top: 24px;">
             {% if messages %}
                 <ul class="messages">
                     {% for message in messages %}
@@ -117,46 +65,37 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="site-footer">
-        <div class="container">
-            <span>Entrep - Shop &copy; {% now "Y" %} — quality products, delivered to your door.</span>
-            <span><a href="{% url 'store:product_list' %}">Shop</a> &nbsp;&middot;&nbsp; <a href="{% url 'store:address_list' %}">Delivery</a></span>
-        </div>
-    </footer>
+    <!-- MOBILE BOTTOM NAV -->
+    <nav class="mobile-bottom-nav">
+        <a href="{% url 'store:home' %}" class="mobile-nav-item {% if request.path == '/' %}active{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+        </a>
+        <a href="{% url 'store:product_list' %}" class="mobile-nav-item {% if 'products' in request.path %}active{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Categories
+        </a>
+        <a href="{% url 'store:cart_detail' %}" class="mobile-nav-item {% if 'cart' in request.path %}active{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Cart
+        </a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'accounts:profile' %}" class="mobile-nav-item {% if 'profile' in request.path %}active{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+        </a>
+        {% else %}
+        <a href="{% url 'account_login' %}" class="mobile-nav-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Log In
+        </a>
+        {% endif %}
+    </nav>
 
     <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
 
-    <script src="{% static 'js/lightbox.js' %}" defer></script>
-
     <script>
-        (function () {
-            const revealEls = document.querySelectorAll('.reveal');
-            if (!revealEls.length) return;
-
-            function reveal(el) { el.classList.add('in-view'); }
-
-            if ('IntersectionObserver' in window) {
-                const io = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            reveal(entry.target);
-                            io.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.05, rootMargin: '0px 0px -5% 0px' });
-
-                revealEls.forEach(el => io.observe(el));
-
-                setTimeout(() => {
-                    revealEls.forEach(el => {
-                        if (!el.classList.contains('in-view')) reveal(el);
-                    });
-                }, 1500);
-            } else {
-                revealEls.forEach(reveal);
-            }
-        })();
-
+        // Toast Function
         function showToast(text, tone) {
             const stack = document.getElementById('toast-stack');
             const el = document.createElement('div');
@@ -167,9 +106,10 @@
             setTimeout(() => {
                 el.classList.remove('is-visible');
                 setTimeout(() => el.remove(), 300);
-            }, 2600);
+            }, 3000);
         }
 
+        // AJAX Cart Add
         document.addEventListener('submit', async (e) => {
             const form = e.target.closest('.ajax-add-form');
             if (!form) return;
@@ -186,18 +126,18 @@
                 });
                 const data = await res.json();
                 showToast(data.message, data.ok ? 'success' : 'error');
+                
                 if (data.ok && typeof data.cart_count === 'number') {
-                    const cartLink = document.querySelector('.cart-link');
-                    let countEl = cartLink.querySelector('.count');
-                    if (!countEl) {
-                        countEl = document.createElement('span');
-                        countEl.className = 'count';
-                        cartLink.appendChild(countEl);
-                    }
-                    countEl.textContent = data.cart_count;
-                    cartLink.classList.remove('cart-bump');
-                    void cartLink.offsetWidth;
-                    cartLink.classList.add('cart-bump');
+                    const cartLink = document.querySelectorAll('.header-icon-btn[title="Cart"]');
+                    cartLink.forEach(link => {
+                        let countEl = link.querySelector('.cart-count');
+                        if (!countEl) {
+                            countEl = document.createElement('span');
+                            countEl.className = 'cart-count';
+                            link.appendChild(countEl);
+                        }
+                        countEl.textContent = data.cart_count;
+                    });
                 }
             } catch (err) {
                 form.submit();
@@ -206,29 +146,6 @@
                 if (button) { button.disabled = false; button.textContent = originalText; }
             }
         });
-
-        // ---------- Theme toggle ----------
-        (function () {
-            const root = document.documentElement;
-            const btn = document.getElementById('theme-toggle');
-            if (!btn) return;
-
-            btn.addEventListener('click', function () {
-                const current = root.getAttribute('data-theme') || 'dark';
-                const next = current === 'dark' ? 'light' : 'dark';
-                root.setAttribute('data-theme', next);
-                try { localStorage.setItem('theme', next); } catch (e) {}
-            });
-
-            // Follow OS changes only if the user hasn't picked manually.
-            const mq = window.matchMedia('(prefers-color-scheme: light)');
-            mq.addEventListener('change', function (e) {
-                try {
-                    if (localStorage.getItem('theme')) return;
-                } catch (err) { /* ignore */ }
-                root.setAttribute('data-theme', e.matches ? 'light' : 'dark');
-            });
-        })();
     </script>
     {% block extra_scripts %}{% endblock %}
 </body>
