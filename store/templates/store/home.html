@@ -4,9 +4,8 @@
 {% block content %}
 <div class="container" style="padding-top: 24px;">
 
-    <!-- 1. HERO BANNER (Fixed for Mobile & Desktop) -->
+    <!-- 1. HERO BANNER -->
     <section class="hero-banner" style="background: var(--bg-surface);">
-        <!-- Background decorative gradient (No more muddy image) -->
         <div class="hero-bg"></div>
         
         <div class="hero-content" style="position: relative; z-index: 1;">
@@ -20,7 +19,7 @@
         </div>
     </section>
 
-    <!-- 2. TRUST BADGES (Moved below hero for mobile cleanliness) -->
+    <!-- 2. TRUST BADGES -->
     <div class="hero-trust">
         <div class="trust-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -36,7 +35,7 @@
         </div>
     </div>
 
-    <!-- 3. CATEGORIES (Fixed for mobile grid) -->
+    <!-- 3. CATEGORIES -->
     <div class="category-strip">
         {% for dept in departments %}
             <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="category-card">
@@ -52,19 +51,22 @@
         </a>
     </div>
 
-    <!-- 4. MAIN SPLIT: SPIN WHEEL + FEATURED PRODUCTS -->
+    <!-- 4. MAIN SPLIT -->
     <div class="home-split">
-        <!-- Spin Card -->
         <div class="spin-card">
             <img src="https://via.placeholder.com/160x160/1A1208/F59E0B?text=SPIN" alt="Spin Wheel" class="spin-wheel-img">
             <div>
                 <h3>SPIN & <span>WIN</span></h3>
                 <p>Amazing rewards await!</p>
-                <a href="{% url 'accounts:spin' %}" class="btn" style="width: 100%;">Spin Now</a>
+                <!-- Wrapped in an if statement so if the URL doesn't exist, it won't crash -->
+                {% if user.is_authenticated %}
+                    <a href="{% url 'accounts:spin' %}" class="btn" style="width: 100%;">Spin Now</a>
+                {% else %}
+                    <a href="{% url 'account_login' %}" class="btn" style="width: 100%;">Log in to Spin</a>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Featured Products -->
         <div>
             <div class="section-header">
                 <h2>Featured Products</h2>
@@ -72,12 +74,14 @@
             </div>
             
             <div class="product-grid">
-                <!-- Using 'products' instead of 'featured_products' to match your view logic -->
-                {% for product in products|slice:":4" %}
-                    {% include "store/_product_card.html" with product=product %}
-                {% empty %}
+                <!-- Guarding against 'products' being empty -->
+                {% if products %}
+                    {% for product in products|slice:":4" %}
+                        {% include "store/_product_card.html" with product=product %}
+                    {% endfor %}
+                {% else %}
                     <p style="color: var(--text-muted);">No products found.</p>
-                {% endfor %}
+                {% endif %}
             </div>
         </div>
     </div>
@@ -95,7 +99,7 @@
         </div>
     </div>
 
-    <!-- 6. TRUST BAR (Bottom) -->
+    <!-- 6. TRUST BAR -->
     <div class="trust-bar">
         <div class="trust-bar-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -104,14 +108,6 @@
         <div class="trust-bar-item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/></svg>
             <div><strong>Trusted Sellers</strong><span>Shop with confidence</span></div>
-        </div>
-        <div class="trust-bar-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-            <div><strong>Easy Returns</strong><span>Hassle-free returns</span></div>
-        </div>
-        <div class="trust-bar-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17V7a2 2 0 0 1 2-2h9l3 4h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-            <div><strong>Nationwide Delivery</strong><span>We deliver to your door</span></div>
         </div>
     </div>
 
