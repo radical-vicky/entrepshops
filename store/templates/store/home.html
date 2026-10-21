@@ -6,9 +6,8 @@
 {% block content %}
 <div class="container">
 
-    <!-- 1. HERO BANNER (Matches Image 1) -->
+    <!-- 1. HERO BANNER -->
     <section class="hero-banner">
-        <!-- Dynamic background from your admin active_background -->
         {% if active_background %}
             <img src="{{ active_background.image.url }}" class="hero-banner-bg" alt="Background">
         {% else %}
@@ -19,8 +18,8 @@
         <div class="hero-content">
             <span class="hero-kicker">Premium Quality</span>
             <h1 class="hero-title">Everything You Need<br>In One Place</h1>
-            <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 1.1rem;">
-                Shop the latest electronics, drinks, fashion, and more. Delivered to your door in minutes.
+            <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 1.1rem; max-width: 450px;">
+                Shop the latest electronics, drinks, fashion, and more. Delivered to your door.
             </p>
             <a href="{% url 'store:product_list' %}" class="btn">
                 Shop Now
@@ -29,10 +28,14 @@
         </div>
     </section>
 
-    <!-- 2. DEPARTMENTS (Matches Image 1 & 2) -->
+    <!-- 2. DEPARTMENTS -->
     <div class="dept-grid">
+        <a href="{% url 'store:product_list' %}" class="dept-card {% if not selected_department %}active{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>All</span>
+        </a>
         {% for dept in departments %}
-            <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="dept-card">
+            <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="dept-card {% if selected_department == dept %}active{% endif %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <use href="#icon-{{ dept.icon_kind|default:'bottle' }}"/>
                 </svg>
@@ -41,7 +44,7 @@
         {% endfor %}
     </div>
 
-    <!-- 3. HOT DEALS (Matches Image 1) -->
+    <!-- 3. HOT DEALS / FEATURED PRODUCTS -->
     <section>
         <div class="section-head">
             <h3>Hot Deals</h3>
@@ -50,51 +53,28 @@
         
         <div class="product-grid">
             {% for product in featured_products %}
-                <!-- We will use the exact card structure we built in the CSS -->
-                <article class="product-card">
-                    <div class="product-card-media">
-                        <a href="{{ product.get_absolute_url }}">
-                            {% with img=product.primary_image %}
-                                {% if img %}
-                                    <img src="{{ img.url }}" alt="{{ product.name }}">
-                                {% else %}
-                                    <div class="img-placeholder">
-                                        <svg viewBox="0 0 24 24"><use href="#icon-{{ product.department.icon_kind|default:'bottle' }}"/></svg>
-                                    </div>
-                                {% endif %}
-                            {% endwith %}
-                        </a>
-                        {% if product.discount_percent %}
-                            <span class="badge badge-red">-{{ product.discount_percent }}%</span>
-                        {% endif %}
-                    </div>
-                    <div class="product-card-content">
-                        <p class="product-vendor">{% if product.vendor %}{{ product.vendor.business_name }}{% else %}EntrepShop{% endif %}</p>
-                        <a href="{{ product.get_absolute_url }}">
-                            <h4 class="product-title">{{ product.name }}</h4>
-                        </a>
-                        <div class="product-rating">
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="var(--brand-amber)"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18.5 5.5 22 7 14.5 2 9.5 9 9"/></svg>
-                            <span>4.8</span>
-                        </div>
-                        <div class="product-price-row">
-                            <span class="price">KES {{ product.price }}</span>
-                            {% if product.compare_at_price %}
-                                <span class="was-price">KES {{ product.compare_at_price }}</span>
-                            {% endif %}
-                        </div>
-                        <form action="{% url 'store:cart_add' product.id %}" method="post" class="ajax-add-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="quantity" value="1">
-                            <button type="submit" class="btn-add-cart">Add to Cart</button>
-                        </form>
-                    </div>
-                </article>
+                {% include "store/_product_card.html" with product=product %}
             {% empty %}
-                <p style="color: var(--text-muted);">No featured products found.</p>
+                <p style="color: var(--text-muted); grid-column: 1 / -1; padding: 20px 0;">No featured products at the moment.</p>
             {% endfor %}
         </div>
     </section>
+
+    <!-- 4. NEW ARRIVALS / RECENT PRODUCTS -->
+    {% if products %}
+    <section style="margin-top: 48px;">
+        <div class="section-head">
+            <h3>New Arrivals</h3>
+            <a href="{% url 'store:product_list' %}">View All</a>
+        </div>
+        
+        <div class="product-grid">
+            {% for product in products|slice:":8" %}
+                {% include "store/_product_card.html" with product=product %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 
 </div>
 {% endblock %}
