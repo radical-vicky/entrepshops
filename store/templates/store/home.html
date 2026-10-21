@@ -1,287 +1,100 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Entrep - Shop — quality products, delivered{% endblock %}
+
+{% block title %}EntrepShop — Premium goods, delivered{% endblock %}
 
 {% block content %}
-
-{% if hero_posters %}
-<section class="hero-poster-stack" id="hero">
-    {% for promo in hero_posters %}
-    <a href="{{ promo.cta_url|default:'/products/' }}"
-       class="hero-poster {% if forloop.first %}is-active{% endif %}"
-       data-tone="{{ promo.tone|default:'orange' }}">
-        <div class="hero-poster-media">
-            {% if promo.media_type == 'video' and promo.video_source %}
-                <video autoplay muted loop playsinline preload="metadata">
-                    <source src="{{ promo.video_source }}">
-                </video>
-            {% elif promo.image %}
-                <img src="{{ promo.image.url }}" alt="{{ promo.title }}" loading="eager">
-            {% endif %}
-        </div>
-
-        <div class="hero-poster-body">
-            <span class="hero-poster-kicker">{{ promo.kicker|default:'Featured' }}</span>
-            <h2 class="hero-poster-headline">{{ promo.title }}</h2>
-            {% if promo.description %}
-                <p class="hero-poster-sub">{{ promo.description|truncatechars:160 }}</p>
-            {% endif %}
-
-            <div class="hero-poster-actions">
-                <span class="hero-poster-cta">
-                    {{ promo.cta_label|default:'Shop now' }}
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                </span>
-                {% if promo.voucher_code %}
-                    <span class="hero-poster-voucher">
-                        <code>{{ promo.voucher_code }}</code>
-                    </span>
-                {% endif %}
-            </div>
-        </div>
-    </a>
-    {% endfor %}
-
-    {% if hero_posters|length > 1 %}
-        <button type="button" class="hero-poster-arrow hero-poster-arrow--prev"
-                id="hero-prev" aria-label="Previous slide">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button type="button" class="hero-poster-arrow hero-poster-arrow--next"
-                id="hero-next" aria-label="Next slide">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-
-        <div class="hero-poster-dots" id="hero-dots">
-            {% for promo in hero_posters %}
-                <button type="button"
-                        class="hero-poster-dot {% if forloop.first %}is-active{% endif %}"
-                        data-slide="{{ forloop.counter0 }}"
-                        aria-label="Slide {{ forloop.counter }}"></button>
-            {% endfor %}
-        </div>
-    {% endif %}
-</section>
-{% endif %}
-
-<div class="marquee" aria-hidden="true">
-    <div class="marquee-track">
-        <span>Thousands of products, one shop</span>
-        <span>Pay safely with M-Pesa</span>
-        <span>Same-day delivery across Nairobi</span>
-        <span>New arrivals every week</span>
-        <span>Refer a friend, get KES 100 credit</span>
-        <span>Thousands of products, one shop</span>
-        <span>Pay safely with M-Pesa</span>
-        <span>Same-day delivery across Nairobi</span>
-        <span>New arrivals every week</span>
-        <span>Refer a friend, get KES 100 credit</span>
-    </div>
-</div>
-
 <div class="container">
 
-    <section class="trust-row reveal">
-        <div class="trust-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 17V7a2 2 0 0 1 2-2h9l3 4h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1"/>
-                <circle cx="7" cy="17" r="2"/>
-                <circle cx="17" cy="17" r="2"/>
-            </svg>
-            <span class="trust-badge-label">Fast &amp; Reliable<br>Delivery</span>
-        </div>
-        <div class="trust-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/>
-                <path d="M9 12l2 2 4-4"/>
-            </svg>
-            <span class="trust-badge-label">Secure<br>Payments</span>
-        </div>
-        <div class="trust-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 12a8 8 0 1 1-8-8"/>
-                <path d="M20 4l-8 8-3-3"/>
-            </svg>
-            <span class="trust-badge-label">Great<br>Deals</span>
-        </div>
-        <div class="trust-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18"/>
-                <path d="M3 12h18"/>
-                <path d="M3 18h12"/>
-            </svg>
-            <span class="trust-badge-label">Wide<br>Selection</span>
+    <!-- 1. HERO BANNER (Matches Image 1) -->
+    <section class="hero-banner">
+        <!-- Dynamic background from your admin active_background -->
+        {% if active_background %}
+            <img src="{{ active_background.image.url }}" class="hero-banner-bg" alt="Background">
+        {% else %}
+            <!-- Fallback aesthetic gradient if no bg is uploaded -->
+            <div style="position:absolute; inset:0; background: radial-gradient(circle at top right, rgba(245,158,11,0.15), transparent 50%);"></div>
+        {% endif %}
+        
+        <div class="hero-content">
+            <span class="hero-kicker">Premium Quality</span>
+            <h1 class="hero-title">Everything You Need<br>In One Place</h1>
+            <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 1.1rem;">
+                Shop the latest electronics, drinks, fashion, and more. Delivered to your door in minutes.
+            </p>
+            <a href="{% url 'store:product_list' %}" class="btn">
+                Shop Now
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
         </div>
     </section>
 
-    <section class="reveal" id="offers">
+    <!-- 2. DEPARTMENTS (Matches Image 1 & 2) -->
+    <div class="dept-grid">
+        {% for dept in departments %}
+            <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="dept-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <use href="#icon-{{ dept.icon_kind|default:'bottle' }}"/>
+                </svg>
+                <span>{{ dept.name }}</span>
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- 3. HOT DEALS (Matches Image 1) -->
+    <section>
         <div class="section-head">
-            <div>
-                <span class="eyebrow">Offers &amp; vouchers</span>
-                <h3>Deals worth clipping</h3>
-            </div>
-            <span class="sub">Codes apply automatically at checkout on eligible orders</span>
+            <h3>Hot Deals</h3>
+            <a href="{% url 'store:product_list' %}">View All</a>
         </div>
-
-        {% if promotions %}
-        <div class="promo-poster-track" id="promo-slider">
-            {% for promo in promotions %}
-            <a href="{{ promo.cta_url|default:'/products/' }}"
-               class="promo-poster {% if forloop.first %}is-active{% endif %}"
-               data-tone="{{ promo.tone }}">
-                <div class="promo-poster-media">
-                    {% if promo.media_type == 'video' and promo.video_source %}
-                        <video autoplay muted loop playsinline preload="metadata">
-                            <source src="{{ promo.video_source }}">
-                        </video>
-                    {% elif promo.image %}
-                        <img src="{{ promo.image.url }}" alt="{{ promo.title }}">
-                    {% endif %}
-                    <div class="promo-poster-scrim"></div>
-                </div>
-
-                <div class="promo-poster-body">
-                    <span class="promo-poster-kicker">{{ promo.kicker }}</span>
-                    <h4 class="promo-poster-title">{{ promo.title }}</h4>
-                    {% if promo.description %}
-                        <p class="promo-poster-sub">{{ promo.description|truncatechars:120 }}</p>
-                    {% endif %}
-
-                    <div class="promo-poster-footer">
-                        <span class="promo-poster-cta">{{ promo.cta_label|default:'Shop now' }}</span>
-                        {% if promo.voucher_code %}
-                            <span class="promo-poster-voucher">
-                                <code>{{ promo.voucher_code }}</code>
-                            </span>
+        
+        <div class="product-grid">
+            {% for product in featured_products %}
+                <!-- We will use the exact card structure we built in the CSS -->
+                <article class="product-card">
+                    <div class="product-card-media">
+                        <a href="{{ product.get_absolute_url }}">
+                            {% with img=product.primary_image %}
+                                {% if img %}
+                                    <img src="{{ img.url }}" alt="{{ product.name }}">
+                                {% else %}
+                                    <div class="img-placeholder">
+                                        <svg viewBox="0 0 24 24"><use href="#icon-{{ product.department.icon_kind|default:'bottle' }}"/></svg>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        </a>
+                        {% if product.discount_percent %}
+                            <span class="badge badge-red">-{{ product.discount_percent }}%</span>
                         {% endif %}
                     </div>
-                </div>
-            </a>
-            {% endfor %}
-
-            {% if promotions|length > 1 %}
-                <div class="promo-poster-nav">
-                    <button type="button" class="promo-poster-arrow" id="promo-prev" aria-label="Previous offer">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
-                    <div class="promo-poster-dots" id="promo-dots">
-                        {% for promo in promotions %}
-                            <button type="button"
-                                    class="promo-poster-dot {% if forloop.first %}is-active{% endif %}"
-                                    data-slide="{{ forloop.counter0 }}"
-                                    aria-label="Offer {{ forloop.counter }}"></button>
-                        {% endfor %}
+                    <div class="product-card-content">
+                        <p class="product-vendor">{% if product.vendor %}{{ product.vendor.business_name }}{% else %}EntrepShop{% endif %}</p>
+                        <a href="{{ product.get_absolute_url }}">
+                            <h4 class="product-title">{{ product.name }}</h4>
+                        </a>
+                        <div class="product-rating">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="var(--brand-amber)"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18.5 5.5 22 7 14.5 2 9.5 9 9"/></svg>
+                            <span>4.8</span>
+                        </div>
+                        <div class="product-price-row">
+                            <span class="price">KES {{ product.price }}</span>
+                            {% if product.compare_at_price %}
+                                <span class="was-price">KES {{ product.compare_at_price }}</span>
+                            {% endif %}
+                        </div>
+                        <form action="{% url 'store:cart_add' product.id %}" method="post" class="ajax-add-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn-add-cart">Add to Cart</button>
+                        </form>
                     </div>
-                    <button type="button" class="promo-poster-arrow" id="promo-next" aria-label="Next offer">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
-                </div>
-            {% endif %}
-        </div>
-        {% else %}
-            <p class="muted">No active offers right now — check back soon.</p>
-        {% endif %}
-    </section>
-
-    {% if departments|length > 1 or not selected_department %}
-    <section class="reveal" id="departments">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Browse by department</span>
-                <h3>What are you shopping for?</h3>
-            </div>
-        </div>
-        <div class="dept-grid">
-            <a href="{% url 'store:product_list' %}"
-               class="dept-card dept-card-all {% if not selected_department %}is-active{% endif %}"
-               data-dept-preview="">All departments</a>
-
-            {% for dept in departments %}
-                <a href="{% url 'store:product_list' %}?department={{ dept.slug }}"
-                   class="dept-card {% if selected_department == dept %}is-active{% endif %}"
-                   data-dept-preview="{{ dept.theme }}">{{ dept.name }}</a>
+                </article>
+            {% empty %}
+                <p style="color: var(--text-muted);">No featured products found.</p>
             {% endfor %}
-        </div>
-    </section>
-    {% endif %}
-
-    <section class="reveal" id="browse-all">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">The shop</span>
-                <h3>Browse everything on EntrepShop</h3>
-            </div>
-        </div>
-        <div class="glass" style="padding: 32px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
-            <div>
-                <p style="margin: 0 0 6px; color: var(--text-dim); max-width: 60ch;">
-                    Thousands of products across every department — filter by price,
-                    category, and availability, or search for exactly what you need.
-                </p>
-            </div>
-            <a href="{% url 'store:product_list' %}" class="btn">
-                Open the shop
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </a>
         </div>
     </section>
 
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-(function () {
-    function initSlider({ container, slideSelector, dotSelector, prevId, nextId, activeClass, autoplayMs }) {
-        if (!container) return;
-        const slides = container.querySelectorAll(slideSelector);
-        const dots = container.querySelectorAll(dotSelector);
-        if (slides.length < 2) return;
-        let current = 0;
-        let timer;
-
-        function show(index) {
-            slides[current].classList.remove(activeClass);
-            if (dots[current]) dots[current].classList.remove(activeClass);
-            current = (index + slides.length) % slides.length;
-            slides[current].classList.add(activeClass);
-            if (dots[current]) dots[current].classList.add(activeClass);
-        }
-
-        function next() { show(current + 1); }
-        function prev() { show(current - 1); }
-
-        function restart() {
-            clearInterval(timer);
-            timer = setInterval(next, autoplayMs);
-        }
-
-        const prevBtn = prevId ? document.getElementById(prevId) : null;
-        const nextBtn = nextId ? document.getElementById(nextId) : null;
-        if (prevBtn) prevBtn.addEventListener('click', () => { prev(); restart(); });
-        if (nextBtn) nextBtn.addEventListener('click', () => { next(); restart(); });
-        dots.forEach(dot => dot.addEventListener('click', () => { show(parseInt(dot.dataset.slide, 10)); restart(); }));
-
-        restart();
-    }
-
-    initSlider({
-        container: document.getElementById('hero'),
-        slideSelector: '.hero-poster', dotSelector: '.hero-poster-dot',
-        prevId: 'hero-prev', nextId: 'hero-next',
-        activeClass: 'is-active', autoplayMs: 6500,
-    });
-
-    initSlider({
-        container: document.getElementById('promo-slider'),
-        slideSelector: '.promo-poster', dotSelector: '#promo-dots .promo-poster-dot',
-        prevId: 'promo-prev', nextId: 'promo-next',
-        activeClass: 'is-active', autoplayMs: 5500,
-    });
-})();
-</script>
 {% endblock %}
