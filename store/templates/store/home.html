@@ -1,80 +1,201 @@
 {% extends "base.html" %}
 {% load static %}
-
-{% block title %}EntrepShop — Premium goods, delivered{% endblock %}
+{% block title %}Entrep - Shop — quality products, delivered{% endblock %}
 
 {% block content %}
-<div class="container">
 
-    <!-- 1. HERO BANNER -->
-    <section class="hero-banner">
-        {% if active_background %}
-            <img src="{{ active_background.image.url }}" class="hero-banner-bg" alt="Background">
+{% if hero_posters %}
+<!-- HERO BANNER -->
+<section class="hero-banner" id="hero">
+    {% for promo in hero_posters %}
+    <a href="{{ promo.cta_url|default:'/products/' }}"
+       class="hero-slide {% if forloop.first %}is-active{% endif %}"
+       style="display: {% if forloop.first %}flex{% else %}none{% endif %}; text-decoration: none; color: inherit; width: 100%;">
+        
+        <!-- Background Media -->
+        {% if promo.media_type == 'video' and promo.video_source %}
+            <video autoplay muted loop playsinline preload="metadata" class="hero-banner-bg">
+                <source src="{{ promo.video_source }}">
+            </video>
+        {% elif promo.image %}
+            <img src="{{ promo.image.url }}" alt="{{ promo.title }}" class="hero-banner-bg" loading="eager">
         {% else %}
-            <!-- Fallback aesthetic gradient if no bg is uploaded -->
             <div style="position:absolute; inset:0; background: radial-gradient(circle at top right, rgba(245,158,11,0.15), transparent 50%);"></div>
         {% endif %}
-        
+
+        <!-- Content -->
         <div class="hero-content">
-            <span class="hero-kicker">Premium Quality</span>
-            <h1 class="hero-title">Everything You Need<br>In One Place</h1>
-            <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 1.1rem; max-width: 450px;">
-                Shop the latest electronics, drinks, fashion, and more. Delivered to your door.
-            </p>
-            <a href="{% url 'store:product_list' %}" class="btn">
-                Shop Now
+            <span class="hero-kicker">{{ promo.kicker|default:'Featured' }}</span>
+            <h2 class="hero-title">{{ promo.title }}</h2>
+            {% if promo.description %}
+                <p style="color: var(--text-muted); margin-bottom: 32px; font-size: 1.1rem; max-width: 450px;">
+                    {{ promo.description|truncatechars:160 }}
+                </p>
+            {% endif %}
+
+            <span class="btn">
+                {{ promo.cta_label|default:'Shop now' }}
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </a>
+            </span>
+            
+            {% if promo.voucher_code %}
+                <span style="display: inline-block; margin-left: 12px; border: 1px dashed var(--border-strong); padding: 10px 16px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85rem;">
+                    Code: <strong style="color: var(--brand-amber);">{{ promo.voucher_code }}</strong>
+                </span>
+            {% endif %}
         </div>
-    </section>
+    </a>
+    {% endfor %}
 
-    <!-- 2. DEPARTMENTS -->
-    <div class="dept-grid">
-        <a href="{% url 'store:product_list' %}" class="dept-card {% if not selected_department %}active{% endif %}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-            <span>All</span>
-        </a>
-        {% for dept in departments %}
-            <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="dept-card {% if selected_department == dept %}active{% endif %}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <use href="#icon-{{ dept.icon_kind|default:'bottle' }}"/>
-                </svg>
-                <span>{{ dept.name }}</span>
-            </a>
-        {% endfor %}
-    </div>
-
-    <!-- 3. HOT DEALS / FEATURED PRODUCTS -->
-    <section>
-        <div class="section-head">
-            <h3>Hot Deals</h3>
-            <a href="{% url 'store:product_list' %}">View All</a>
-        </div>
-        
-        <div class="product-grid">
-            {% for product in featured_products %}
-                {% include "store/_product_card.html" with product=product %}
-            {% empty %}
-                <p style="color: var(--text-muted); grid-column: 1 / -1; padding: 20px 0;">No featured products at the moment.</p>
-            {% endfor %}
-        </div>
-    </section>
-
-    <!-- 4. NEW ARRIVALS / RECENT PRODUCTS -->
-    {% if products %}
-    <section style="margin-top: 48px;">
-        <div class="section-head">
-            <h3>New Arrivals</h3>
-            <a href="{% url 'store:product_list' %}">View All</a>
-        </div>
-        
-        <div class="product-grid">
-            {% for product in products|slice:":8" %}
-                {% include "store/_product_card.html" with product=product %}
-            {% endfor %}
-        </div>
-    </section>
+    {% if hero_posters|length > 1 %}
+        <button type="button" class="hero-poster-arrow hero-poster-arrow--prev" id="hero-prev" aria-label="Previous slide" style="position:absolute; left:20px; top:50%; transform:translateY(-50%); z-index:10; width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,0.5); border:1px solid var(--border-strong); color:white; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button type="button" class="hero-poster-arrow hero-poster-arrow--next" id="hero-next" aria-label="Next slide" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); z-index:10; width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,0.5); border:1px solid var(--border-strong); color:white; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
     {% endif %}
+</section>
+{% endif %}
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true" style="border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 12px 0; overflow: hidden; margin-bottom: 32px;">
+    <div class="marquee-track" style="display: flex; gap: 48px; white-space: nowrap; animation: marquee 26s linear infinite;">
+        <span>Thousands of products, one shop</span>
+        <span>Pay safely with M-Pesa</span>
+        <span>Same-day delivery across Nairobi</span>
+        <span>New arrivals every week</span>
+        <span>Refer a friend, get KES 100 credit</span>
+        <span>Thousands of products, one shop</span>
+        <span>Pay safely with M-Pesa</span>
+        <span>Same-day delivery across Nairobi</span>
+        <span>New arrivals every week</span>
+        <span>Refer a friend, get KES 100 credit</span>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- DEPARTMENTS -->
+    <section id="departments">
+        <div class="dept-grid">
+            <a href="{% url 'store:product_list' %}" class="dept-card {% if not selected_department %}active{% endif %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <span>All</span>
+            </a>
+            {% for dept in departments %}
+                <a href="{% url 'store:product_list' %}?department={{ dept.slug }}" class="dept-card {% if selected_department == dept %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <use href="#icon-{{ dept.icon_kind|default:'bottle' }}"/>
+                    </svg>
+                    <span>{{ dept.name }}</span>
+                </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- PRODUCTS GRID (Pulls directly from your original view logic) -->
+    <section id="browse-all">
+        <div class="section-head">
+            <h3>{% if search_query %}Results for "{{ search_query }}"{% elif selected_category %}{{ selected_category.name }}{% elif selected_department %}{{ selected_department.name }}{% else %}All Products{% endif %}</h3>
+            <span style="color: var(--text-muted); font-size: 0.9rem;">{{ page_obj.paginator.count }} items</span>
+        </div>
+        
+        <div class="product-grid" id="product-grid-container">
+            {% include "store/_product_grid.html" %}
+        </div>
+
+        <!-- Pagination / Loader -->
+        {% if page_obj.has_next %}
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="?page={{ page_obj.next_page_number }}{% if selected_department %}&department={{ selected_department.slug }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="btn btn-outline" id="load-more-btn">
+                    Load More Products
+                </a>
+            </div>
+        {% endif %}
+    </section>
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<style>
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.marquee-track span::before {
+    content: "•";
+    color: var(--brand-amber);
+    margin-right: 12px;
+}
+</style>
+
+<script>
+(function () {
+    // 1. Hero Slider Logic (Adapted for your original JS)
+    const slides = document.querySelectorAll('.hero-slide');
+    if (slides.length > 1) {
+        let current = 0;
+        const prevBtn = document.getElementById('hero-prev');
+        const nextBtn = document.getElementById('hero-next');
+        let timer;
+
+        function show(index) {
+            slides[current].style.display = 'none';
+            slides[current].classList.remove('is-active');
+            
+            current = (index + slides.length) % slides.length;
+            
+            slides[current].style.display = 'flex';
+            slides[current].classList.add('is-active');
+        }
+
+        function next() { show(current + 1); }
+        function prev() { show(current - 1); }
+
+        function restart() {
+            clearInterval(timer);
+            timer = setInterval(next, 6500);
+        }
+
+        if (prevBtn) prevBtn.addEventListener('click', (e) => { e.preventDefault(); prev(); restart(); });
+        if (nextBtn) nextBtn.addEventListener('click', (e) => { e.preventDefault(); next(); restart(); });
+        
+        restart();
+    }
+
+    // 2. AJAX Pagination (Load More)
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const url = loadMoreBtn.href;
+            const grid = document.getElementById('product-grid-container');
+            
+            loadMoreBtn.textContent = 'Loading...';
+            loadMoreBtn.style.pointerEvents = 'none';
+
+            try {
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await res.json();
+                
+                // Append new products
+                grid.insertAdjacentHTML('beforeend', data.grid_html);
+                
+                // Update button
+                if (data.has_next) {
+                    loadMoreBtn.href = `?page=${data.next_page}{% if selected_department %}&department={{ selected_department.slug }}{% endif %}{% if selected_category %}&category={{ selected_category.slug }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}`;
+                    loadMoreBtn.textContent = 'Load More Products';
+                    loadMoreBtn.style.pointerEvents = 'auto';
+                } else {
+                    loadMoreBtn.remove();
+                }
+            } catch (err) {
+                window.location.href = url; // Fallback
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}
