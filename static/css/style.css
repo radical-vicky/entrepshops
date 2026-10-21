@@ -348,3 +348,112 @@ img { max-width: 100%; display: block; }
 /* Global Button */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--brand-amber); color: var(--brand-amber-text); padding: 12px 24px; border-radius: var(--radius-sm); font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; transition: background 0.2s; }
 .btn:hover { background: var(--brand-amber-hover); }
+
+/* =========================================================================
+   MOBILE FIXES (Based on your screenshot)
+   ========================================================================= */
+
+/* 1. Fix Mobile Header (Stack search bar, show icons) */
+@media (max-width: 768px) {
+    .header-top {
+        flex-wrap: wrap;
+        padding-bottom: 12px;
+    }
+    .header-search {
+        order: 3;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 12px;
+        display: flex; /* Force show on mobile */
+    }
+    .header-actions .header-link span {
+        display: none; /* Hide 'Login' and 'Cart' text, keep icons */
+    }
+    .header-actions {
+        gap: 16px;
+    }
+}
+
+/* 2. Fix Mobile Hero Banner */
+@media (max-width: 768px) {
+    .hero-banner {
+        padding: 32px 24px;
+        min-height: 350px;
+        margin: 12px 0;
+    }
+    .hero-title {
+        font-size: 2rem; /* Make text smaller so it doesn't break into 4 lines */
+        line-height: 1.1;
+    }
+    .hero-sub {
+        font-size: 0.95rem;
+        margin-bottom: 24px;
+    }
+    /* Hide the background image on mobile if it makes text unreadable */
+    .hero-bg-image-mobile {
+        display: none; 
+    }
+    /* Move trust badges below the hero on mobile */
+    .hero-trust {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 24px;
+        margin-bottom: 24px;
+        background: var(--bg-surface);
+        padding: 16px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-light);
+    }
+    .trust-item {
+        font-size: 0.75rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+}
+
+/* 3. Fix Category Grid on Mobile */
+@media (max-width: 768px) {
+    .category-strip {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns instead of squished flex */
+        gap: 8px;
+    }
+    .category-card {
+        padding: 12px 8px;
+    }
+    .category-card svg {
+        width: 24px;
+        height: 24px;
+    }
+    .category-card span {
+        font-size: 0.7rem;
+        line-height: 1.2;
+        word-wrap: break-word;
+    }
+}
+
+/* 4. Fix the Split Layout (Spin Wheel + Featured) */
+@media (max-width: 992px) {
+    .home-split {
+        grid-template-columns: 1fr;
+    }
+    .spin-card {
+        flex-direction: row;
+        text-align: left;
+        padding: 16px;
+    }
+    .spin-wheel-img {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 0;
+        margin-right: 16px;
+    }
+    .spin-card h3 {
+        font-size: 1.1rem;
+    }
+    .spin-card p {
+        font-size: 0.8rem;
+        margin-bottom: 8px;
+    }
+}
