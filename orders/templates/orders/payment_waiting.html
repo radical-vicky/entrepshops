@@ -1,21 +1,62 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Waiting for payment — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-<div class="waiting-box">
-    <div class="pulse-icon"><svg><use href="#icon-phone"/></svg></div>
-    <h1>Check your phone</h1>
-    <p>We've sent an M-Pesa payment prompt to <strong>{{ order.phone_number }}</strong>.</p>
-    <p>Enter your M-Pesa PIN to complete payment for order #{{ order.id }} (KES {{ order.total }}).</p>
-    <p id="status-line" class="badge badge-muted">Waiting for confirmation…</p>
-    <div id="waiting-actions">
-        <a href="{% url 'orders:order_detail' order.id %}" class="btn btn-small btn-outline">View order</a>
+<div class="container" style="padding-top: 60px; padding-bottom: 60px; display: flex; justify-content: center;">
+
+    <div class="payment-waiting-card">
+        
+        <!-- Pulsing Clock Icon -->
+        <div class="waiting-icon-wrap">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--orange)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        </div>
+
+        <h1 class="waiting-title">Payment Pending</h1>
+        
+        <p class="waiting-subtitle">
+            We've sent an M-Pesa payment prompt to <strong>{{ order.phone_number }}</strong>.<br>
+            Enter your M-Pesa PIN to complete payment for order #{{ order.id }}.
+        </p>
+
+        <!-- Order Number & Amount Box -->
+        <div class="waiting-order-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="text-align: left;">
+                    <span class="waiting-order-label">Order Number</span>
+                    <span class="waiting-order-value">#{{ order.id }}</span>
+                </div>
+                <div style="text-align: right;">
+                    <span class="waiting-order-label">Total</span>
+                    <span class="waiting-order-value" style="color: var(--orange);">KES {{ order.total }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Line & Actions (Hooked up to your JS) -->
+        <div class="waiting-actions">
+            <p id="status-line" class="badge badge-muted" style="width: 100%; padding: 12px; margin-bottom: 12px; font-size: 0.85rem; border-radius: 6px;">
+                Waiting for confirmation…
+            </p>
+
+            <div id="waiting-actions" style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <!-- Your JS will prepend the "Try again" button here if it fails -->
+                
+                <a href="{% url 'orders:order_detail' order.id %}" class="btn-waiting-secondary">
+                    Contact Support
+                </a>
+            </div>
+        </div>
+
     </div>
-</div>
+
 </div>
 
 <script>
+    // --- YOUR EXACT ORIGINAL JAVASCRIPT LOGIC ---
     const statusUrl = "{% url 'payments:payment_status' order.id %}";
     const statusLine = document.getElementById('status-line');
     const actions = document.getElementById('waiting-actions');
@@ -27,16 +68,30 @@
             if (data.order_status === 'paid') {
                 statusLine.textContent = 'Payment confirmed! Preparing your order.';
                 statusLine.className = 'badge badge-success';
+                statusLine.style.width = '100%';
+                statusLine.style.padding = '12px';
+                statusLine.style.marginBottom = '12px';
+                statusLine.style.fontSize = '0.85rem';
+                statusLine.style.borderRadius = '6px';
+                
                 clearInterval(interval);
                 setTimeout(() => window.location.href = "{% url 'orders:order_detail' order.id %}", 1500);
             } else if (data.txn_status === 'failed' || data.txn_status === 'cancelled') {
                 statusLine.textContent = data.txn_message || ('Payment ' + data.txn_status + '.');
                 statusLine.className = 'badge badge-warning';
+                statusLine.style.width = '100%';
+                statusLine.style.padding = '12px';
+                statusLine.style.marginBottom = '12px';
+                statusLine.style.fontSize = '0.85rem';
+                statusLine.style.borderRadius = '6px';
+                
                 clearInterval(interval);
                 const retryForm = document.createElement('form');
                 retryForm.method = 'post';
                 retryForm.action = "{% url 'orders:retry_payment' order.id %}";
-                retryForm.innerHTML = `{% csrf_token %}<button type="submit" class="btn btn-small btn-orange">Try again</button>`;
+                retryForm.style.width = '100%';
+                // Use your existing button style
+                retryForm.innerHTML = `{% csrf_token %}<button type="submit" class="btn-waiting-primary" style="width: 100%; margin-bottom: 10px;">Try again</button>`;
                 actions.prepend(retryForm);
             }
         } catch (e) {

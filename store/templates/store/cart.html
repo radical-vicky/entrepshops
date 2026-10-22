@@ -1,128 +1,153 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Your cart — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Header / Steps -->
+    <div class="page-head" style="margin-bottom: 24px;">
         <span class="eyebrow">Cart</span>
-        <h1>Your cart</h1>
+        <h1>Your Cart</h1>
+    </div>
+
+    <div class="cart-steps" style="display: flex; gap: 24px; margin-bottom: 32px; font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+        <span style="color: var(--orange); font-weight: 700; border-bottom: 2px solid var(--orange); padding-bottom: 4px;">1. Cart</span>
+        <span style="color: var(--text-mute);">2. Address</span>
+        <span style="color: var(--text-mute);">3. Payment</span>
+        <span style="color: var(--text-mute);">4. Review</span>
     </div>
 
     {% if cart|length == 0 %}
-        <div class="form-card">
-            <p>Your cart is empty.</p>
-            <a href="{% url 'store:home' %}" class="btn btn-small">Browse products</a>
+        <!-- EMPTY STATE -->
+        <div style="text-align: center; padding: 60px 0; background: #121110; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+            <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="var(--text-mute)" stroke-width="1.5" style="margin-bottom: 20px;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <h2 style="font-size: 1.5rem; margin-bottom: 10px;">Your cart is empty</h2>
+            <p style="color: var(--text-dim); margin-bottom: 24px;">Looks like you haven't added anything yet.</p>
+            <a href="{% url 'store:product_list' %}" class="btn">Browse products</a>
         </div>
     {% else %}
-        <div class="form-card wide">
-            <table class="cart-table">
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Product</th>
-                        <th>Unit price</th>
-                        <th>Quantity</th>
-                        <th>Subtotal</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div class="cart-layout">
+            
+            <!-- LEFT: CART ITEMS -->
+            <div class="cart-items-container">
                 {% for line in cart %}
-                    <tr>
-                        {# ---------- thumbnail ---------- #}
-                        <td class="cart-thumb-cell">
+                    <div class="cart-item-card">
+                        <!-- Image -->
+                        <a href="{{ line.product.get_absolute_url }}" class="cart-item-img-wrap">
                             {% with img=line.product.primary_image %}
                                 {% if img %}
-                                    <img src="{{ img.url }}" alt="" class="cart-thumb">
+                                    <img src="{{ img.url }}" alt="{{ line.product.name }}">
                                 {% else %}
-                                    <div class="cart-thumb cart-thumb-placeholder">
-                                        <svg style="width:18px;height:18px;color:#45D68A"><use href="#icon-bottle"/></svg>
+                                    <div class="img-placeholder" style="height: 100%; border: none;">
+                                        <svg viewBox="0 0 24 24" width="32" height="32" style="color:#45D68A"><use href="#icon-bottle"/></svg>
                                     </div>
                                 {% endif %}
                             {% endwith %}
-                        </td>
+                        </a>
 
-                        {# ---------- name + variant + badges ---------- #}
-                        <td>
-                            {{ line.product.name }}
+                        <!-- Details -->
+                        <div class="cart-item-info">
+                            <a href="{{ line.product.get_absolute_url }}" class="cart-item-title">{{ line.product.name }}</a>
+                            
                             {% if line.variant %}
-                                <br><span class="muted cart-variant-label">{{ line.variant.size_label }}</span>
+                                <div class="cart-item-variant">Size: {{ line.variant.size_label }}</div>
                             {% elif line.product.volume_ml %}
-                                <br><span class="muted cart-variant-label">{{ line.product.volume_ml }}ml</span>
+                                <div class="cart-item-variant">Volume: {{ line.product.volume_ml }}ml</div>
                             {% endif %}
 
+                            <!-- Bonus / Stock Badges -->
                             {% if line.is_bonus %}
-                                <br><span class="badge badge-success">FREE gift</span>
-                                <span class="muted" style="font-size:0.78rem">{{ line.bundle_label }}</span>
+                                <div style="margin-top: 4px;">
+                                    <span class="badge badge-success">FREE gift</span>
+                                    <span class="muted" style="font-size:0.78rem">{{ line.bundle_label }}</span>
+                                </div>
                             {% endif %}
-
                             {% if not line.is_bonus and line.variant and line.variant.stock == 0 %}
-                                <span class="badge badge-warning">Out of stock</span>
+                                <span class="badge badge-warning" style="margin-top:4px; display:inline-block;">Out of stock</span>
                             {% elif not line.is_bonus and not line.variant and not line.product.in_stock %}
-                                <span class="badge badge-warning">Out of stock</span>
+                                <span class="badge badge-warning" style="margin-top:4px; display:inline-block;">Out of stock</span>
                             {% endif %}
-
                             {% if not line.is_bonus and not line.product.is_deliverable %}
-                                <span class="badge badge-warning">Not deliverable</span>
+                                <span class="badge badge-warning" style="margin-top:4px; display:inline-block;">Not deliverable</span>
                             {% endif %}
-                        </td>
 
-                        {# ---------- unit price ---------- #}
-                        <td>
-                            KES {{ line.unit_price }}
-                            {% if line.is_wholesale %}
-                                <br><span class="badge badge-success">Wholesale</span>
-                            {% endif %}
-                        </td>
+                            <div class="cart-item-price-unit">
+                                KES {{ line.unit_price }}
+                                {% if line.is_wholesale %}
+                                    <span class="badge badge-success" style="margin-left: 6px; font-size: 0.6rem;">Wholesale</span>
+                                {% endif %}
+                            </div>
+                        </div>
 
-                        {# ---------- quantity / update form ---------- #}
-                        <td>
+                        <!-- Quantity Controls -->
+                        <div class="cart-item-qty">
                             {% if line.is_bonus %}
-                                <span class="muted">{{ line.quantity }} (bonus)</span>
+                                <span class="muted" style="font-size: 0.85rem;">{{ line.quantity }} (bonus)</span>
                             {% else %}
-                                <form action="{% url 'store:cart_update' line.product.id %}"
-                                      method="post"
-                                      class="inline-form">
+                                <form action="{% url 'store:cart_update' line.product.id %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="variant_id"
-                                           value="{{ line.variant.id|default:'' }}">
-                                    <input type="number"
-                                           name="quantity"
-                                           value="{{ line.quantity }}"
-                                           min="1"
-                                           max="{% if line.variant %}{{ line.variant.stock }}{% else %}{{ line.product.stock }}{% endif %}">
-                                    <button type="submit" class="btn btn-small btn-outline">Update</button>
+                                    <input type="hidden" name="variant_id" value="{{ line.variant.id|default:'' }}">
+                                    <button type="submit" name="quantity" value="{{ line.quantity|add:'-1' }}" class="qty-btn" {% if line.quantity <= 1 %}disabled{% endif %}>-</button>
+                                    <span class="qty-val">{{ line.quantity }}</span>
+                                    <button type="submit" name="quantity" value="{{ line.quantity|add:'1' }}" class="qty-btn">+</button>
                                 </form>
                             {% endif %}
-                        </td>
+                        </div>
 
-                        {# ---------- subtotal ---------- #}
-                        <td>KES {{ line.subtotal }}</td>
+                        <!-- Subtotal -->
+                        <div class="cart-item-total">
+                            KES {{ line.subtotal }}
+                        </div>
 
-                        {# ---------- remove form ---------- #}
-                        <td>
+                        <!-- Remove Button -->
+                        <div class="cart-item-remove">
                             {% if not line.is_bonus %}
-                                <form action="{% url 'store:cart_remove' line.product.id %}"
-                                      method="post"
-                                      class="inline-form">
+                                <form action="{% url 'store:cart_remove' line.product.id %}" method="post">
                                     {% csrf_token %}
-                                    <input type="hidden" name="variant_id"
-                                           value="{{ line.variant.id|default:'' }}">
-                                    <button type="submit" class="btn btn-small btn-danger">Remove</button>
+                                    <input type="hidden" name="variant_id" value="{{ line.variant.id|default:'' }}">
+                                    <button type="submit" aria-label="Remove item">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
                                 </form>
                             {% endif %}
-                        </td>
-                    </tr>
+                        </div>
+                    </div>
                 {% endfor %}
-                </tbody>
-            </table>
-
-            <div class="cart-summary">
-                <p class="total">Subtotal: KES {{ cart.subtotal }}</p>
-                <p class="muted">Delivery fee is calculated at checkout based on your address.</p>
-                <a href="{% url 'orders:checkout' %}" class="btn">Proceed to checkout</a>
             </div>
+
+            <!-- RIGHT: ORDER SUMMARY -->
+            <div class="cart-summary-container">
+                <h3 class="summary-title">Order Summary</h3>
+                
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>KES {{ cart.subtotal }}</span>
+                </div>
+                
+                <div class="summary-row">
+                    <span>Delivery</span>
+                    <span style="color: var(--text-mute); font-size: 0.8rem;">Calculated at checkout</span>
+                </div>
+                
+                <div class="summary-divider"></div>
+                
+                <div class="summary-row summary-total">
+                    <span>Total</span>
+                    <span>KES {{ cart.subtotal }}</span>
+                </div>
+
+                <a href="{% url 'orders:checkout' %}" class="btn-checkout">
+                    Proceed to Checkout
+                </a>
+
+                <a href="{% url 'store:product_list' %}" class="btn-continue">
+                    Continue Shopping
+                </a>
+            </div>
+
         </div>
     {% endif %}
+
 </div>
 {% endblock %}

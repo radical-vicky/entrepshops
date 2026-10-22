@@ -1,36 +1,85 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}{{ job.title }} — Careers — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-<div class="page-head">
-    <span class="eyebrow">{{ job.department }} &middot; {{ job.location }} &middot; {{ job.get_employment_type_display }}</span>
-    <h1>{{ job.title }}</h1>
-</div>
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
 
-<div class="job-detail-layout">
-    <div>
-        <p>{{ job.description|linebreaks }}</p>
-        {% if job.requirements_list %}
-            <h3>What we're looking for</h3>
-            <ul class="requirements-list">
-                {% for req in job.requirements_list %}<li>{{ req }}</li>{% endfor %}
-            </ul>
-        {% endif %}
+    <!-- Page Header -->
+    <div class="page-head" style="margin-bottom: 32px;">
+        <span class="eyebrow" style="font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold);">
+            {{ job.department }} &middot; {{ job.location }} &middot; {{ job.get_employment_type_display }}
+        </span>
+        <h1 style="font-family: var(--font-display); font-size: 2.2rem; color: var(--text); margin-top: 8px;">{{ job.title }}</h1>
     </div>
 
-    <div class="glass form-card">
-        <h3 style="margin-top:0">Apply for this role</h3>
-        <form method="post" action="{% url 'careers:apply' job.slug %}" class="auth-form">
-            {% csrf_token %}
-            <label>Full name<input type="text" name="full_name" required></label>
-            <label>Email<input type="email" name="email" required></label>
-            <label>Phone number<input type="text" name="phone_number" required></label>
-            <label>CV / portfolio link<input type="url" name="resume_link" placeholder="https://..."></label>
-            <label>Why you're a fit<textarea name="message" rows="4"></textarea></label>
-            <button type="submit" class="btn">Submit application</button>
-        </form>
+    <div class="job-detail-layout">
+
+        <!-- LEFT: Job Description -->
+        <div class="job-detail-content">
+            <div class="job-description-card">
+                <p style="color: var(--text-dim); font-size: 0.95rem; line-height: 1.7; margin: 0;">
+                    {{ job.description|linebreaks }}
+                </p>
+
+                {% if job.requirements_list %}
+                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-glass);">
+                        <h3 style="font-family: var(--font-display); font-size: 1.2rem; color: var(--text); margin: 0 0 16px;">
+                            What we're looking for
+                        </h3>
+                        <ul class="requirements-list" style="padding-left: 20px; margin: 0; color: var(--text-dim); font-size: 0.9rem; line-height: 1.7;">
+                            {% for req in job.requirements_list %}
+                                <li style="margin-bottom: 8px;">{{ req }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT: Application Form -->
+        <div class="job-apply-sidebar">
+            <div class="job-apply-card">
+                <h3 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--text); margin: 0 0 20px;">
+                    Apply for this role
+                </h3>
+
+                <form method="post" action="{% url 'careers:apply' job.slug %}" class="dashboard-form">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label>Full name</label>
+                        <input type="text" name="full_name" placeholder="Your full name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email address</label>
+                        <input type="email" name="email" placeholder="you@example.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Phone number</label>
+                        <input type="text" name="phone_number" placeholder="07XXXXXXXX" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>CV / Portfolio link</label>
+                        <input type="url" name="resume_link" placeholder="https://...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Why you're a fit</label>
+                        <textarea name="message" rows="4" placeholder="Tell us why you'd be a great fit for this role..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit-orange" style="margin-top: 8px;">
+                        Submit application
+                    </button>
+                </form>
+            </div>
+        </div>
+
     </div>
-</div>
 </div>
 {% endblock %}

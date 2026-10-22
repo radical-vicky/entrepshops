@@ -18,8 +18,8 @@ class RiderAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'status', 'rider', 'total', 'created_at')
-    list_filter = ('status', 'rider', 'created_at')
+    list_display = ('id', 'user', 'status', 'payment_method', 'rider', 'total', 'created_at')
+    list_filter = ('status', 'payment_method', 'rider', 'created_at')
     search_fields = ('id', 'user__username', 'phone_number')
     inlines = [OrderItemInline]
     readonly_fields = (

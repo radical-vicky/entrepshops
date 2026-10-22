@@ -1,100 +1,85 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Daily Spin — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px; display: flex; flex-direction: column; align-items: center;">
 
-    <div class="page-head">
-        <span class="eyebrow">Rewards</span>
-        <h1>Daily Spin</h1>
-        <p class="lede">
-            One free spin a day. Win cash vouchers, transport fee, drinks, or a
-            big-ticket prize — winnings post straight to your wallet or wait for
-            you to claim.
-        </p>
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-family: var(--font-display); font-size: 1.8rem; color: var(--text); margin: 0 0 8px;">Spin & Win</h1>
+        <p style="color: var(--text-mute); font-size: 0.9rem; margin: 0;">Get amazing rewards and discounts</p>
     </div>
 
-    <div class="spin-layout">
-
-        {# ---------- Left: the wheel ---------- #}
-        <div class="spin-wheel-wrap">
-            <div id="spin-wheel" class="spin-wheel"></div>
-            <div class="spin-pointer"></div>
-            <div class="spin-hub" aria-hidden="true"></div>
+    <!-- The Wheel -->
+    <div class="spin-wheel-wrap">
+        <div id="spin-wheel" class="spin-wheel"></div>
+        <div class="spin-pointer"></div>
+        <div class="spin-hub" aria-hidden="true">
+            <span class="hub-text">SPIN</span>
         </div>
+    </div>
 
-        {# ---------- Right: the result panel ---------- #}
-        <div class="spin-panel glass">
-            {% if today_spin %}
-                <span class="eyebrow">Today's result</span>
-                <h3>{{ today_spin.prize.label }}</h3>
+    <!-- Spin Button -->
+    <div style="margin-top: 40px; width: 100%; max-width: 300px;">
+        {% if today_spin %}
+            <button class="btn btn-orange" style="width: 100%; padding: 16px;" disabled>
+                Come back tomorrow
+            </button>
+        {% else %}
+            <form method="post" action="{% url 'accounts:spin_wheel' %}" id="spin-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-orange" style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: 700;">
+                    Spin Now
+                </button>
+            </form>
+        {% endif %}
+    </div>
 
-                {% if today_spin.claim_status == 'pending_claim' and today_spin.prize.cash_value %}
-                    <p class="muted">Claim it to add KES {{ today_spin.prize.cash_value }} to your wallet.</p>
-                    <form method="post" action="{% url 'accounts:claim_prize' today_spin.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-orange btn-small">Claim to wallet</button>
-                    </form>
-                {% elif today_spin.claim_status == 'pending_claim' %}
-                    <p class="muted">Choose where to deliver it:</p>
-                    {% if addresses %}
-                        <form method="post" action="{% url 'accounts:claim_prize' today_spin.id %}" class="claim-form">
-                            {% csrf_token %}
-                            <select name="address_id" required>
-                                {% for addr in addresses %}
-                                    <option value="{{ addr.id }}">{{ addr.label }} — {{ addr.as_text }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-orange btn-small">Claim prize</button>
-                        </form>
-                    {% else %}
-                        <p class="badge badge-warning">Add a delivery address to claim this prize.</p>
-                        <a href="{% url 'store:address_add' %}" class="btn btn-small btn-outline">Add address</a>
-                    {% endif %}
-                {% elif today_spin.claim_status == 'claimed' %}
-                    <p class="badge badge-success">Claimed — delivering to {{ today_spin.claim_address.label }}</p>
-                {% elif today_spin.claim_status == 'fulfilled' and today_spin.prize.cash_value %}
-                    <p class="badge badge-success">Claimed — KES {{ today_spin.prize.cash_value }} added to your wallet</p>
-                {% elif today_spin.claim_status == 'fulfilled' %}
-                    <p class="badge badge-success">Delivered — enjoy!</p>
-                {% else %}
-                    <p class="muted">Come back tomorrow for another spin.</p>
-                {% endif %}
+    <!-- Result / Claim Panel -->
+    {% if today_spin %}
+    <div class="spin-panel glass" style="margin-top: 32px; width: 100%; max-width: 400px;">
+        <span class="eyebrow">Today's result</span>
+        <h3>{{ today_spin.prize.label }}</h3>
 
-            {% else %}
-                <span class="eyebrow">Ready?</span>
-                <h3>Spin the wheel</h3>
-                <p class="muted">One tap, one shot a day.</p>
-                <form method="post" action="{% url 'accounts:spin_wheel' %}" id="spin-form">
+        {% if today_spin.claim_status == 'pending_claim' and today_spin.prize.cash_value %}
+            <p class="muted">Claim it to add KES {{ today_spin.prize.cash_value }} to your wallet.</p>
+            <form method="post" action="{% url 'accounts:claim_prize' today_spin.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-orange btn-small" style="width: 100%;">Claim to wallet</button>
+            </form>
+        {% elif today_spin.claim_status == 'pending_claim' %}
+            <p class="muted">Choose where to deliver it:</p>
+            {% if addresses %}
+                <form method="post" action="{% url 'accounts:claim_prize' today_spin.id %}" class="claim-form">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-orange">Spin now</button>
+                    <select name="address_id" required>
+                        {% for addr in addresses %}
+                            <option value="{{ addr.id }}">{{ addr.label }} — {{ addr.as_text }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-orange btn-small" style="width: 100%;">Claim prize</button>
                 </form>
+            {% else %}
+                <p class="badge badge-warning">Add a delivery address to claim this prize.</p>
+                <a href="{% url 'store:address_add' %}" class="btn btn-small btn-outline" style="width: 100%;">Add address</a>
             {% endif %}
+        {% elif today_spin.claim_status == 'claimed' %}
+            <p class="badge badge-success">Claimed — delivering to {{ today_spin.claim_address.label }}</p>
+        {% elif today_spin.claim_status == 'fulfilled' and today_spin.prize.cash_value %}
+            <p class="badge badge-success">Claimed — KES {{ today_spin.prize.cash_value }} added to your wallet</p>
+        {% elif today_spin.claim_status == 'fulfilled' %}
+            <p class="badge badge-success">Delivered — enjoy!</p>
+        {% else %}
+            <p class="muted">Come back tomorrow for another spin.</p>
+        {% endif %}
 
-            <a href="{% url 'accounts:profile' %}" class="wallet-chip" style="text-decoration:none">
-                <svg style="width:16px;height:16px"><use href="#icon-gift"/></svg>
-                Wallet balance: <strong>KES {{ profile.wallet_balance }}</strong>
-            </a>
-        </div>
-
+        <a href="{% url 'accounts:profile' %}" class="wallet-chip" style="text-decoration:none; margin-top: 16px;">
+            <svg style="width:16px;height:16px"><use href="#icon-gift"/></svg>
+            Wallet balance: <strong>KES {{ profile.wallet_balance }}</strong>
+        </a>
     </div>
-
-    {# ---------- Today's prizes ---------- #}
-    {% if prizes %}
-        <h3 class="prizes-heading">Today's prizes</h3>
-        <div class="prize-grid">
-            {% for prize in prizes %}
-                <div class="prize-chip">
-                    {% if prize.image %}
-                        <img src="{{ prize.image.url }}" alt="{{ prize.label }}">
-                    {% endif %}
-                    <div class="prize-label">
-                        <span class="prize-swatch" style="background:{{ prize.color }}"></span>
-                        {{ prize.label }}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
     {% endif %}
 
 </div>
@@ -119,26 +104,21 @@
         const size = (p.weight / totalWeight) * 360;
         const mid = angle + size / 2;
 
-        // Each wedge uses its own colour from the DB. Fallback to a
-        // palette by index if a prize has no colour set.
-        const fallback = ['#2FA66B', '#FF8A3D', '#E8B93C', '#45D68A', '#B5541A', '#0F0F0F'][i % 6];
+        // Default color palette matching your design
+        const fallback = ['#F5A623', '#1A1A1A', '#F5A623', '#1A1A1A', '#F5A623', '#1A1A1A'][i % 6];
         const color = (p.color || fallback).trim();
         stops.push(`${color} ${angle}deg ${angle + size}deg`);
 
-        // Place this prize's image + name along its segment, rotated
-        // so the whole slice, art included, spins together.
         const item = document.createElement('div');
         item.className = 'wheel-item';
-        item.style.transform = `translate(-50%, -50%) rotate(${mid}deg) translate(0, -${radius * 0.62}px)`;
+        // Rotate the item to its segment, then push outward
+        item.style.transform = `translate(-50%, -50%) rotate(${mid}deg) translate(0, -${radius * 0.55}px)`;
 
-        if (p.image) {
-            const img = document.createElement('img');
-            img.src = p.image;
-            img.alt = '';
-            item.appendChild(img);
-        }
+        // Text label
         const label = document.createElement('span');
-        label.textContent = p.label;
+        label.innerHTML = p.label.replace(/(\d+%)/g, '<br>$1'); // Break line on percentages for better fit
+        // Rotate the text back to horizontal
+        label.style.transform = `rotate(${-mid}deg)`; 
         item.appendChild(label);
 
         wheelEl.appendChild(item);
@@ -151,8 +131,14 @@
     wheelEl.style.background = `conic-gradient(${stops.join(',')})`;
     {% endif %}
 
+    // Spin animation trigger
+    document.getElementById('spin-form')?.addEventListener('submit', function(e) {
+        wheelEl.style.transition = 'transform 4s cubic-bezier(0.15, 0.90, 0.15, 1)';
+        wheelEl.style.transform = `rotate(${1080 + (Math.random() * 360)}deg)`; // 3+ full spins
+    });
+
     if (winningLabel) {
-        // Settle the wheel pointing at today's actual result on load.
+        // Settle wheel on today's actual result
         let cursor = 0;
         let targetMid = 0;
         for (const p of raw) {
@@ -162,6 +148,8 @@
         }
         const spins = 4;
         requestAnimationFrame(() => {
+            wheelEl.style.transition = 'transform 2s ease-out';
+            // Subtract from 360 so it points at the top (where pointer is)
             wheelEl.style.transform = `rotate(${spins * 360 + (360 - targetMid)}deg)`;
         });
     }

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Add delivery address — Entrep - Shop{% endblock %}
 
 {% block extra_head %}
@@ -7,45 +8,102 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
-        <span class="eyebrow">Account</span>
-        <h1>Add a delivery address</h1>
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Steps Header -->
+    <div class="cart-steps" style="display: flex; gap: 24px; margin-bottom: 24px; font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; justify-content: center;">
+        <span style="color: var(--text-mute);">1. Cart</span>
+        <span style="color: var(--orange); font-weight: 700; border-bottom: 2px solid var(--orange); padding-bottom: 4px;">2. Address</span>
+        <span style="color: var(--text-mute);">3. Payment</span>
+        <span style="color: var(--text-mute);">4. Review</span>
     </div>
 
-    <div class="form-card">
-        <div class="location-btn-row">
-            <button type="button" id="use-location-btn" class="btn btn-outline btn-small">
-                <svg style="width:15px;height:15px"><use href="#icon-pin"/></svg>
-                Use my current location
-            </button>
-            <span id="pin-readout" class="muted"></span>
+    <div class="address-form-wrapper">
+        <h1 class="address-page-title">Delivery Address</h1>
+
+        <!-- Map Section -->
+        <div class="map-section">
+            <div class="location-btn-row">
+                <button type="button" id="use-location-btn" class="btn btn-outline btn-small">
+                    <svg style="width:15px;height:15px; margin-right:4px;"><use href="#icon-pin"/></svg>
+                    Use my current location
+                </button>
+                <span id="pin-readout" class="muted" style="font-size:0.8rem; margin-left:8px;"></span>
+            </div>
+
+            <div id="pin-map" class="pin-map"></div>
+            <p id="location-status" class="muted map-hint" style="font-size: 0.75rem; margin-bottom: 20px;">
+                Tap or drag the pin to mark exactly where we should deliver.
+            </p>
         </div>
 
-        <div id="pin-map" class="pin-map"></div>
-        <p id="location-status" class="muted map-hint">
-            Tap or drag the pin to mark exactly where we should deliver — this helps your rider find the right
-            gate, block, or entrance, especially in larger apartment complexes.
-        </p>
-
-        <form method="post" class="auth-form">
+        <!-- Address Form -->
+        <form method="post" class="address-form">
             {% csrf_token %}
-            <label>Label (e.g. Home, Office)<input type="text" name="label" value="Home"></label>
-            <label>Full name<input type="text" name="full_name" required></label>
-            <label>Phone number (for M-Pesa & the rider to call you)<input type="text" name="phone_number" placeholder="07XXXXXXXX" required></label>
-            <label>Building / apartment name<input type="text" name="building_name" required></label>
-            <label>Apartment / house number<input type="text" name="apartment_number"></label>
-            <label>Floor<input type="text" name="floor"></label>
-            <label>Street<input type="text" name="street" required></label>
-            <label>Area / estate<input type="text" name="area" required></label>
-            <label>City<input type="text" name="city" value="Nairobi"></label>
-            <label>Delivery notes (gate code, landmark, etc.)<textarea name="delivery_notes"></textarea></label>
-            <label class="checkbox-label"><input type="checkbox" name="is_default"> Set as default address</label>
+
+            <div class="form-group">
+                <label>Label (e.g. Home, Office)</label>
+                <input type="text" name="label" value="Home">
+            </div>
+
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="full_name" required placeholder="Grace Kemi">
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" name="phone_number" placeholder="07XXXXXXXX" required>
+            </div>
+
+            <div class="form-group">
+                <label>Building / Apartment Name</label>
+                <input type="text" name="building_name" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Apartment / House No.</label>
+                    <input type="text" name="apartment_number">
+                </div>
+                <div class="form-group">
+                    <label>Floor</label>
+                    <input type="text" name="floor">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Street / Address</label>
+                <input type="text" name="street" required placeholder="Nairobi, Kenya">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Area / Estate</label>
+                    <input type="text" name="area" required>
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" name="city" value="Nairobi">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Delivery Instructions (Optional)</label>
+                <textarea name="delivery_notes" rows="2" placeholder="Gate code, landmark, etc."></textarea>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" name="is_default" style="width:auto; accent-color: var(--orange);">
+                    Set as default address
+                </label>
+            </div>
 
             <input type="hidden" id="id_latitude" name="latitude">
             <input type="hidden" id="id_longitude" name="longitude">
 
-            <button type="submit" class="btn">Save address</button>
+            <button type="submit" class="btn-submit-orange">Save & Continue</button>
         </form>
     </div>
 </div>
@@ -61,6 +119,7 @@
     const status = document.getElementById('location-status');
     const locateBtn = document.getElementById('use-location-btn');
 
+    // Initialize map
     const map = L.map('pin-map', { zoomControl: true }).setView(DEFAULT_CENTER, 13);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -77,17 +136,13 @@
         readout.textContent = `Pinned: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     }
 
-    // Tap anywhere on the map to drop the pin there.
     map.on('click', (e) => setPin(e.latlng.lat, e.latlng.lng, false));
 
-    // Fine-tune by dragging the marker itself.
     marker.on('dragend', () => {
         const pos = marker.getLatLng();
         setPin(pos.lat, pos.lng, false);
     });
 
-    // "Use my current location" recenters the map and drops the pin there,
-    // rather than blindly filling hidden fields the user can't see/adjust.
     locateBtn.addEventListener('click', () => {
         if (!navigator.geolocation) {
             status.textContent = 'Your browser does not support GPS location — tap the map to pin your address instead.';
@@ -106,8 +161,6 @@
         );
     });
 
-    // Best-effort: silently try to center on the user as soon as the page
-    // loads, without blocking on it or nagging for permission twice.
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => setPin(position.coords.latitude, position.coords.longitude, true),

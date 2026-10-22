@@ -1,61 +1,78 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Activate WhatsApp Earn — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
-        <span class="eyebrow">WhatsApp Earn</span>
-        <h1>Activate your account</h1>
-        <p class="lede">
-            Post today's product on WhatsApp Status, earn per view.
-            Activation costs <strong>KES {{ activation_fee }}</strong>
-            and lasts <strong>{{ activation_days }} days</strong>.
-        </p>
-    </div>
+<div class="container" style="padding-top: 40px; padding-bottom: 60px; display: flex; justify-content: center;">
 
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li class="message {{ message.tags }}">{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+    <div style="width: 100%; max-width: 520px;">
 
-    <div class="glass" style="max-width:520px;padding:32px;">
-        {% if is_active %}
-            <h3 style="margin-top:0">You're active</h3>
-            <p class="muted">
-                {% if sub.days_left %}
-                    {{ sub.days_left }} day{{ sub.days_left|pluralize }} left.
-                    Expires {{ sub.expires_at|date:"d M Y" }}.
-                {% endif %}
+        <!-- Page Header -->
+        <div class="page-head" style="text-align: center; margin-bottom: 32px;">
+            <span class="eyebrow">WhatsApp Earn</span>
+            <h1>Activate your account</h1>
+            <p class="lede" style="max-width: 100%;">
+                Post today's product on WhatsApp Status, earn per view.
+                Activation costs <strong style="color: var(--gold);">KES {{ activation_fee }}</strong>
+                and lasts <strong>{{ activation_days }} days</strong>.
             </p>
-            <a href="{% url 'marketing:list' %}" class="btn">
-                Go to today's campaign
-            </a>
+        </div>
 
-        {% else %}
-            <h3 style="margin-top:0">Pay to start earning</h3>
-            <p class="muted">
-                KES {{ activation_fee }} activates your account for
-                {{ activation_days }} days. You'll earn per view on every
-                campaign you share, and can withdraw any time.
-            </p>
-
-            <form method="post" action="{% url 'marketing:start_activation_payment' %}" class="auth-form">
-                {% csrf_token %}
-                <label>M-Pesa phone number
-                    <input type="text" name="phone_number" required
-                           placeholder="2547XXXXXXXX"
-                           value="{{ sub.mpesa_phone }}">
-                </label>
-                <button type="submit" class="btn btn-full">
-                    Pay KES {{ activation_fee }} via M-Pesa
-                </button>
-            </form>
-
-            <div id="activation-status" style="margin-top:16px;display:none;"></div>
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                    <li class="message {{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
         {% endif %}
+
+        <!-- Main Card -->
+        <div class="earnings-table-card" style="padding: 32px;">
+            {% if is_active %}
+                <div style="text-align: center;">
+                    <div style="width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 50%; background: rgba(69, 214, 138, 0.12); border: 1px solid rgba(69, 214, 138, 0.35); display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--success)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <h3 style="font-family: var(--font-display); font-size: 1.4rem; color: var(--text); margin-bottom: 8px;">You're active</h3>
+                    <p style="color: var(--text-mute); font-size: 0.9rem; margin-bottom: 24px;">
+                        {% if sub.days_left %}
+                            {{ sub.days_left }} day{{ sub.days_left|pluralize }} left.
+                            Expires {{ sub.expires_at|date:"d M Y" }}.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'marketing:list' %}" class="btn" style="width: 100%;">
+                        Go to today's campaign
+                    </a>
+                </div>
+
+            {% else %}
+                <h3 style="font-family: var(--font-display); font-size: 1.2rem; color: var(--text); margin-bottom: 8px;">Pay to start earning</h3>
+                <p style="color: var(--text-mute); font-size: 0.9rem; line-height: 1.6; margin-bottom: 24px;">
+                    KES {{ activation_fee }} activates your account for
+                    {{ activation_days }} days. You'll earn per view on every
+                    campaign you share, and can withdraw any time.
+                </p>
+
+                <form method="post" action="{% url 'marketing:start_activation_payment' %}" class="dashboard-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label>M-Pesa phone number</label>
+                        <input type="text" name="phone_number" required
+                               placeholder="2547XXXXXXXX"
+                               value="{{ sub.mpesa_phone }}">
+                    </div>
+
+                    <button type="submit" class="btn-submit-orange" style="margin-top: 8px;">
+                        Pay KES {{ activation_fee }} via M-Pesa
+                    </button>
+                </form>
+
+                <div id="activation-status" style="margin-top: 20px; display: none;"></div>
+            {% endif %}
+        </div>
+
     </div>
 </div>
 
@@ -72,7 +89,7 @@
             if (data.latest_status === 'failed') {
                 const el = document.getElementById('activation-status');
                 el.style.display = 'block';
-                el.innerHTML = '<p class="muted">Payment failed. Please try again.</p>';
+                el.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem; text-align: center;">Payment failed. Please try again.</p>';
                 return;
             }
             setTimeout(poll, 4000);

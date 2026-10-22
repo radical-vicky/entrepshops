@@ -1,70 +1,150 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Checkout — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Steps Header -->
+    <div class="cart-steps" style="display: flex; gap: 24px; margin-bottom: 32px; font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;">
+        <span style="color: var(--text-mute);">1. Cart</span>
+        <span style="color: var(--orange); font-weight: 700; border-bottom: 2px solid var(--orange); padding-bottom: 4px;">2. Checkout</span>
+        <span style="color: var(--text-mute);">3. Payment</span>
+    </div>
+
+    <div class="page-head" style="margin-bottom: 24px;">
         <span class="eyebrow">Checkout</span>
         <h1>Complete your order</h1>
     </div>
 
     {% if not address_options %}
-        <div class="form-card">
+        <div class="empty-address-warning" style="max-width: 500px; margin: 0 auto;">
+            <h4>No Delivery Address Found</h4>
             <p>You need a delivery address first.</p>
-            <a href="{% url 'store:address_add' %}" class="btn btn-small">Add delivery address</a>
+            <a href="{% url 'store:address_add' %}" class="btn" style="margin-top: 10px;">Add delivery address</a>
         </div>
     {% else %}
-        <form method="post" class="form-card wide checkout-form">
+        
+        <!-- The form wraps EVERYTHING -->
+        <form method="post" class="checkout-layout">
             {% csrf_token %}
-            <h3>Deliver to</h3>
-            {% for option in address_options %}
-                <label class="radio-card {% if not option.deliverable %}radio-card-disabled{% endif %}">
-                    <input type="radio" name="address_id" value="{{ option.address.id }}"
-                           {% if forloop.first %}checked{% endif %}
-                           {% if not option.deliverable %}disabled{% endif %}>
-                    <span>
-                        <strong>{{ option.address.label }}</strong> — {{ option.address.as_text }}<br>
-                        {% if option.deliverable %}
-                            <span class="muted">
-                                Delivery fee: KES {{ option.fee }}
-                                {% if option.zone %}({{ option.zone.name }}, ~{{ option.zone.estimated_minutes }} min){% endif %}
-                                — Total: KES {{ option.total }}
-                            </span>
-                        {% else %}
-                            <span class="badge badge-warning">Not currently delivering to {{ option.address.area }}</span>
-                        {% endif %}
-                    </span>
-                </label>
-            {% endfor %}
-            <p><a href="{% url 'store:address_add' %}">+ Add another address</a></p>
+            
+            <!-- LEFT COLUMN -->
+            <div class="checkout-main">
+                
+                <!-- 1. Deliver to -->
+                <div class="checkout-card">
+                    <h3 class="checkout-card-title">Deliver to</h3>
+                    <div class="address-list-checkout">
+                        {% for option in address_options %}
+                            <label class="address-radio-option {% if not option.deliverable %}is-disabled{% endif %}">
+                                <input type="radio" name="address_id" value="{{ option.address.id }}"
+                                       {% if forloop.first %}checked{% endif %}
+                                       {% if not option.deliverable %}disabled{% endif %} required>
+                                <div class="address-radio-content">
+                                    <div class="address-radio-header">
+                                        <strong>{{ option.address.label }}</strong>
+                                    </div>
+                                    <p class="address-radio-text">
+                                        {{ option.address.as_text }}<br>
+                                        {% if option.deliverable %}
+                                            <span class="muted" style="font-size: 0.75rem;">
+                                                Fee: KES {{ option.fee }}
+                                                {% if option.zone %}({{ option.zone.name }}, ~{{ option.zone.estimated_minutes }} min){% endif %}
+                                                — Total: KES {{ option.total }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-warning" style="margin-top: 4px; display: inline-block;">Not currently delivering to {{ option.address.area }}</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p style="margin-top: 12px;"><a href="{% url 'store:address_add' %}" style="color: var(--orange); font-size: 0.85rem; text-decoration: none;">+ Add another address</a></p>
+                </div>
 
-            <h3>M-Pesa phone number</h3>
-            <label>We'll send an STK push to this number to pay
-                <input type="text" name="phone_number" placeholder="07XXXXXXXX (leave blank to use address phone)">
-            </label>
+                <!-- 2. M-Pesa phone number -->
+                <div class="checkout-card">
+                    <h3 class="checkout-card-title">Phone number for M-Pesa (Optional)</h3>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 8px; display: block;">We'll send an STK push to this number to pay</label>
+                        <input type="text" name="phone_number" placeholder="07XXXXXXXX (leave blank to use address phone)" style="width: 100%; padding: 12px 14px; background: var(--void-2); border: 1px solid var(--border-glass); border-radius: 6px; color: var(--text);">
+                    </div>
+                </div>
 
-            <h3>Order summary</h3>
-            <table class="cart-table">
-                <tbody>
-                {% for line in cart %}
-                    <tr>
-                        <td class="cart-thumb-cell">
-                            {% if line.product.image %}
-                                <img src="{{ line.product.image.url }}" alt="" class="cart-thumb cart-thumb-sm">
-                            {% else %}
-                                <div class="cart-thumb cart-thumb-sm cart-thumb-placeholder"><svg style="width:14px;height:14px;color:#45D68A"><use href="#icon-bottle"/></svg></div>
-                            {% endif %}
-                        </td>
-                        <td>{{ line.quantity }} x {{ line.product.name }}{% if line.is_bonus %} <span class="badge badge-success">FREE</span>{% endif %}</td>
-                        <td>KES {{ line.subtotal }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <p class="total" style="font-family:var(--font-mono);font-weight:700;color:var(--green-bright)">Subtotal: KES {{ cart.subtotal }}</p>
-            <p class="muted">Delivery fee depends on the address above — free on orders KES {{ free_delivery_small }} or under, and free again on bulk orders of KES {{ free_delivery_wholesale }}+.</p>
+                <!-- 3. Payment Method -->
+                <div class="checkout-card">
+                    <h3 class="checkout-card-title">Payment Method</h3>
+                    <div class="payment-options">
+                        
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="mpesa" checked>
+                            <span class="payment-label mpesa-label">M-Pesa</span>
+                        </label>
 
-            <button type="submit" class="btn">Pay with M-Pesa</button>
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="card">
+                            <span class="payment-label">Card Payment</span>
+                        </label>
+
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="cod">
+                            <span class="payment-label">Cash on Delivery</span>
+                        </label>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: ORDER SUMMARY -->
+            <div class="checkout-summary-container">
+                <h3 class="summary-title">Order summary</h3>
+                
+                <div class="summary-items">
+                    {% for line in cart %}
+                        <div class="summary-item">
+                            <div class="summary-item-img">
+                                {% if line.product.image %}
+                                    <img src="{{ line.product.image.url }}" alt="">
+                                {% else %}
+                                    <div class="img-placeholder" style="border:none; height:100%;"><svg viewBox="0 0 24 24" width="20" height="20"><use href="#icon-bottle"/></svg></div>
+                                {% endif %}
+                            </div>
+                            <div class="summary-item-info">
+                                <p class="summary-item-name">{{ line.quantity }} x {{ line.product.name }} {% if line.is_bonus %}<span class="badge badge-success" style="font-size:0.6rem; padding:1px 4px;">FREE</span>{% endif %}</p>
+                            </div>
+                            <div class="summary-item-price">
+                                KES {{ line.subtotal }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="summary-divider"></div>
+                
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>KES {{ cart.subtotal }}</span>
+                </div>
+                
+                <div class="summary-row" style="font-size: 0.75rem; line-height: 1.4;">
+                    <span class="muted">Free delivery on orders KES {{ free_delivery_small }} or under, and free again on bulk orders of KES {{ free_delivery_wholesale }}+.</span>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-checkout">
+                    Place Order
+                </button>
+                
+                <p style="text-align: center; font-size: 0.7rem; color: var(--text-mute); margin-top: 12px;">
+                    By placing your order, you agree to our Terms & Conditions.
+                </p>
+            </div>
+
         </form>
     {% endif %}
 </div>

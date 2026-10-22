@@ -33,76 +33,113 @@
     {% include "includes/icons.html" %}
 
     <header class="site-header">
-        <div class="container header-inner">
-            <a href="{% url 'store:home' %}" class="logo">
-                {% if active_logo %}
-                    <img src="{{ active_logo.image.url }}" alt="Entrep - Shop" class="logo-image">
-                    <span class="logo-stack">
-                        <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
-                        <span class="logo-tagline">Shop · Save · Grow</span>
-                    </span>
-                {% else %}
-                    <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
-                    <span class="logo-stack">
-                        <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
-                        <span class="logo-tagline">Shop · Save · Grow</span>
-                    </span>
-                {% endif %}
-            </a>
-
-            <nav class="main-nav">
-                <a href="{% url 'store:product_list' %}">Shop</a>
-
-                {% if not user.is_authenticated or not user.vendor_profile %}
-                    <a href="{% url 'vendors:become_vendor' %}">Sell on Entrep</a>
-                {% endif %}
-
-                <a href="{% url 'careers:list' %}">Careers</a>
-
-                {% if user.is_authenticated %}
-                    {% if user.vendor_profile %}
-                        <a href="{% url 'vendors:dashboard' %}"><svg><use href="#icon-gift"/></svg>My Shop</a>
-                    {% endif %}
-                    <a href="{% url 'orders:order_history' %}"><svg><use href="#icon-order"/></svg>Orders</a>
-                    <a href="{% url 'store:address_list' %}"><svg><use href="#icon-pin"/></svg>Addresses</a>
-                    <a href="{% url 'marketing:list' %}"><svg><use href="#icon-share"/></svg>Earn</a>
-                    <a href="{% url 'sourcing:request_list' %}"><svg><use href="#icon-truck"/></svg>Import</a>
-                    <a href="{% url 'marketing:withdrawals' %}"><svg><use href="#icon-cash"/></svg>Withdraw</a>
-                    <a href="{% url 'accounts:spin' %}"><svg><use href="#icon-gift"/></svg>Spin</a>
-                    {% if user.rider_profile %}
-                        <a href="{% url 'orders:rider_dashboard' %}"><svg><use href="#icon-truck"/></svg>Rider</a>
-                    {% endif %}
-                    <a href="{% url 'accounts:profile' %}" class="nav-avatar-link">
-                        {% if user.profile.avatar %}
-                            <img src="{{ user.profile.avatar.url }}" alt="" class="nav-avatar">
-                        {% else %}
-                            <svg><use href="#icon-user"/></svg>
-                        {% endif %}
-                        {{ user.username }}
-                    </a>
-                    <a href="{% url 'account_logout' %}">Logout</a>
-                {% else %}
-                    <a href="{% url 'account_login' %}">Login</a>
-                    <a href="{% url 'account_signup' %}">Register</a>
-                {% endif %}
-
-                <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light">
-                    <svg class="theme-toggle-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="4"/>
-                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-                    </svg>
-                    <svg class="theme-toggle-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
+        <!-- TOP HEADER: Logo, Search, Icons -->
+        <div class="header-top">
+            <div class="container header-top-inner">
+                
+                <!-- Mobile Hamburger Button -->
+                <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open Menu">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
 
-                <a href="{% url 'store:cart_detail' %}" class="cart-link">
-                    <svg><use href="#icon-cart"/></svg>
-                    Cart{% if cart|length %}<span class="count">{{ cart|length }}</span>{% endif %}
+                <!-- Logo -->
+                <a href="{% url 'store:home' %}" class="logo">
+                    {% if active_logo %}
+                        <img src="{{ active_logo.image.url }}" alt="Entrep - Shop" class="logo-image">
+                        <span class="logo-stack">
+                            <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
+                            <span class="logo-tagline">Shop · Save · Grow</span>
+                        </span>
+                    {% else %}
+                        <svg class="logo-mark" viewBox="0 0 24 24"><use href="#icon-glass"/></svg>
+                        <span class="logo-stack">
+                            <span class="logo-wordmark">Entrep<span class="accent">Shop</span></span>
+                            <span class="logo-tagline">Shop · Save · Grow</span>
+                        </span>
+                    {% endif %}
                 </a>
-            </nav>
+
+                <!-- Center Search Bar -->
+                <form action="{% url 'store:product_list' %}" method="GET" class="header-search" id="header-search-form">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" name="q" placeholder="Search for products, brands and more..." value="{{ request.GET.q|default:'' }}">
+                </form>
+
+                <!-- Right Actions -->
+                <div class="header-actions">
+                    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light">
+                        <svg class="theme-toggle-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="4"/>
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                        </svg>
+                        <svg class="theme-toggle-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+
+                    <!-- Search Icon (Submits the form) -->
+                    <button type="submit" form="header-search-form" class="icon-btn search-submit-btn" aria-label="Search">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </button>
+                    
+                    <!-- User Profile -->
+                    <a href="{% url 'accounts:profile' %}" class="icon-btn" aria-label="Account">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </a>
+
+                    <!-- Cart -->
+                    <a href="{% url 'store:cart_detail' %}" class="cart-link">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                        {% if cart|length %}<span class="count">{{ cart|length }}</span>{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM HEADER: Navigation (Slides in on mobile) -->
+        <div class="header-bottom" id="mobile-nav-menu">
+            
+            <!-- Mobile close button -->
+            <button type="button" class="mobile-close-btn" id="mobile-close-btn" aria-label="Close Menu">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <div class="container" style="padding: 0 20px;">
+                <nav class="main-nav">
+                    <a href="{% url 'store:home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a>
+                    <a href="{% url 'store:product_list' %}" class="nav-item {% if request.resolver_match.url_name == 'product_list' %}active{% endif %}">Shop</a>
+
+                    {% if not user.is_authenticated or not user.vendor_profile %}
+                        <a href="{% url 'vendors:become_vendor' %}" class="nav-item">Sell on Entrep</a>
+                    {% endif %}
+
+                    <a href="{% url 'careers:list' %}" class="nav-item">Careers</a>
+
+                    {% if user.is_authenticated %}
+                        {% if user.vendor_profile %}
+                            <a href="{% url 'vendors:dashboard' %}" class="nav-item">My Shop</a>
+                        {% endif %}
+                        <a href="{% url 'orders:order_history' %}" class="nav-item">Orders</a>
+                        <a href="{% url 'store:address_list' %}" class="nav-item">Addresses</a>
+                        <a href="{% url 'marketing:list' %}" class="nav-item">Earn</a>
+                        <a href="{% url 'sourcing:request_list' %}" class="nav-item">Import</a>
+                        <a href="{% url 'marketing:withdrawals' %}" class="nav-item">Withdraw</a>
+                        <a href="{% url 'accounts:spin' %}" class="nav-item">Spin</a>
+                        {% if user.rider_profile %}
+                            <a href="{% url 'orders:rider_dashboard' %}" class="nav-item">Rider</a>
+                        {% endif %}
+                        <a href="{% url 'account_logout' %}" class="nav-item">Logout</a>
+                    {% else %}
+                        <a href="{% url 'account_login' %}" class="nav-item">Login</a>
+                        <a href="{% url 'account_signup' %}" class="nav-item">Register</a>
+                    {% endif %}
+                </nav>
+            </div>
         </div>
     </header>
+    
+    <!-- Mobile Backdrop (MUST BE OUTSIDE HEADER) -->
+    <div class="mobile-nav-backdrop" id="mobile-nav-backdrop"></div>
 
     <main>
         <div class="container">
@@ -129,6 +166,24 @@
     <script src="{% static 'js/lightbox.js' %}" defer></script>
 
     <script>
+        // ---------- Mobile Menu Logic ----------
+        (function() {
+            const menuBtn = document.getElementById('mobile-menu-btn');
+            const closeBtn = document.getElementById('mobile-close-btn');
+            const navMenu = document.getElementById('mobile-nav-menu');
+            const backdrop = document.getElementById('mobile-nav-backdrop');
+
+            function toggleMenu() {
+                navMenu.classList.toggle('is-open');
+                backdrop.classList.toggle('is-open');
+            }
+
+            if (menuBtn) menuBtn.addEventListener('click', toggleMenu);
+            if (closeBtn) closeBtn.addEventListener('click', toggleMenu);
+            if (backdrop) backdrop.addEventListener('click', toggleMenu);
+        })();
+
+        // ---------- Reveal Animations ----------
         (function () {
             const revealEls = document.querySelectorAll('.reveal');
             if (!revealEls.length) return;
@@ -157,6 +212,7 @@
             }
         })();
 
+        // ---------- AJAX Add to Cart ----------
         function showToast(text, tone) {
             const stack = document.getElementById('toast-stack');
             const el = document.createElement('div');
@@ -220,7 +276,6 @@
                 try { localStorage.setItem('theme', next); } catch (e) {}
             });
 
-            // Follow OS changes only if the user hasn't picked manually.
             const mq = window.matchMedia('(prefers-color-scheme: light)');
             mq.addEventListener('change', function (e) {
                 try {

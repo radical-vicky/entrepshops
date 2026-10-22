@@ -1,60 +1,81 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Withdrawal history — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Page Header -->
+    <div class="page-head" style="margin-bottom: 24px;">
         <span class="eyebrow">Withdrawals</span>
         <h1>Withdrawal history</h1>
+        <p class="lede">Track all your M-Pesa withdrawal requests.</p>
     </div>
 
-    <div class="glass withdraw-card">
-        <header class="withdraw-head">
-            <span class="eyebrow">Available to withdraw</span>
-            <div class="withdraw-balance">KES {{ balance }}</div>
-        </header>
+    <!-- Balance Card -->
+    <div class="earnings-stats-row" style="grid-template-columns: 1fr;">
+        <div class="earnings-stat-card accent" style="flex-direction: row; justify-content: space-between; align-items: center;">
+            <div>
+                <span class="stat-label">Available to withdraw</span>
+                <strong style="display: block; margin-top: 4px;">KES {{ balance }}</strong>
+            </div>
+            <a href="{% url 'marketing:withdraw' %}" class="btn btn-small">Request Withdrawal</a>
+        </div>
+    </div>
 
-        <table class="cart-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Amount</th>
-                    <th>Phone</th>
-                    <th>Status</th>
-                    <th>Receipt</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for w in withdrawals %}
+    <!-- Withdrawals Table -->
+    <div class="earnings-table-card" style="margin-top: 24px;">
+        <h3 class="earnings-section-title">All Requests</h3>
+        <div class="table-responsive">
+            <table class="dash-table">
+                <thead>
                     <tr>
-                        <td>{{ w.requested_at|date:"j M Y, H:i" }}</td>
-                        <td>KES {{ w.amount }}</td>
-                        <td>{{ w.phone_number }}</td>
-                        <td>
-                            {% if w.status == 'paid' %}
-                                <span class="badge badge-success">Paid</span>
-                            {% elif w.status == 'approved' %}
-                                <span class="badge badge-warning">In progress</span>
-                            {% elif w.status == 'rejected' %}
-                                <span class="badge badge-muted">Rejected</span>
-                            {% else %}
-                                <span class="badge badge-warning">In progress</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ w.mpesa_receipt|default:"—" }}</td>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Receipt</th>
                     </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="5" class="muted">No withdrawal requests yet.</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for w in withdrawals %}
+                        <tr>
+                            <td style="color: var(--text-mute);">{{ w.requested_at|date:"j M Y, H:i" }}</td>
+                            <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">KES {{ w.amount }}</td>
+                            <td>{{ w.phone_number }}</td>
+                            <td>
+                                {% if w.status == 'paid' %}
+                                    <span class="status-badge status-delivered">Paid</span>
+                                {% elif w.status == 'approved' %}
+                                    <span class="status-badge status-paid">In progress</span>
+                                {% elif w.status == 'rejected' %}
+                                    <span class="status-badge status-cancelled">Rejected</span>
+                                {% else %}
+                                    <span class="status-badge status-paid">In progress</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right; font-family: var(--font-mono); color: var(--text-dim);">
+                                {{ w.mpesa_receipt|default:"—" }}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-mute); padding: 40px 20px;">
+                                No withdrawal requests yet.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-        <div class="withdraw-footer">
-            <a href="{% url 'marketing:withdraw' %}" class="btn">Request a withdrawal</a>
+        <!-- Footer Actions -->
+        <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="{% url 'marketing:withdraw' %}" class="btn btn-small">Request a withdrawal</a>
             <a href="{% url 'marketing:earnings' %}" class="btn btn-outline btn-small">Back to earnings</a>
         </div>
     </div>
+
 </div>
 {% endblock %}

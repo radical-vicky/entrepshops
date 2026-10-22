@@ -10,6 +10,7 @@ urlpatterns = [
     path('waiting/<int:order_id>/retry/', views.retry_payment, name='retry_payment'),
     path('history/', views.order_history, name='order_history'),
     path('<int:order_id>/', views.order_detail, name='order_detail'),
+    path('success/<int:order_id>/', views.order_success, name='order_success'),
     path('<int:order_id>/receipt/', views.download_receipt, name='download_receipt'),
     path('items/<int:item_id>/review/', views.submit_review, name='submit_review'),
     path('<int:order_id>/tip/', views.send_tip, name='send_tip'),

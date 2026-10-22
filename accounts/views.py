@@ -1,35 +1,59 @@
 import json
 import random
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.db.models import Avg
 
 from store.models import DeliveryAddress
+from orders.models import Order, Review
 
 from .models import DailySpin, Profile, SpinPrize, WalletTransaction, WithdrawalRequest
 
 
 @login_required
 def profile_view(request):
-    from django.conf import settings as dj_settings
-
     profile, _ = Profile.objects.get_or_create(user=request.user)
     referral_link = request.build_absolute_uri(f'/?ref={profile.referral_code}')
+    
+    # --- DATABASE STATS ---
+    total_orders = Order.objects.filter(user=request.user).count()
+    
+    avg_rating = Review.objects.filter(user=request.user).aggregate(Avg('rating'))['rating__avg'] or 0
+    avg_rating = round(avg_rating, 1)
+    
+    wishlist_count = 0 
+    
+    is_verified = request.user.emailaddress_set.filter(verified=True).exists()
+    account_status = "Verified" if is_verified else "Unverified"
+
     recent_transactions = request.user.wallet_transactions.all()[:15]
     today_spin = DailySpin.objects.filter(user=request.user, spin_date=timezone.localdate()).first()
     recent_withdrawals = request.user.withdrawals.all()[:10]
+
     return render(request, 'accounts/profile.html', {
         'profile': profile,
         'referral_link': referral_link,
         'recent_transactions': recent_transactions,
         'today_spin': today_spin,
         'recent_withdrawals': recent_withdrawals,
-        'min_withdrawal': dj_settings.WALLET_MIN_WITHDRAWAL_KES,
-        'referral_bonus': dj_settings.REFERRAL_BONUS_KES,
+        'min_withdrawal': settings.WALLET_MIN_WITHDRAWAL_KES,
+        'referral_bonus': settings.REFERRAL_EMAIL_BONUS_KES,
+        'total_orders': total_orders,
+        'avg_rating': avg_rating,
+        'wishlist_count': wishlist_count,
+        'account_status': account_status,
     })
+
+
+@login_required
+def edit_profile(request):
+    """Renders the form page for editing profile."""
+    return render(request, 'accounts/edit_profile.html')
 
 
 @login_required
@@ -37,6 +61,7 @@ def profile_view(request):
 def update_profile(request):
     profile, _ = Profile.objects.get_or_create(user=request.user)
 
+    # Update username
     new_username = request.POST.get('username', '').strip()
     if new_username and new_username != request.user.username:
         from django.contrib.auth import get_user_model
@@ -47,11 +72,25 @@ def update_profile(request):
         request.user.username = new_username
         request.user.save(update_fields=['username'])
 
+    # Update email
+    new_email = request.POST.get('email', '').strip()
+    if new_email and new_email != request.user.email:
+        request.user.email = new_email
+        request.user.save(update_fields=['email'])
+
+    # Update profile fields
+    profile.phone_number = request.POST.get('phone_number', '').strip()
+    profile.date_of_birth = request.POST.get('dob') or None
+    profile.gender = request.POST.get('gender', '')
+    profile.bio = request.POST.get('bio', '').strip()
+
+    # Update avatar
     if request.FILES.get('avatar'):
         profile.avatar = request.FILES['avatar']
-        profile.save(update_fields=['avatar'])
 
-    messages.success(request, 'Profile updated.')
+    profile.save()
+
+    messages.success(request, 'Profile updated successfully.')
     return redirect('accounts:profile')
 
 
@@ -147,12 +186,10 @@ def claim_prize(request, spin_id):
 @login_required
 @require_POST
 def withdraw_wallet(request):
-    from django.conf import settings as dj_settings
-
     from payments.mpesa import MpesaError, b2c_payment
 
     profile, _ = Profile.objects.get_or_create(user=request.user)
-    min_amount = dj_settings.WALLET_MIN_WITHDRAWAL_KES
+    min_amount = settings.WALLET_MIN_WITHDRAWAL_KES
 
     try:
         amount = int(request.POST.get('amount', 0))

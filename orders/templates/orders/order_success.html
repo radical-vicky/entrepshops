@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Order Placed Successfully — EntrepShop{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 60px; padding-bottom: 60px; display: flex; justify-content: center;">
+
+    <div class="success-card">
+        
+        <!-- Animated Checkmark Icon -->
+        <div class="success-icon-wrap">
+            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="8 12 11 15 16 9"></polyline>
+            </svg>
+        </div>
+
+        <h1 class="success-title">Order Placed Successfully!</h1>
+        
+        <p class="success-subtitle">
+            Your order has been received and is being processed.<br>
+            You will get a notification shortly.
+        </p>
+
+        <!-- Order Number Box -->
+        <div class="success-order-box">
+            <span class="success-order-label">Order Number</span>
+            <span class="success-order-value">#{{ order.id }}</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="success-actions">
+            <a href="{% url 'orders:order_detail' order.id %}" class="btn-success-primary">
+                View Order Details
+            </a>
+
+            <a href="{% url 'store:home' %}" class="btn-success-secondary">
+                Continue Shopping
+            </a>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

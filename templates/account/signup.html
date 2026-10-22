@@ -1,35 +1,147 @@
 {% extends "base.html" %}
+{% load static %}
 {% load socialaccount %}
-{% block title %}Register — Entrep - Shop{% endblock %}
+
+{% block title %}Join EntrepShop — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
-        <span class="eyebrow">Account</span>
-        <h1>Create an account</h1>
-        <p class="lede">Save delivery addresses and pay with M-Pesa in a couple of taps.</p>
+<div class="login-page-wrapper">
+    
+    <!-- LEFT SIDE: Hero Background & Trust Badges -->
+    <div class="login-hero-side">
+        <div class="login-hero-bg" style="background-image: url('{% static 'images/login-hero-bg.png' %}');"></div>
+        <div class="login-hero-overlay"></div>
+        
+        <div class="login-hero-content">
+            <h1 class="login-hero-title">
+                Join Entrepshop<br>
+                <span class="accent">Today</span>
+            </h1>
+            <p class="login-hero-subtitle">
+                Create your account and get access to exclusive deals,<br>
+                faster checkout, order tracking and much more.
+            </p>
+
+            <div class="login-trust-badges">
+                <div class="trust-badge-box">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    <div><strong>Exclusive Deals</strong><span>Member-only discounts</span></div>
+                </div>
+                <div class="trust-badge-box">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <div><strong>Faster Delivery</strong><span>Track your orders easily</span></div>
+                </div>
+                <div class="trust-badge-box">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                    <div><strong>Secure Shopping</strong><span>Your data is safe with us</span></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="form-card">
-        {% get_providers as socialaccount_providers %}
-        {% if socialaccount_providers %}
-            <div class="social-auth">
-                <a href="{% provider_login_url 'google' method='oauth2' %}" class="btn btn-google">
-                    Sign up with Google
-                </a>
-            </div>
-            <p class="muted or-divider">or register with a username and password</p>
-        {% endif %}
+    <!-- RIGHT SIDE: Signup Form Card -->
+    <div class="login-form-side">
+        <div class="login-form-card">
+            
+            <!-- DUPLICATE LOGO REMOVED — Navbar already has it -->
 
-        <form method="post" action="{% url 'account_signup' %}" class="auth-form">
-            {% csrf_token %}
-            {{ form.as_p }}
-            {% if redirect_field_value %}
-                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            <h2 class="login-title">Create Your Account</h2>
+            <p class="login-subtitle">Join EntrepShop and start shopping smarter.</p>
+
+            {% if form.non_field_errors %}
+                <div class="message error" style="margin-bottom: 20px;">
+                    {% for error in form.non_field_errors %}
+                        <p style="margin: 0; font-size: 0.85rem;">{{ error }}</p>
+                    {% endfor %}
+                </div>
             {% endif %}
-            <button type="submit" class="btn">Register</button>
-        </form>
-        <p style="margin-top:18px">Already have an account? <a href="{% url 'account_login' %}">Login here</a></p>
+
+            <form method="post" action="{% url 'account_signup' %}" class="login-form">
+                {% csrf_token %}
+
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        
+                        <div class="input-wrapper">
+                            {% if 'email' in field.name %}
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#666" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+                            {% elif 'username' in field.name or 'name' in field.name %}
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#666" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            {% elif 'phone' in field.name %}
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#666" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            {% elif 'password' in field.name %}
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#666" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            {% endif %}
+                            
+                            <input 
+                                type="{{ field.field.widget.input_type }}" 
+                                name="{{ field.html_name }}" 
+                                id="{{ field.id_for_label }}"
+                                placeholder="{{ field.label }}"
+                                {% if field.value %}value="{{ field.value }}"{% endif %}
+                                {% if field.field.required %}required{% endif %}
+                            >
+                            
+                            {% if 'password' in field.name %}
+                            <button type="button" class="password-toggle" onclick="togglePassword(this)">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#666" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
+                            {% endif %}
+                        </div>
+
+                        {% if field.errors %}
+                            <ul class="errorlist" style="list-style:none; padding:0; margin:6px 0 0; color: var(--danger); font-size: 0.75rem;">
+                                {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                {% if redirect_field_value %}
+                    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                {% endif %}
+
+                <button type="submit" class="login-btn-primary">
+                    Sign Up
+                </button>
+            </form>
+
+            <div class="login-divider">
+                <span>Or</span>
+            </div>
+
+            {% get_providers as socialaccount_providers %}
+            {% if socialaccount_providers %}
+                <a href="{% provider_login_url 'google' method='oauth2' %}" class="login-btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Continue with Google
+                </a>
+            {% endif %}
+
+            <p class="login-terms">
+                Already have an account? 
+                <a href="{% url 'account_login' %}">Login here</a>
+            </p>
+
+        </div>
     </div>
 </div>
+
+<script>
+    function togglePassword(button) {
+        const wrapper = button.closest('.input-wrapper');
+        const input = wrapper.querySelector('input');
+        if (input.type === 'password') {
+            input.type = 'text';
+        } else {
+            input.type = 'password';
+        }
+    }
+</script>
 {% endblock %}

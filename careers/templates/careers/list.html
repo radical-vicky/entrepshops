@@ -1,26 +1,45 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Careers — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-<div class="page-head">
-    <span class="eyebrow">Careers</span>
-    <h1>Join the team</h1>
-    <p class="lede">Riders, marketers, managers, and more — open roles are posted here as they come up.</p>
-</div>
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
 
-{% if not jobs %}
-    <p class="muted">No open roles right now — check back soon.</p>
-{% else %}
-<div class="job-grid">
-    {% for job in jobs %}
-        <a href="{{ job.get_absolute_url }}" class="glass job-card">
-            <span class="badge">{{ job.department }}</span>
-            <h3>{{ job.title }}</h3>
-            <p class="muted">{{ job.location }} &middot; {{ job.get_employment_type_display }}</p>
-        </a>
-    {% endfor %}
-</div>
-{% endif %}
+    <div class="page-head">
+        <span class="eyebrow">Careers</span>
+        <h1>Join the team</h1>
+        <p class="lede">Riders, marketers, managers, and more — open roles are posted here as they come up.</p>
+    </div>
+
+    {% if not jobs %}
+        <div class="vendor-empty-state">
+            <h3>No open roles right now</h3>
+            <p>Check back soon — we're always looking for great people.</p>
+        </div>
+    {% else %}
+        <div class="job-grid">
+            {% for job in jobs %}
+                <a href="{{ job.get_absolute_url }}" class="job-card">
+                    
+                    <div class="job-card-header">
+                        <span class="badge" style="background: rgba(232, 185, 60, 0.12); color: var(--gold); border: 1px solid rgba(232, 185, 60, 0.35);">
+                            {{ job.department }}
+                        </span>
+                    </div>
+
+                    <h3 class="job-title">{{ job.title }}</h3>
+                    
+                    <p class="job-meta">
+                        {{ job.location }} &middot; {{ job.get_employment_type_display }}
+                    </p>
+
+                    <div class="job-card-footer">
+                        <span class="job-cta">View role &rarr;</span>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

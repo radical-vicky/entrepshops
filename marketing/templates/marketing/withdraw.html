@@ -1,9 +1,13 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Withdraw — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Page Header -->
+    <div class="page-head" style="margin-bottom: 32px;">
         <span class="eyebrow">Withdrawals</span>
         <h1>Withdraw your earnings</h1>
         <p class="lede">
@@ -14,83 +18,86 @@
     </div>
 
     <div class="withdraw-layout">
-        <section class="glass withdraw-card">
-            <header class="withdraw-head">
-                <span class="eyebrow">Available to withdraw</span>
-                <div class="withdraw-balance">KES {{ balance }}</div>
+
+        <!-- LEFT: Withdrawal Form -->
+        <section class="earnings-table-card" style="padding: 32px;">
+            <header style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-glass);">
+                <span class="stat-label">Available to withdraw</span>
+                <div style="font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; color: var(--gold); margin-top: 4px;">
+                    KES {{ balance }}
+                </div>
             </header>
 
             {% if balance < 100 %}
-                <div class="withdraw-notice">
-                    <strong>No balance available right now.</strong>
-                    <p class="muted">
-                        You need at least KES 100 to withdraw. Keep sharing —
-                        your balance updates as soon as screenshots are credited.
+                <div class="earnings-pending-box" style="margin-bottom: 20px;">
+                    <strong style="color: var(--text); display: block; margin-bottom: 6px;">No balance available right now.</strong>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-mute); line-height: 1.5;">
+                        You need at least KES 100 to withdraw. Keep sharing — your balance updates as soon as screenshots are credited.
                     </p>
                 </div>
-                <a href="{% url 'marketing:list' %}" class="btn btn-outline btn-small">
+                <a href="{% url 'marketing:list' %}" class="btn btn-outline btn-small" style="width: 100%; text-align: center;">
                     Back to campaigns
                 </a>
             {% else %}
-                <form method="post" class="auth-form" novalidate>
+                <form method="post" class="dashboard-form" novalidate>
                     {% csrf_token %}
 
-                    <p>
-                        <label for="{{ form.phone_number.id_for_label }}">
-                            {{ form.phone_number.label }}
-                        </label>
+                    <div class="form-group">
+                        <label for="{{ form.phone_number.id_for_label }}">{{ form.phone_number.label }}</label>
                         {{ form.phone_number }}
-                        <span class="helptext">
-                            Format: 2547XXXXXXXX. This is the Safaricom number
-                            that will receive the M-Pesa transfer.
+                        <span style="font-size: 0.75rem; color: var(--text-mute); margin-top: 6px; line-height: 1.4;">
+                            Format: 2547XXXXXXXX. This is the Safaricom number that will receive the M-Pesa transfer.
                         </span>
                         {% if form.phone_number.errors %}
-                            <ul class="errorlist">
+                            <ul class="errorlist" style="list-style:none; padding:0; margin: 6px 0 0; color: var(--danger); font-size: 0.8rem;">
                                 {% for e in form.phone_number.errors %}<li>{{ e }}</li>{% endfor %}
                             </ul>
                         {% endif %}
-                    </p>
+                    </div>
 
-                    <p>
-                        <label for="{{ form.amount.id_for_label }}">
-                            {{ form.amount.label }}
-                        </label>
+                    <div class="form-group">
+                        <label for="{{ form.amount.id_for_label }}">{{ form.amount.label }}</label>
                         {{ form.amount }}
-                        <span class="helptext">{{ form.amount.help_text }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-mute); margin-top: 6px; line-height: 1.4;">
+                            {{ form.amount.help_text }}
+                        </span>
                         {% if form.amount.errors %}
-                            <ul class="errorlist">
+                            <ul class="errorlist" style="list-style:none; padding:0; margin: 6px 0 0; color: var(--danger); font-size: 0.8rem;">
                                 {% for e in form.amount.errors %}<li>{{ e }}</li>{% endfor %}
                             </ul>
                         {% endif %}
-                    </p>
+                    </div>
 
-                    <button type="submit" class="btn btn-full">Request withdrawal</button>
+                    <button type="submit" class="btn-submit-orange" style="margin-top: 8px;">
+                        Request withdrawal
+                    </button>
                 </form>
 
-                <p class="muted withdraw-note">
-                    You'll receive an email confirming your request, and another
-                    when the money has been sent. Once submitted, the amount is
-                    locked — you'll see it marked as "In progress" until we pay it out.
+                <p style="margin: 20px 0 0; font-size: 0.8rem; color: var(--text-mute); line-height: 1.55;">
+                    You'll receive an email confirming your request, and another when the money has been sent. Once submitted, the amount is locked — you'll see it marked as "In progress" until we pay it out.
                 </p>
             {% endif %}
         </section>
 
-        <aside class="glass withdraw-info">
-            <span class="eyebrow">How it works</span>
-            <ol class="withdraw-steps">
-                <li>Submit the request with your M-Pesa number and amount.</li>
-                <li>We review it and send the money to your phone.</li>
+        <!-- RIGHT: Info Panel -->
+        <aside class="earnings-table-card" style="padding: 28px;">
+            <span class="stat-label" style="display: block; margin-bottom: 16px;">How it works</span>
+            
+            <ol style="padding-left: 18px; margin: 0 0 24px; color: var(--text-dim); font-size: 0.9rem; line-height: 1.7;">
+                <li style="margin-bottom: 8px;">Submit the request with your M-Pesa number and amount.</li>
+                <li style="margin-bottom: 8px;">We review it and send the money to your phone.</li>
                 <li>You get a confirmation email with the M-Pesa receipt code.</li>
             </ol>
-            <p class="muted">
-                Only M-Pesa numbers registered in Kenya can receive payouts.
-                If your number isn't registered yet, dial *334# to set it up
-                before requesting.
+
+            <p style="margin: 0 0 20px; font-size: 0.85rem; color: var(--text-mute); line-height: 1.55; border-top: 1px solid var(--border-glass); padding-top: 20px;">
+                Only M-Pesa numbers registered in Kenya can receive payouts. If your number isn't registered yet, dial *334# to set it up before requesting.
             </p>
-            <a href="{% url 'marketing:withdrawals' %}" class="btn btn-outline btn-small">
+
+            <a href="{% url 'marketing:withdrawals' %}" class="btn btn-outline btn-small" style="width: 100%; text-align: center;">
                 View withdrawal history
             </a>
         </aside>
+
     </div>
 </div>
 {% endblock %}

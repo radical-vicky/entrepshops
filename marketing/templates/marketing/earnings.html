@@ -1,147 +1,170 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}My earnings — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Page Header -->
+    <div class="page-head" style="margin-bottom: 24px;">
         <span class="eyebrow">Earnings</span>
         <h1>Your share earnings</h1>
+        <p class="lede">Track your views, manage payouts, and withdraw to M-Pesa.</p>
     </div>
 
+    <!-- In-progress Warning Banner -->
     {% if in_progress_total %}
-        <div class="earnings-banner">
+        <div class="earnings-banner" style="margin-bottom: 24px;">
             <strong>Withdrawal in progress:</strong>
             KES {{ in_progress_total }} is being processed. You'll get an email
             when the money is sent.
         </div>
     {% endif %}
 
-    <div class="form-card wide">
-        <div class="marketing-stats">
-            <div class="marketing-stat">
-                <strong>{{ total_views }}</strong>
-                <span>total views</span>
-            </div>
-            <div class="marketing-stat">
-                <strong>KES {{ total_earnings }}</strong>
-                <span>total earned</span>
-            </div>
+    <!-- Stat Cards -->
+    <div class="earnings-stats-row">
+        <div class="earnings-stat-card">
+            <span class="stat-label">Total Views</span>
+            <strong>{{ total_views }}</strong>
         </div>
-
-        {% if pending_total %}
-            <div class="earnings-pending">
-                <span class="eyebrow">Pending 24h hold</span>
-                <div class="earnings-pending-amount">KES {{ pending_total }}</div>
-                <p class="muted">
-                    {{ pending_views }} view{{ pending_views|pluralize }} awaiting
-                    review. Credits within 24 hours of upload.
-                </p>
-            </div>
-        {% endif %}
-
-        <div class="withdraw-cta">
-            <div>
-                <span class="eyebrow">Available to withdraw</span>
-                <div class="withdraw-balance-small">KES {{ balance }}</div>
-            </div>
+        <div class="earnings-stat-card">
+            <span class="stat-label">Total Earned</span>
+            <strong>KES {{ total_earnings }}</strong>
+        </div>
+        <div class="earnings-stat-card accent">
+            <span class="stat-label">Available to Withdraw</span>
+            <strong>KES {{ balance }}</strong>
             {% if balance > 0 %}
-                <a href="{% url 'marketing:withdraw' %}" class="btn">Withdraw to M-Pesa</a>
+                <a href="{% url 'marketing:withdraw' %}" class="btn btn-small" style="margin-top: 12px;">Withdraw to M-Pesa</a>
             {% else %}
-                <a href="{% url 'marketing:withdraw' %}" class="btn btn-outline">Withdraw to M-Pesa</a>
+                <a href="{% url 'marketing:withdraw' %}" class="btn btn-outline btn-small" style="margin-top: 12px; opacity: 0.5; pointer-events: none;">Withdraw to M-Pesa</a>
             {% endif %}
         </div>
+    </div>
 
-        <h3>Your shares</h3>
-        <table class="cart-table">
-            <thead>
-                <tr>
-                    <th>Campaign</th>
-                    <th>Views</th>
-                    <th>Earned</th>
-                    <th>Since</th>
-                    <th>Proof</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in shares %}
-                    <tr>
-                        <td>{{ s.campaign.title }}</td>
-                        <td>{{ s.views }}</td>
-                        <td>KES {{ s.earnings }}</td>
-                        <td>{{ s.created_at|date:"j M Y" }}</td>
-                        <td>
-                            <a href="{% url 'marketing:upload_proof' s.id %}"
-                               class="btn btn-small btn-outline">Upload proof</a>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="5" class="muted">No shares yet.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Pending Payouts Box -->
+    {% if pending_total %}
+        <div class="earnings-pending-box">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <span class="eyebrow" style="color: var(--gold);">Pending 24h Hold</span>
+                    <div class="earnings-pending-amount">KES {{ pending_total }}</div>
+                    <p class="muted" style="margin: 8px 0 0; font-size: 0.85rem;">
+                        {{ pending_views }} view{{ pending_views|pluralize }} awaiting review. Credits within 24 hours of upload.
+                    </p>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
-        {% if pending_proofs %}
-            <h3>Pending payouts</h3>
-            <table class="cart-table">
+    <!-- Shares Table -->
+    <div class="earnings-table-card">
+        <h3 class="earnings-section-title">Your Shares</h3>
+        <div class="table-responsive">
+            <table class="dash-table">
                 <thead>
                     <tr>
                         <th>Campaign</th>
-                        <th>Reported views</th>
-                        <th>Credits on</th>
-                        <th>Status</th>
+                        <th>Views</th>
+                        <th>Earned</th>
+                        <th>Since</th>
+                        <th style="text-align: right;">Proof</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for p in pending_proofs %}
+                    {% for s in shares %}
                         <tr>
-                            <td>{{ p.share.campaign.title }}</td>
-                            <td>{{ p.reported_views }}</td>
-                            <td>{{ p.payout_due_at|date:"j M Y, H:i" }}</td>
-                            <td><span class="badge badge-warning">24h hold</span></td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endif %}
-
-        {% if recent_withdrawals %}
-            <h3>Recent withdrawals</h3>
-            <table class="cart-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Phone</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for w in recent_withdrawals %}
-                        <tr>
-                            <td>{{ w.requested_at|date:"j M Y" }}</td>
-                            <td>KES {{ w.amount }}</td>
-                            <td>{{ w.phone_number }}</td>
-                            <td>
-                                {% if w.status == 'paid' %}
-                                    <span class="badge badge-success">Paid</span>
-                                {% elif w.status == 'approved' %}
-                                    <span class="badge badge-warning">In progress</span>
-                                {% elif w.status == 'rejected' %}
-                                    <span class="badge badge-muted">Rejected</span>
-                                {% else %}
-                                    <span class="badge badge-warning">In progress</span>
-                                {% endif %}
+                            <td style="font-weight: 500; color: var(--text);">{{ s.campaign.title }}</td>
+                            <td>{{ s.views }}</td>
+                            <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">KES {{ s.earnings }}</td>
+                            <td style="color: var(--text-mute);">{{ s.created_at|date:"j M Y" }}</td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'marketing:upload_proof' s.id %}" class="btn btn-small btn-outline">Upload proof</a>
                             </td>
                         </tr>
+                    {% empty %}
+                        <tr><td colspan="5" style="text-align: center; color: var(--text-mute); padding: 24px;">No shares yet.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
-            <div class="withdraw-footer">
+        </div>
+    </div>
+
+    <!-- Pending Payouts Table -->
+    {% if pending_proofs %}
+        <div class="earnings-table-card" style="margin-top: 32px;">
+            <h3 class="earnings-section-title">Pending Payouts</h3>
+            <div class="table-responsive">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Campaign</th>
+                            <th>Reported Views</th>
+                            <th>Credits On</th>
+                            <th style="text-align: right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pending_proofs %}
+                            <tr>
+                                <td style="font-weight: 500; color: var(--text);">{{ p.share.campaign.title }}</td>
+                                <td>{{ p.reported_views }}</td>
+                                <td style="color: var(--text-mute);">{{ p.payout_due_at|date:"j M Y, H:i" }}</td>
+                                <td style="text-align: right;">
+                                    <span class="status-badge status-paid">24h hold</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Recent Withdrawals Table -->
+    {% if recent_withdrawals %}
+        <div class="earnings-table-card" style="margin-top: 32px;">
+            <h3 class="earnings-section-title">Recent Withdrawals</h3>
+            <div class="table-responsive">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Phone</th>
+                            <th style="text-align: right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for w in recent_withdrawals %}
+                            <tr>
+                                <td style="color: var(--text-mute);">{{ w.requested_at|date:"j M Y" }}</td>
+                                <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">KES {{ w.amount }}</td>
+                                <td>{{ w.phone_number }}</td>
+                                <td style="text-align: right;">
+                                    {% if w.status == 'paid' %}
+                                        <span class="status-badge status-delivered">Paid</span>
+                                    {% elif w.status == 'approved' %}
+                                        <span class="status-badge status-paid">In progress</span>
+                                    {% elif w.status == 'rejected' %}
+                                        <span class="status-badge status-cancelled">Rejected</span>
+                                    {% else %}
+                                        <span class="status-badge status-paid">In progress</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 16px; text-align: right;">
                 <a href="{% url 'marketing:withdrawals' %}" class="btn btn-outline btn-small">
                     View full withdrawal history
                 </a>
             </div>
-        {% endif %}
-    </div>
+        </div>
+    {% endif %}
+
 </div>
 {% endblock %}

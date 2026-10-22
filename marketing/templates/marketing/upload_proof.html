@@ -1,53 +1,72 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block title %}Upload proof — Entrep - Shop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
-        <span class="eyebrow">Upload proof</span>
-        <h1>{{ share.campaign.title }}</h1>
-        <p class="muted">
-            Send us a screenshot of your WhatsApp Status view count for this campaign.
-        </p>
-    </div>
+<div class="container" style="padding-top: 40px; padding-bottom: 60px; display: flex; justify-content: center;">
 
-    <div class="form-card wide">
-        <form method="post" enctype="multipart/form-data" class="auth-form">
-            {% csrf_token %}
+    <div style="width: 100%; max-width: 560px;">
 
-            <p>
-                <label for="{{ form.screenshot.id_for_label }}">Screenshot</label>
-                {{ form.screenshot }}
-                <span class="helptext">
-                    Open WhatsApp → Status → tap your posted Status → take a screenshot
-                    showing the view count. PNG or JPG, under 5 MB.
-                </span>
-                {% if form.screenshot.errors %}
-                    <ul class="errorlist">{% for e in form.screenshot.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                {% endif %}
+        <!-- Page Header -->
+        <div class="page-head" style="margin-bottom: 24px;">
+            <span class="eyebrow">Upload proof</span>
+            <h1>{{ share.campaign.title }}</h1>
+            <p class="lede">
+                Send us a screenshot of your WhatsApp Status view count for this campaign.
             </p>
+        </div>
 
-            <p>
-                <label for="{{ form.reported_views.id_for_label }}">Number of views shown</label>
-                {{ form.reported_views }}
-                <span class="helptext">Type the exact number you see in the screenshot.</span>
-                {% if form.reported_views.errors %}
-                    <ul class="errorlist">{% for e in form.reported_views.errors %}<li>{{ e }}</li>{% endfor %}</ul>
-                {% endif %}
+        <!-- Form Card -->
+        <div class="earnings-table-card" style="padding: 32px;">
+            <form method="post" enctype="multipart/form-data" class="dashboard-form">
+                {% csrf_token %}
+
+                <!-- Screenshot Upload -->
+                <div class="form-group">
+                    <label for="{{ form.screenshot.id_for_label }}">Screenshot</label>
+                    {{ form.screenshot }}
+                    <span style="font-size: 0.75rem; color: var(--text-mute); margin-top: 6px; line-height: 1.5;">
+                        Open WhatsApp → Status → tap your posted Status → take a screenshot showing the view count. PNG or JPG, under 5 MB.
+                    </span>
+                    {% if form.screenshot.errors %}
+                        <ul class="errorlist" style="list-style:none; padding:0; margin: 6px 0 0; color: var(--danger); font-size: 0.8rem;">
+                            {% for e in form.screenshot.errors %}<li>{{ e }}</li>{% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <!-- Reported Views -->
+                <div class="form-group">
+                    <label for="{{ form.reported_views.id_for_label }}">Number of views shown</label>
+                    {{ form.reported_views }}
+                    <span style="font-size: 0.75rem; color: var(--text-mute); margin-top: 6px; line-height: 1.5;">
+                        Type the exact number you see in the screenshot.
+                    </span>
+                    {% if form.reported_views.errors %}
+                        <ul class="errorlist" style="list-style:none; padding:0; margin: 6px 0 0; color: var(--danger); font-size: 0.8rem;">
+                            {% for e in form.reported_views.errors %}<li>{{ e }}</li>{% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+
+                <!-- Optional Notes -->
+                <div class="form-group">
+                    <label for="{{ form.note.id_for_label }}">Notes (optional)</label>
+                    {{ form.note }}
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" class="btn-submit-orange" style="margin-top: 8px;">
+                    Send for review
+                </button>
+            </form>
+
+            <!-- Info Footnote -->
+            <p style="margin: 24px 0 0; padding-top: 20px; border-top: 1px solid var(--border-glass); font-size: 0.8rem; color: var(--text-mute); line-height: 1.55;">
+                You can upload any time. Earnings are credited <strong style="color: var(--text);">24 hours after upload</strong>, so we can run anti-fraud checks. You'll get an email the moment the credit lands.
             </p>
-
-            <p>
-                <label for="{{ form.note.id_for_label }}">Notes (optional)</label>
-                {{ form.note }}
-            </p>
-
-            <button type="submit" class="btn">Send for review</button>
-        </form>
-
-        <p class="muted" style="margin-top:18px; font-size:0.82rem">
-            You can upload any time. Earnings are credited <strong>24 hours after upload</strong>,
-            so we can run anti-fraud checks. You'll get an email the moment the credit lands.
-        </p>
+        </div>
     </div>
 </div>
 {% endblock %}

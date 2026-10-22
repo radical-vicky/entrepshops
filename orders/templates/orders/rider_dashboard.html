@@ -1,66 +1,386 @@
 {% extends "base.html" %}
-{% block title %}Rider dashboard — Entrep - Shop{% endblock %}
+{% load static %}
+
+{% block title %}Rider Dashboard — EntrepShop{% endblock %}
+
+{% block extra_head %}
+<!-- Leaflet Map CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    /* Live Map Container */
+    #live-map { 
+        width: 100%; 
+        height: 300px; 
+        border-radius: 8px; 
+        z-index: 1; 
+        border: 1px solid var(--border-glass);
+    }
+    
+    /* Dark Mode Map Filters */
+    .leaflet-tile-pane { 
+        filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); 
+    }
+    .leaflet-container { 
+        background: #1a1a1a; 
+        font-family: var(--font-body); 
+    }
+    .leaflet-popup-content-wrapper {
+        background: #222;
+        color: #fff;
+        border-radius: 4px;
+    }
+    .leaflet-popup-tip {
+        background: #222;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container">
-<div class="section-head">
-    <div><span class="eyebrow">Rider dashboard</span><h1>Hi {{ rider.name }}</h1></div>
-</div>
+<div class="rider-layout">
+    
+    <!-- SIDEBAR -->
+    <aside class="rider-sidebar" id="rider-sidebar">
+        <button type="button" class="rider-close-btn" id="rider-close-btn">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
 
-<h3>Active deliveries</h3>
-{% if not active_orders %}
-    <p class="muted">No orders assigned to you right now.</p>
-{% else %}
-<div class="rider-grid">
-    {% for order in active_orders %}
-        <div class="glass rider-card">
-            <div class="rider-card-head">
-                <strong>Order #{{ order.id }}</strong>
-                <span class="badge">{{ order.get_status_display }}</span>
+        <div class="rider-sidebar-header">
+            <span class="logo-wordmark">Rider<span class="accent">Hub</span></span>
+        </div>
+
+        <nav class="rider-nav">
+            <a href="{% url 'orders:rider_dashboard' %}" class="rider-nav-item active">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </a>
+            <a href="#" class="rider-nav-item">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+                New Orders <span class="nav-badge">{{ new_count }}</span>
+            </a>
+            <a href="#" class="rider-nav-item">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                My Deliveries
+            </a>
+            <a href="#" class="rider-nav-item">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Earnings
+            </a>
+        </nav>
+    </aside>
+
+    <div class="rider-sidebar-backdrop" id="rider-backdrop"></div>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="rider-main">
+        
+        <!-- Mobile Header -->
+        <div class="rider-mobile-header">
+            <button type="button" id="rider-menu-btn" class="mobile-menu-btn">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <span class="logo-wordmark">Rider<span class="accent">Hub</span></span>
+        </div>
+
+        <!-- Welcome Header -->
+        <div class="dashboard-header">
+            <div>
+                <h2 class="welcome-text">Welcome back,</h2>
+                <h1 class="rider-name">{{ rider.name }} <span class="verified-badge">✔</span></h1>
+                <p class="delivery-subtext">Delivering for a better tomorrow</p>
             </div>
-            <p>{{ order.user.username }} — {{ order.phone_number }}</p>
-            <p>{{ order.delivery_address.as_text }}</p>
-            {% if order.delivery_address.has_gps %}
-                <a href="{{ order.delivery_address.maps_url }}" target="_blank" rel="noopener">
-                    <svg style="width:13px;height:13px;vertical-align:-2px"><use href="#icon-pin"/></svg> Open in Google Maps
-                </a>
-            {% endif %}
-            <p class="price">KES {{ order.total }}</p>
-            <div class="rider-actions">
-                {% if order.status == 'preparing' %}
-                    <form method="post" action="{% url 'orders:rider_mark_out_for_delivery' order.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-small">Mark out for delivery</button>
-                    </form>
-                {% elif order.status == 'out_for_delivery' %}
-                    <form method="post" action="{% url 'orders:rider_mark_delivered' order.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-small btn-orange">Mark delivered</button>
-                    </form>
-                {% endif %}
+            <div class="header-date">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                {% now "l, d M Y" %}
             </div>
         </div>
-    {% endfor %}
-</div>
-{% endif %}
 
-<h3 style="margin-top:40px">Recently delivered</h3>
-{% if not completed_orders %}
-    <p class="muted">Nothing delivered yet.</p>
-{% else %}
-<table class="cart-table">
-    <thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Delivered</th></tr></thead>
-    <tbody>
-    {% for order in completed_orders %}
-        <tr>
-            <td>#{{ order.id }}</td>
-            <td>{{ order.user.username }}</td>
-            <td>KES {{ order.total }}</td>
-            <td>{{ order.delivered_at|date:"d M, H:i" }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
-{% endif %}
+        <!-- Stats Row -->
+        <div class="dashboard-stats">
+            <div class="stat-box">
+                <div class="stat-icon" style="color: var(--gold);"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                <div class="stat-info"><span class="stat-num">{{ new_count }}</span><span class="stat-label">New Orders</span><span class="stat-sub">Awaiting acceptance</span></div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-icon" style="color: #4FC3F7;"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+                <div class="stat-info"><span class="stat-num">{{ active_count }}</span><span class="stat-label">In Progress</span><span class="stat-sub">Out for delivery</span></div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-icon" style="color: var(--success);"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                <div class="stat-info"><span class="stat-num">{{ completed_today.count }}</span><span class="stat-label">Completed Today</span><span class="stat-sub">Delivered successfully</span></div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-icon" style="color: var(--gold);"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+                <div class="stat-info"><span class="stat-num">KES {{ earnings_today }}</span><span class="stat-label">Today's Earnings</span><span class="stat-sub">From completed orders</span></div>
+            </div>
+        </div>
+
+        <!-- Main Split Layout -->
+        <div class="dashboard-split">
+            
+            <!-- LEFT COL: New Orders & Ongoing -->
+            <div class="dashboard-left-col">
+                
+                <!-- New Orders -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <h3>New Orders <span class="badge-circle">{{ new_count }}</span></h3>
+                        <a href="#">View All →</a>
+                    </div>
+                    
+                    {% for order in new_orders|slice:":3" %}
+                    <div class="new-order-item">
+                        <div class="order-img">
+                            {% if order.items.first.product.image %}
+                                <img src="{{ order.items.first.product.image.url }}" alt="">
+                            {% else %}
+                                <div style="background: #222; width: 100%; height: 100%;"></div>
+                            {% endif %}
+                        </div>
+                        <div class="order-details">
+                            <div style="display: flex; justify-content: space-between;">
+                                <strong>#{{ order.id }}</strong>
+                                <strong style="color: var(--gold);">KES {{ order.total }}</strong>
+                            </div>
+                            <p class="order-name">{{ order.items.first.product.name|default:"Order Items" }}</p>
+                            <div class="order-meta">
+                                <span><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: text-bottom;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {{ order.delivery_address.area }}</span>
+                            </div>
+                        </div>
+                        <div class="order-actions">
+                            <a href="{% url 'orders:order_detail' order.id %}" class="btn-outline-sm" style="text-decoration: none; text-align: center;">View</a>
+                            <form method="post" action="{% url 'orders:rider_mark_out_for_delivery' order.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-gold-sm" style="width: 100%;">Accept</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                        <p style="color: var(--text-mute); font-size: 0.85rem;">No new orders right now.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Ongoing Deliveries Table -->
+                <div class="dash-card" style="margin-top: 24px;">
+                    <div class="dash-card-header">
+                        <h3>Ongoing Deliveries</h3>
+                        <a href="#">View All →</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="dash-table">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Customer</th>
+                                    <th>Area</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in accepted_orders %}
+                                <tr>
+                                    <td>#{{ order.id }}</td>
+                                    <td>{{ order.user.username }}</td>
+                                    <td>{{ order.delivery_address.area }}</td>
+                                    <td><span class="status-badge status-processing" style="font-size: 0.65rem;">Accepted</span></td>
+                                    <td>
+                                        <form method="post" action="{% url 'orders:rider_mark_out_for_delivery' order.id %}">
+                                            {% csrf_token %}
+                                            <button class="btn-outline-sm">Start Delivery</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% for order in ongoing_orders %}
+                                <tr>
+                                    <td>#{{ order.id }}</td>
+                                    <td>{{ order.user.username }}</td>
+                                    <td>{{ order.delivery_address.area }}</td>
+                                    <td><span class="status-badge status-out" style="font-size: 0.65rem;">On the Way</span></td>
+                                    <td>
+                                        <form method="post" action="{% url 'orders:rider_mark_delivered' order.id %}">
+                                            {% csrf_token %}
+                                            <button class="btn-gold-sm">Mark Delivered</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if not accepted_orders and not ongoing_orders %}
+                                <tr><td colspan="5" style="text-align: center; color: var(--text-mute);">No active deliveries.</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COL: Map & Status -->
+            <div class="dashboard-right-col">
+                
+                <!-- REAL LIVE MAP -->
+                <div class="dash-card map-card" style="padding: 16px; height: auto;">
+                    <div class="dash-card-header" style="margin-bottom: 12px;">
+                        <h3>Live Map</h3>
+                        <a href="#" id="open-in-maps-btn" class="btn-gold-sm" target="_blank">Open in Google Maps</a>
+                    </div>
+                    
+                    <!-- Map Container -->
+                    <div id="live-map"></div>
+
+                    <div class="map-footer" style="position: static; background: transparent; padding: 12px 0 0 0; border-top: 1px solid var(--border-glass); margin-top: 12px; border-radius: 0;">
+                        <span><span style="color: #4CAF50;">●</span> Pickup (Store)</span>
+                        <span><span style="color: #4FC3F7;">●</span> Drop-off (Customer)</span>
+                    </div>
+                </div>
+
+                <!-- Rider Status -->
+                <div class="dash-card" style="margin-top: 24px;">
+                    <div class="dash-card-header">
+                        <h3>Rider Status</h3>
+                    </div>
+                    <div class="status-row">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--success);">●</span>
+                            <span style="font-weight: 600;">Online</span>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="rider-info-grid">
+                        <div><span class="label">Vehicle Type</span><strong>{{ rider.vehicle|default:"Motorbike" }}</strong></div>
+                        <div><span class="label">Phone Number</span><strong>{{ rider.phone_number }}</strong></div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Recently Delivered -->
+        <div class="dash-card" style="margin-top: 24px;">
+            <div class="dash-card-header">
+                <h3>Recent Deliveries</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Delivered At</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_deliveries %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.user.username }}</td>
+                            <td>KES {{ order.total }}</td>
+                            <td>{{ order.delivered_at|date:"h:i A" }}</td>
+                            <td><span class="status-badge status-delivered" style="font-size: 0.65rem;">Delivered</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" style="text-align: center; color: var(--text-mute);">Nothing delivered yet today.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
 </div>
+
+<!-- Mobile Sidebar Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const menuBtn = document.getElementById('rider-menu-btn');
+    const closeBtn = document.getElementById('rider-close-btn');
+    const sidebar = document.getElementById('rider-sidebar');
+    const backdrop = document.getElementById('rider-backdrop');
+
+    function toggleSidebar() {
+        sidebar.classList.toggle('is-open');
+        backdrop.classList.toggle('is-open');
+    }
+
+    if (menuBtn) menuBtn.addEventListener('click', toggleSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+    if (backdrop) backdrop.addEventListener('click', toggleSidebar);
+});
+</script>
+
+<!-- Leaflet Map Script -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize the map centered on Nairobi
+    const map = L.map('live-map').setView([-1.286389, 36.817223], 13);
+
+    // 2. Add the OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19,
+    }).addTo(map);
+
+    // Custom Icons
+    const pickupIcon = L.divIcon({
+        className: 'custom-icon',
+        html: `<div style="background: #4CAF50; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+    });
+
+    const dropoffIcon = L.divIcon({
+        className: 'custom-icon',
+        html: `<div style="background: #4FC3F7; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+    });
+
+    // 3. Fetch coordinates from Django context
+    {% if ongoing_orders or accepted_orders %}
+        {% with active_order=ongoing_orders.first|default:accepted_orders.first %}
+            
+            // Default store location (Nairobi CBD)
+            const pickupCoords = [-1.286389, 36.817223]; 
+            
+            // Customer coordinates (Fallback if no GPS set)
+            const dropoffCoords = [
+                {{ active_order.delivery_address.latitude|default:"-1.300000" }}, 
+                {{ active_order.delivery_address.longitude|default:"36.830000" }}
+            ];
+
+            // Add markers
+            L.marker(pickupCoords, {icon: pickupIcon}).addTo(map).bindPopup("Pickup: Store");
+            L.marker(dropoffCoords, {icon: dropoffIcon}).addTo(map).bindPopup("Drop-off: {{ active_order.delivery_address.area }}");
+
+            // Draw a dashed line
+            const routeLine = L.polyline([pickupCoords, dropoffCoords], {
+                color: '#E8B93C',
+                weight: 3,
+                dashArray: '8, 8',
+                opacity: 0.8
+            }).addTo(map);
+
+            // Fit map to show both markers
+            map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+
+            // Update Google Maps button
+            const mapsBtn = document.getElementById('open-in-maps-btn');
+            if (mapsBtn) {
+                mapsBtn.href = "https://www.google.com/maps/dir/?api=1&origin=" + pickupCoords[0] + "," + pickupCoords[1] + "&destination=" + dropoffCoords[0] + "," + dropoffCoords[1];
+            }
+
+        {% endwith %}
+    {% else %}
+        // No active orders, just show the store location
+        L.marker([-1.286389, 36.817223], {icon: pickupIcon}).addTo(map).bindPopup("No active deliveries right now");
+    {% endif %}
+});
+</script>
 {% endblock %}

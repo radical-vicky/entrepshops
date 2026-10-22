@@ -10,7 +10,6 @@ def generate_referral_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=7))
 
 
-
 class Profile(models.Model):
     """Extends the built-in User with an avatar, referral code, and wallet.
     Created automatically for every user (see accounts/signals.py)."""
@@ -29,6 +28,17 @@ class Profile(models.Model):
         help_text='The user whose referral code/link this person signed up through.'
     )
 
+    # --- NEW PROFILE FIELDS ---
+    phone_number = models.CharField(max_length=20, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    gender = models.CharField(
+        max_length=10,
+        choices=[('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')],
+        blank=True
+    )
+    bio = models.TextField(max_length=500, blank=True)
+    # --------------------------
+
     # Two-stage referral payout flags — each flips to True exactly once.
     email_bonus_released = models.BooleanField(
         default=False,
@@ -42,7 +52,6 @@ class Profile(models.Model):
     )
 
     # Legacy flag — kept for backward compatibility with old data.
-    # New logic uses email_bonus_released and first_order_bonus_released.
     referral_bonus_released = models.BooleanField(default=False)
 
     wallet_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -52,15 +61,10 @@ class Profile(models.Model):
         return f'{self.user.username} profile'
 
     def release_email_bonus_if_due(self):
-        """Stage 1 — called when the referred user verifies their email.
-        Pays KES to both sides exactly once. Idempotent: safe to call
-        multiple times (a second call finds the flag already set and
-        returns immediately)."""
         if not self.referred_by_id or self.email_bonus_released:
             return
         bonus = getattr(settings, 'REFERRAL_EMAIL_BONUS_KES', 0)
         if bonus <= 0:
-            # Even with a zero bonus, mark as released so we don't re-check.
             self.email_bonus_released = True
             self.save(update_fields=['email_bonus_released'])
             return
@@ -78,12 +82,8 @@ class Profile(models.Model):
         self.save(update_fields=['email_bonus_released'])
 
     def release_first_order_bonus_if_due(self):
-        """Stage 2 — called when the referred user completes their first
-        paid order. Only pays if stage 1 (email verification) already
-        happened. Idempotent."""
         if not self.referred_by_id or self.first_order_bonus_released:
             return
-        # Gate on email verification — no email bonus, no order bonus.
         if not self.email_bonus_released:
             return
         bonus = getattr(settings, 'REFERRAL_FIRST_ORDER_BONUS_KES', 0)
@@ -113,7 +113,6 @@ class Profile(models.Model):
         super().save(*args, **kwargs)
 
     def credit_wallet(self, amount, kind, description=''):
-        """Add funds to the wallet and log the transaction for an audit trail."""
         self.wallet_balance = models.F('wallet_balance') + amount
         self.save(update_fields=['wallet_balance'])
         self.refresh_from_db(fields=['wallet_balance'])
@@ -122,9 +121,6 @@ class Profile(models.Model):
         )
 
     def debit_wallet(self, amount, kind, description=''):
-        """Atomically deduct funds, refusing if the balance would go
-        negative — locks the row so two simultaneous withdrawal requests
-        can't both succeed against the same balance."""
         from django.db import transaction as db_transaction
         with db_transaction.atomic():
             locked = Profile.objects.select_for_update().get(pk=self.pk)
@@ -151,7 +147,6 @@ class WalletTransaction(models.Model):
         ADJUSTMENT = 'adjustment', 'Manual adjustment'
         WITHDRAWAL = 'withdrawal', 'Wallet withdrawal'
         WITHDRAWAL_REVERSAL = 'withdrawal_reversal', 'Withdrawal reversed (failed payout)'
-        # Legacy — kept for old transaction rows so get_kind_display() doesn't break.
         REFERRAL_BONUS = 'referral_bonus', 'Referral bonus (legacy)'
         REFERRAL_SIGNUP_BONUS = 'referral_signup_bonus', 'Welcome bonus (referred, legacy)'
 
@@ -172,11 +167,6 @@ class WalletTransaction(models.Model):
 
 
 class WithdrawalRequest(models.Model):
-    """A request to cash out wallet funds to M-Pesa, via Safaricom's B2C
-    API. The wallet balance is debited the moment the request is created
-    (to prevent double-withdrawing the same funds) and refunded
-    automatically if the payout ends up failing."""
-
     class Status(models.TextChoices):
         PENDING = 'pending', 'Pending'
         PROCESSING = 'processing', 'Processing'
@@ -206,8 +196,6 @@ class WithdrawalRequest(models.Model):
         self.save(update_fields=['status', 'mpesa_receipt_number', 'completed_at'])
 
     def mark_failed(self, reason=''):
-        """Refund the wallet — the debit made at request time didn't
-        actually leave the business, so it comes straight back."""
         self.status = self.Status.FAILED
         self.failure_reason = reason[:255]
         self.completed_at = timezone.now()
@@ -220,11 +208,6 @@ class WithdrawalRequest(models.Model):
 
 
 class SpinWheelTheme(models.Model):
-    """Upload a custom background image for the spin wheel itself (e.g. a
-    designed wheel graphic) — same "upload many, pick one active" pattern
-    as site backgrounds and logos. Falls back to the generated color-wheel
-    if none is active. Prize names/images still overlay on top either way."""
-
     label = models.CharField(max_length=100, blank=True, help_text='Just a label for you, e.g. "Festive wheel".')
     image = models.ImageField(upload_to='site/spin-wheel/', help_text='A square image works best — it fills the circular wheel face.')
     is_active = models.BooleanField(
@@ -250,13 +233,8 @@ class SpinWheelTheme(models.Model):
     def get_active(cls):
         return cls.objects.filter(is_active=True).first()
 
-class SpinPrize(models.Model):
-    """A possible outcome of the daily spin wheel. Manage these entirely
-    from /admin/ — labels, odds (weight), colour, and whether each is
-    currently in play. Cash-value prizes are auto-credited to the winner's
-    wallet; physical prizes (drinks, a smartphone, etc.) are recorded as a
-    win for you to fulfil manually."""
 
+class SpinPrize(models.Model):
     class Kind(models.TextChoices):
         CASH = 'cash', 'Cash voucher'
         TRANSPORT = 'transport', 'Transport fee'
@@ -291,8 +269,6 @@ class SpinPrize(models.Model):
 
 
 class DailySpin(models.Model):
-    """One spin result per user per calendar day."""
-
     class ClaimStatus(models.TextChoices):
         AUTO_CREDITED = 'auto_credited', 'Auto-credited to wallet'
         NOTHING_TO_CLAIM = 'nothing_to_claim', 'No prize (try again)'

@@ -4,12 +4,40 @@
 
 {% block content %}
 
+<!-- ========================================== -->
+<!-- HERO SECTION                               -->
+<!-- ========================================== -->
 {% if hero_posters %}
 <section class="hero-poster-stack" id="hero">
     {% for promo in hero_posters %}
     <a href="{{ promo.cta_url|default:'/products/' }}"
        class="hero-poster {% if forloop.first %}is-active{% endif %}"
        data-tone="{{ promo.tone|default:'orange' }}">
+       
+        <!-- LEFT: Text Content -->
+        <div class="hero-poster-body">
+            <span class="hero-poster-kicker">{{ promo.kicker|default:'FEATURED' }}</span>
+            <h2 class="hero-poster-headline">{{ promo.title|default:'Quality Products<br>Better Living'|safe }}</h2>
+            
+            {% if promo.description %}
+                <p class="hero-poster-sub">{{ promo.description|truncatechars:160 }}</p>
+            {% else %}
+                <p class="hero-poster-sub">Discover amazing products at the best prices.<br>Fast delivery. Secure payments.</p>
+            {% endif %}
+
+            <div class="hero-poster-actions">
+                <span class="hero-poster-cta">
+                    {{ promo.cta_label|default:'Shop Now' }}
+                </span>
+                {% if promo.voucher_code %}
+                    <span class="hero-poster-voucher">
+                        <code>{{ promo.voucher_code }}</code>
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT: Image -->
         <div class="hero-poster-media">
             {% if promo.media_type == 'video' and promo.video_source %}
                 <video autoplay muted loop playsinline preload="metadata">
@@ -19,55 +47,29 @@
                 <img src="{{ promo.image.url }}" alt="{{ promo.title }}" loading="eager">
             {% endif %}
         </div>
-
-        <div class="hero-poster-body">
-            <span class="hero-poster-kicker">{{ promo.kicker|default:'Featured' }}</span>
-            <h2 class="hero-poster-headline">{{ promo.title }}</h2>
-            {% if promo.description %}
-                <p class="hero-poster-sub">{{ promo.description|truncatechars:160 }}</p>
-            {% endif %}
-
-            <div class="hero-poster-actions">
-                <span class="hero-poster-cta">
-                    {{ promo.cta_label|default:'Shop now' }}
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                </span>
-                {% if promo.voucher_code %}
-                    <span class="hero-poster-voucher">
-                        <code>{{ promo.voucher_code }}</code>
-                    </span>
-                {% endif %}
-            </div>
-        </div>
     </a>
     {% endfor %}
 
     {% if hero_posters|length > 1 %}
-        <button type="button" class="hero-poster-arrow hero-poster-arrow--prev"
-                id="hero-prev" aria-label="Previous slide">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <button type="button" class="hero-poster-arrow hero-poster-arrow--prev" id="hero-prev" aria-label="Previous slide">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <button type="button" class="hero-poster-arrow hero-poster-arrow--next"
-                id="hero-next" aria-label="Next slide">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        <button type="button" class="hero-poster-arrow hero-poster-arrow--next" id="hero-next" aria-label="Next slide">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
         <div class="hero-poster-dots" id="hero-dots">
             {% for promo in hero_posters %}
-                <button type="button"
-                        class="hero-poster-dot {% if forloop.first %}is-active{% endif %}"
-                        data-slide="{{ forloop.counter0 }}"
-                        aria-label="Slide {{ forloop.counter }}"></button>
+                <button type="button" class="hero-poster-dot {% if forloop.first %}is-active{% endif %}" data-slide="{{ forloop.counter0 }}" aria-label="Slide {{ forloop.counter }}"></button>
             {% endfor %}
         </div>
     {% endif %}
 </section>
 {% endif %}
 
+<!-- ========================================== -->
+<!-- MARQUEE                                    -->
+<!-- ========================================== -->
 <div class="marquee" aria-hidden="true">
     <div class="marquee-track">
         <span>Thousands of products, one shop</span>
@@ -85,6 +87,9 @@
 
 <div class="container">
 
+    <!-- ========================================== -->
+    <!-- TRUST BADGES                               -->
+    <!-- ========================================== -->
     <section class="trust-row reveal">
         <div class="trust-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -118,104 +123,148 @@
         </div>
     </section>
 
-    <section class="reveal" id="offers">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Offers &amp; vouchers</span>
-                <h3>Deals worth clipping</h3>
-            </div>
-            <span class="sub">Codes apply automatically at checkout on eligible orders</span>
+    <!-- ========================================== -->
+    <!-- HOT DEALS SECTION                          -->
+    <!-- ========================================== -->
+    <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 40px;">
+        <div>
+            <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin: 0;">Hot Deals</h3>
+            <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--orange); text-transform: uppercase;">Limited time offers</span>
         </div>
+        <a href="{% url 'store:product_list' %}" style="color: var(--orange); font-family: var(--font-body); font-weight: 600; text-decoration: none; font-size: 0.9rem;">View All</a>
+    </div>
 
-        {% if promotions %}
-        <div class="promo-poster-track" id="promo-slider">
-            {% for promo in promotions %}
-            <a href="{{ promo.cta_url|default:'/products/' }}"
-               class="promo-poster {% if forloop.first %}is-active{% endif %}"
-               data-tone="{{ promo.tone }}">
-                <div class="promo-poster-media">
-                    {% if promo.media_type == 'video' and promo.video_source %}
-                        <video autoplay muted loop playsinline preload="metadata">
-                            <source src="{{ promo.video_source }}">
-                        </video>
-                    {% elif promo.image %}
-                        <img src="{{ promo.image.url }}" alt="{{ promo.title }}">
+    <div class="screenshot-product-grid reveal">
+        {% for product in hot_deals %}
+        <div class="screenshot-card">
+            <a href="{{ product.get_absolute_url }}" class="screenshot-image-wrap">
+                {% with img=product.primary_image %}
+                    {% if img %}
+                        <img src="{{ img.url }}" alt="{{ product.name }}" loading="lazy">
+                    {% else %}
+                        <div class="img-placeholder"><svg viewBox="0 0 24 24"><use href="#icon-bottle"/></svg></div>
                     {% endif %}
-                    <div class="promo-poster-scrim"></div>
-                </div>
+                {% endwith %}
+                
+                {% if product.discount_percent %}
+                    <span class="screenshot-badge">-{{ product.discount_percent }}%</span>
+                {% elif product.is_rentable %}
+                    <span class="screenshot-badge" style="background: var(--gold);">For Hire</span>
+                {% endif %}
+            </a>
 
-                <div class="promo-poster-body">
-                    <span class="promo-poster-kicker">{{ promo.kicker }}</span>
-                    <h4 class="promo-poster-title">{{ promo.title }}</h4>
-                    {% if promo.description %}
-                        <p class="promo-poster-sub">{{ promo.description|truncatechars:120 }}</p>
-                    {% endif %}
-
-                    <div class="promo-poster-footer">
-                        <span class="promo-poster-cta">{{ promo.cta_label|default:'Shop now' }}</span>
-                        {% if promo.voucher_code %}
-                            <span class="promo-poster-voucher">
-                                <code>{{ promo.voucher_code }}</code>
-                            </span>
+            <div class="screenshot-info">
+                <a href="{{ product.get_absolute_url }}" class="screenshot-title">{{ product.name }}</a>
+                
+                <!-- PRICE LOGIC: Check if it's a rental car -->
+                {% if product.is_rentable %}
+                    <div class="screenshot-price">
+                        KES {{ product.daily_rate|floatformat:0 }}<span style="font-size: 0.7rem; font-weight: 500; color: var(--text-mute);">/day</span>
+                    </div>
+                {% else %}
+                    <div class="screenshot-price">
+                        KES {{ product.price }}
+                        {% if product.compare_at_price %}
+                            <span class="screenshot-old-price">KES {{ product.compare_at_price }}</span>
                         {% endif %}
                     </div>
+                {% endif %}
+                
+                <div class="screenshot-subtext">
+                    {% if product.is_rentable %}
+                        Available for hire
+                    {% elif product.in_stock %}
+                        Fast delivery
+                    {% else %}
+                        Out of stock
+                    {% endif %}
                 </div>
+
+                <!-- BUTTON LOGIC: Rent vs Add to Cart -->
+                {% if product.is_rentable %}
+                    <a href="{% url 'store:rental_checkout' product.id %}" class="screenshot-add-btn" style="text-align: center; text-decoration: none; display: block;">Rent Now</a>
+                {% else %}
+                    <form action="{% url 'store:cart_add' product.id %}" method="post" class="ajax-add-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="quantity" value="1">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="screenshot-add-btn">Add to Cart</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+            <p style="color: var(--text-mute);">No hot deals available right now.</p>
+        {% endfor %}
+    </div>
+
+    <!-- ========================================== -->
+    <!-- NEW ARRIVALS SECTION                       -->
+    <!-- ========================================== -->
+    <div class="section-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 50px;">
+        <div>
+            <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin: 0;">New Arrivals</h3>
+        </div>
+        <a href="{% url 'store:product_list' %}" style="color: var(--orange); font-family: var(--font-body); font-weight: 600; text-decoration: none; font-size: 0.9rem;">View All</a>
+    </div>
+
+    <div class="screenshot-product-grid reveal">
+        {% for product in new_arrivals %}
+        <div class="screenshot-card">
+            <a href="{{ product.get_absolute_url }}" class="screenshot-image-wrap">
+                {% with img=product.primary_image %}
+                    {% if img %}
+                        <img src="{{ img.url }}" alt="{{ product.name }}" loading="lazy">
+                    {% else %}
+                        <div class="img-placeholder"><svg viewBox="0 0 24 24"><use href="#icon-bottle"/></svg></div>
+                    {% endif %}
+                {% endwith %}
+                
+                {% if product.is_rentable %}
+                    <span class="screenshot-badge" style="background: var(--gold);">For Hire</span>
+                {% endif %}
             </a>
-            {% endfor %}
 
-            {% if promotions|length > 1 %}
-                <div class="promo-poster-nav">
-                    <button type="button" class="promo-poster-arrow" id="promo-prev" aria-label="Previous offer">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    </button>
-                    <div class="promo-poster-dots" id="promo-dots">
-                        {% for promo in promotions %}
-                            <button type="button"
-                                    class="promo-poster-dot {% if forloop.first %}is-active{% endif %}"
-                                    data-slide="{{ forloop.counter0 }}"
-                                    aria-label="Offer {{ forloop.counter }}"></button>
-                        {% endfor %}
+            <div class="screenshot-info">
+                <a href="{{ product.get_absolute_url }}" class="screenshot-title">{{ product.name }}</a>
+                
+                <!-- PRICE LOGIC: Check if it's a rental car -->
+                {% if product.is_rentable %}
+                    <div class="screenshot-price">
+                        KES {{ product.daily_rate|floatformat:0 }}<span style="font-size: 0.7rem; font-weight: 500; color: var(--text-mute);">/day</span>
                     </div>
-                    <button type="button" class="promo-poster-arrow" id="promo-next" aria-label="Next offer">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                    </button>
+                {% else %}
+                    <div class="screenshot-price">
+                        KES {{ product.price }}
+                    </div>
+                {% endif %}
+                
+                <div class="screenshot-subtext">
+                    {% if product.is_rentable %}Available for hire{% else %}Fast delivery{% endif %}
                 </div>
-            {% endif %}
-        </div>
-        {% else %}
-            <p class="muted">No active offers right now — check back soon.</p>
-        {% endif %}
-    </section>
 
-    {% if departments|length > 1 or not selected_department %}
-    <section class="reveal" id="departments">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">Browse by department</span>
-                <h3>What are you shopping for?</h3>
+                <!-- BUTTON LOGIC: Rent vs Add to Cart -->
+                {% if product.is_rentable %}
+                    <a href="{% url 'store:rental_checkout' product.id %}" class="screenshot-add-btn" style="text-align: center; text-decoration: none; display: block;">Rent Now</a>
+                {% else %}
+                    <form action="{% url 'store:cart_add' product.id %}" method="post" class="ajax-add-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="quantity" value="1">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="screenshot-add-btn">Add to Cart</button>
+                    </form>
+                {% endif %}
             </div>
         </div>
-        <div class="dept-grid">
-            <a href="{% url 'store:product_list' %}"
-               class="dept-card dept-card-all {% if not selected_department %}is-active{% endif %}"
-               data-dept-preview="">All departments</a>
+        {% empty %}
+            <p style="color: var(--text-mute);">No new arrivals yet.</p>
+        {% endfor %}
+    </div>
 
-            {% for dept in departments %}
-                <a href="{% url 'store:product_list' %}?department={{ dept.slug }}"
-                   class="dept-card {% if selected_department == dept %}is-active{% endif %}"
-                   data-dept-preview="{{ dept.theme }}">{{ dept.name }}</a>
-            {% endfor %}
-        </div>
-    </section>
-    {% endif %}
-
-    <section class="reveal" id="browse-all">
-        <div class="section-head">
-            <div>
-                <span class="eyebrow">The shop</span>
-                <h3>Browse everything on EntrepShop</h3>
-            </div>
-        </div>
+    <!-- ========================================== -->
+    <!-- BROWSE ALL SECTION                         -->
+    <!-- ========================================== -->
+    <section class="reveal" id="browse-all" style="margin-top: 60px; margin-bottom: 40px;">
         <div class="glass" style="padding: 32px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
             <div>
                 <p style="margin: 0 0 6px; color: var(--text-dim); max-width: 60ch;">
@@ -274,13 +323,6 @@
         slideSelector: '.hero-poster', dotSelector: '.hero-poster-dot',
         prevId: 'hero-prev', nextId: 'hero-next',
         activeClass: 'is-active', autoplayMs: 6500,
-    });
-
-    initSlider({
-        container: document.getElementById('promo-slider'),
-        slideSelector: '.promo-poster', dotSelector: '#promo-dots .promo-poster-dot',
-        prevId: 'promo-prev', nextId: 'promo-next',
-        activeClass: 'is-active', autoplayMs: 5500,
     });
 })();
 </script>

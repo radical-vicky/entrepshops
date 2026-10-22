@@ -32,9 +32,11 @@ class Order(models.Model):
         DELIVERED = 'delivered', 'Delivered'
         CANCELLED = 'cancelled', 'Cancelled'
 
-    # Ordered timeline of "real progress" statuses used to render the
-    # customer-facing tracker. pending_payment/cancelled are handled
-    # separately since they aren't points on a forward-moving line.
+    class PaymentMethod(models.TextChoices):
+        MPESA = 'mpesa', 'M-Pesa'
+        CARD = 'card', 'Card Payment'
+        COD = 'cod', 'Cash on Delivery'
+
     TIMELINE = [
         (Status.PAID, 'Order placed'),
         (Status.PREPARING, 'Preparing'),
@@ -50,6 +52,12 @@ class Order(models.Model):
     )
     rider = models.ForeignKey(
         Rider, related_name='orders', null=True, blank=True, on_delete=models.SET_NULL
+    )
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.MPESA,
+        help_text='The method the customer chose to pay with.'
     )
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING_PAYMENT
@@ -87,20 +95,11 @@ class Order(models.Model):
         self._release_referral_bonus_if_first_order()
 
     def mark_cancelled(self, reason):
-        """Called when payment fails or is cancelled, so the order doesn't
-        sit forever as a vague 'pending' entry — the customer gets a clear,
-        specific reason instead."""
         self.status = self.Status.CANCELLED
         self.cancellation_reason = reason[:255]
         self.save(update_fields=['status', 'cancellation_reason', 'updated_at'])
 
     def _release_referral_bonus_if_first_order(self):
-        """A referral only pays out once the referred user has completed
-        a genuine first paid order — not just at signup. As an extra
-        anti-fraud check, we also refuse to pay out if this order's phone
-        number has already been used for a paid order by a DIFFERENT
-        user — that's the signature of someone farming referral bonuses
-        with fake accounts that all funnel back to one real phone."""
         had_earlier_paid_order = Order.objects.filter(
             user=self.user,
             status__in=[self.Status.PAID, self.Status.PREPARING, self.Status.OUT_FOR_DELIVERY, self.Status.DELIVERED],
@@ -120,8 +119,6 @@ class Order(models.Model):
             profile.release_first_order_bonus_if_due()
 
     def assign_rider(self, rider):
-        """Assign a rider and, if the order is only just paid, bump it into
-        'preparing' — assignment implies someone has started on the order."""
         self.rider = rider
         self.assigned_at = timezone.now()
         if self.status == self.Status.PAID:
@@ -148,8 +145,6 @@ class Order(models.Model):
 
     @property
     def status_timeline(self):
-        """Ordered steps for the customer-facing progress tracker, each
-        flagged done/active/upcoming based on the order's current status."""
         timestamps = {
             self.Status.PAID: self.created_at,
             self.Status.PREPARING: self.assigned_at,
@@ -190,8 +185,6 @@ class OrderItem(models.Model):
 
 
 class Review(models.Model):
-    """A customer's rating/comment on one item from a delivered order."""
-
     order_item = models.OneToOneField(OrderItem, related_name='order_review', on_delete=models.CASCADE)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='reviews', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, related_name='reviews', on_delete=models.CASCADE)
@@ -207,8 +200,6 @@ class Review(models.Model):
 
 
 class RiderTip(models.Model):
-    """A tip a customer sends after delivery, paid via a separate M-Pesa STK push."""
-
     class Status(models.TextChoices):
         INITIATED = 'initiated', 'Initiated'
         SUCCESS = 'success', 'Success'

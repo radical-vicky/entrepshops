@@ -1,167 +1,132 @@
 {% extends "base.html" %}
-{% block title %}Order #{{ order.id }} — Entrep - Shop{% endblock %}
+{% load static %}
+
+{% block title %}Order #{{ order.id }} — EntrepShop{% endblock %}
 
 {% block content %}
-<div class="container">
-<div class="order-detail-head">
-<h1>Order #{{ order.id }}</h1>
-{% if order.status != 'pending_payment' and order.status != 'cancelled' %}
-    <a href="{% url 'orders:download_receipt' order.id %}" target="_blank" class="btn btn-small btn-outline">
-        <svg style="width:15px;height:15px"><use href="#icon-order"/></svg>
-        Download / print receipt
-    </a>
-{% endif %}
-</div>
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
 
-{% if order.status != 'cancelled' and order.status != 'pending_payment' %}
-<div class="timeline">
-    {% for step in order.status_timeline %}
-        <div class="timeline-step {% if step.done %}is-done{% elif step.active %}is-active{% endif %}">
-            <span class="timeline-dot">
-                {% if step.done %}<svg style="width:12px;height:12px"><use href="#icon-check"/></svg>{% endif %}
-            </span>
-            <span class="timeline-label">{{ step.label }}</span>
-            {% if step.timestamp %}<span class="timeline-time">{{ step.timestamp|date:"d M, H:i" }}</span>{% endif %}
-        </div>
-    {% endfor %}
-</div>
-{% else %}
-    <p class="badge {% if order.status == 'cancelled' %}badge-warning{% endif %}">{{ order.get_status_display }}</p>
-    {% if order.status == 'cancelled' and order.cancellation_reason %}
-        <p class="muted">{{ order.cancellation_reason }}</p>
-        <form method="post" action="{% url 'orders:retry_payment' order.id %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-small btn-orange">Try payment again</button>
-        </form>
-    {% endif %}
-{% endif %}
-
-<div class="order-meta glass">
-    <div>
-        <span class="eyebrow">Delivering to</span>
-        <p>{{ order.delivery_address.as_text }}</p>
-        {% if order.delivery_address.has_gps %}
-            <a href="{{ order.delivery_address.maps_url }}" target="_blank" rel="noopener">
-                <svg style="width:13px;height:13px;vertical-align:-2px"><use href="#icon-pin"/></svg> View pinned drop-off location
-            </a>
-        {% endif %}
-    </div>
-    {% if order.rider %}
+    <!-- Page Header -->
+    <div class="order-detail-head" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
         <div>
-            <span class="eyebrow">Your rider</span>
-            <p>{{ order.rider.name }} — {{ order.rider.phone_number }}{% if order.rider.vehicle %} · {{ order.rider.vehicle }}{% endif %}</p>
+            <span class="eyebrow" style="font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green-bright); display: block; margin-bottom: 8px;">Order #{{ order.id }}</span>
+            <h1 style="font-family: var(--font-display); font-size: 1.8rem; margin: 0; color: var(--text);">Order Details</h1>
+            <p style="color: var(--text-dim); font-size: 0.85rem; margin: 8px 0 0;">
+                Placed on {{ order.created_at|date:"M d, Y" }} 
+                {% if order.delivered_at %} • Delivered on {{ order.delivered_at|date:"M d, Y" }}{% endif %}
+            </p>
         </div>
-    {% endif %}
-    <div>
-        <span class="eyebrow">Phone</span>
-        <p>{{ order.phone_number }}</p>
+        
+        <!-- Status Badge -->
+        <div>
+            {% if order.status == 'pending_payment' %}
+                <span class="badge" style="background: rgba(232, 185, 60, 0.15); color: var(--gold); border: 1px solid var(--gold); font-size: 0.85rem; padding: 6px 12px;">Pending Payment</span>
+            {% elif order.status == 'paid' %}
+                <span class="badge" style="background: rgba(69, 214, 138, 0.15); color: var(--success); border: 1px solid var(--success); font-size: 0.85rem; padding: 6px 12px;">Paid</span>
+            {% elif order.status == 'preparing' %}
+                <span class="badge" style="background: rgba(217, 116, 50, 0.15); color: var(--orange); border: 1px solid var(--orange); font-size: 0.85rem; padding: 6px 12px;">Preparing</span>
+            {% elif order.status == 'out_for_delivery' %}
+                <span class="badge" style="background: rgba(79, 195, 247, 0.15); color: #4FC3F7; border: 1px solid #4FC3F7; font-size: 0.85rem; padding: 6px 12px;">Out for Delivery</span>
+            {% elif order.status == 'delivered' %}
+                <span class="badge" style="background: rgba(69, 214, 138, 0.15); color: var(--success); border: 1px solid var(--success); font-size: 0.85rem; padding: 6px 12px;">Delivered</span>
+            {% elif order.status == 'cancelled' %}
+                <span class="badge" style="background: rgba(240, 96, 92, 0.15); color: var(--danger); border: 1px solid var(--danger); font-size: 0.85rem; padding: 6px 12px;">Cancelled</span>
+            {% endif %}
+        </div>
     </div>
-</div>
 
-<table class="cart-table">
-    <thead><tr><th></th><th>Product</th><th>Unit price</th><th>Qty</th><th>Subtotal</th></tr></thead>
-    <tbody>
-    {% for item in order.items.all %}
-        <tr>
-            <td class="cart-thumb-cell">
-                {% if item.product.image %}
-                    <img src="{{ item.product.image.url }}" alt="" class="cart-thumb">
-                {% else %}
-                    <div class="cart-thumb cart-thumb-placeholder"><svg style="width:18px;height:18px;color:#45D68A"><use href="#icon-bottle"/></svg></div>
-                {% endif %}
-            </td>
-            <td>{{ item.product.name }}{% if item.unit_price == 0 %} <span class="badge badge-success">FREE</span>{% endif %}</td>
-            <td>KES {{ item.unit_price }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>KES {{ item.subtotal }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+    <!-- Main Layout -->
+    <div class="order-detail-layout">
+        
+        <!-- LEFT COLUMN: ITEMS & TRACKING -->
+        <div class="order-items-section">
+            
+            {% for item in order.items.all %}
+            <div class="order-item-card">
+                <a href="{{ item.product.get_absolute_url }}" class="order-item-img">
+                    {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                    {% else %}
+                        <div class="img-placeholder" style="border:none; height:100%;"><svg viewBox="0 0 24 24" width="24" height="24"><use href="#icon-bottle"/></svg></div>
+                    {% endif %}
+                </a>
+                <div class="order-item-info">
+                    <a href="{{ item.product.get_absolute_url }}" class="order-item-name">{{ item.product.name }}</a>
+                    <p class="order-item-qty">Qty: {{ item.quantity }} × KES {{ item.unit_price }}</p>
+                </div>
+                <div class="order-item-price">
+                    KES {{ item.subtotal }}
+                </div>
+            </div>
+            {% endfor %}
 
-<div class="cart-summary">
-    <p>Subtotal: KES {{ order.subtotal }}</p>
-    <p>Delivery fee: KES {{ order.delivery_fee }}</p>
-    <p class="total">Total: KES {{ order.total }}</p>
-</div>
-
-{% if reviewable_items %}
-<section style="margin-top:40px">
-    <div class="section-head"><div><span class="eyebrow">Delivered</span><h3>Rate your drinks</h3></div></div>
-    <div class="review-grid">
-        {% for item in reviewable_items %}
-            <div class="glass review-card">
-                <h4>{{ item.product.name }}</h4>
-                {% if item.review %}
-                    <p class="badge badge-success">You rated this {{ item.review.rating }}/5</p>
-                    {% if item.review.comment %}<p class="muted">"{{ item.review.comment }}"</p>{% endif %}
-                {% else %}
-                    <form method="post" action="{% url 'orders:submit_review' item.id %}" class="review-form">
+            <!-- Track Order / Actions -->
+            <div style="margin-top: 24px;">
+                {% if order.status == 'pending_payment' %}
+                    <form method="post" action="{% url 'orders:retry_payment' order.id %}">
                         {% csrf_token %}
-                        <div class="star-select">
-                            {% for i in "12345" %}
-                                <label>
-                                    <input type="radio" name="rating" value="{{ i }}" {% if i == "5" %}checked{% endif %}>
-                                    <svg style="width:20px;height:20px"><use href="#icon-star"/></svg>
-                                </label>
-                            {% endfor %}
-                        </div>
-                        <textarea name="comment" placeholder="Optional comment" rows="2"></textarea>
-                        <button type="submit" class="btn btn-small">Submit rating</button>
+                        <button type="submit" class="btn-checkout" style="background: var(--orange); color: #000;">Retry M-Pesa Payment</button>
                     </form>
+                {% elif order.status == 'paid' or order.status == 'preparing' or order.status == 'out_for_delivery' %}
+                    <a href="#" class="btn-checkout" style="background: var(--panel); border: 1px solid var(--border-glass); color: var(--text);">Track Order</a>
+                {% elif order.status == 'delivered' %}
+                    <a href="{% url 'orders:download_receipt' order.id %}" class="btn-checkout" style="background: transparent; border: 1px solid var(--border-glass); color: var(--text);">Download Receipt</a>
                 {% endif %}
             </div>
-        {% endfor %}
-    </div>
-</section>
-{% endif %}
 
-{% if order.is_delivered and order.rider %}
-<section style="margin-top:32px">
-    <div class="section-head"><div><span class="eyebrow">Say thanks</span><h3>Tip {{ order.rider.name }}</h3></div></div>
-    <div class="glass tip-card">
-        {% if latest_tip and latest_tip.status == 'success' %}
-            <p class="badge badge-success">You tipped KES {{ latest_tip.amount }} — thank you!</p>
-        {% elif latest_tip and latest_tip.status == 'initiated' %}
-            <p class="badge badge-muted" id="tip-status-line">Waiting for M-Pesa confirmation…</p>
-        {% else %}
-            <form method="post" action="{% url 'orders:send_tip' order.id %}" class="tip-form">
-                {% csrf_token %}
-                <div class="tip-amounts">
-                    {% for amt in "50,100,200" %}
-                        <label class="tip-chip"><input type="radio" name="amount" value="{{ amt }}" {% if amt == "100" %}checked{% endif %}>KES {{ amt }}</label>
-                    {% endfor %}
+        </div>
+
+        <!-- RIGHT COLUMN: ADDRESS, PAYMENT, SUMMARY -->
+        <div class="order-sidebar">
+            
+            <!-- Delivery Address -->
+            <div class="order-sidebar-card">
+                <h3 class="sidebar-card-title">Delivery Address</h3>
+                <div class="address-display">
+                    <p><strong>{{ order.delivery_address.full_name }}</strong></p>
+                    <p>{{ order.delivery_address.phone_number }}</p>
+                    <p>{{ order.delivery_address.as_text }}</p>
                 </div>
-                <input type="text" name="phone_number" placeholder="M-Pesa number (leave blank to use {{ order.phone_number }})">
-                <button type="submit" class="btn btn-small btn-orange">Send tip</button>
-            </form>
-        {% endif %}
-    </div>
-</section>
-{% endif %}
-</div>
-{% endblock %}
+            </div>
 
-{% block extra_scripts %}
-{% if latest_tip and latest_tip.status == 'initiated' %}
-<script>
-    const tipStatusUrl = "{% url 'payments:tip_status' latest_tip.id %}";
-    const tipLine = document.getElementById('tip-status-line');
-    const tipInterval = setInterval(async () => {
-        try {
-            const res = await fetch(tipStatusUrl);
-            const data = await res.json();
-            if (data.tip_status === 'success') {
-                tipLine.textContent = 'Tip sent — thank you!';
-                tipLine.className = 'badge badge-success';
-                clearInterval(tipInterval);
-            } else if (data.tip_status === 'failed' || data.tip_status === 'cancelled') {
-                tipLine.textContent = 'Tip ' + data.tip_status + '.';
-                tipLine.className = 'badge badge-warning';
-                clearInterval(tipInterval);
-            }
-        } catch (e) {}
-    }, 3000);
-</script>
-{% endif %}
+            <!-- Payment Method -->
+            <div class="order-sidebar-card">
+                <h3 class="sidebar-card-title">Payment Method</h3>
+                <div class="payment-method-display">
+                    {% if order.payment_method == 'mpesa' %}
+                        <span class="mpesa-label" style="color: #4CAF50; font-weight: 600;">M-Pesa</span>
+                    {% elif order.payment_method == 'card' %}
+                        <span style="font-weight: 600;">Card Payment</span>
+                    {% elif order.payment_method == 'cod' %}
+                        <span style="font-weight: 600;">Cash on Delivery</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-sidebar-card">
+                <h3 class="sidebar-card-title">Order Summary</h3>
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>KES {{ order.subtotal }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Delivery</span>
+                    <span>KES {{ order.delivery_fee }}</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row summary-total">
+                    <span>Total</span>
+                    <span style="color: var(--orange); font-family: var(--font-mono);">KES {{ order.total }}</span>
+                </div>
+            </div>
+
+            <!-- Support / Help -->
+            <div style="text-align: center; margin-top: 16px;">
+                <a href="#" style="color: var(--text-mute); font-size: 0.8rem; text-decoration: none;">Need help? Contact Support</a>
+            </div>
+
+        </div>
+    </div>
+</div>
 {% endblock %}

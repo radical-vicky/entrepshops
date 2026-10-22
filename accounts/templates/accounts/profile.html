@@ -1,199 +1,187 @@
 {% extends "base.html" %}
-{% block title %}Your profile — Entrep - Shop{% endblock %}
+{% load static %}
+
+{% block title %}My Profile — EntrepShop{% endblock %}
 
 {% block content %}
-<div class="container">
-<div class="page-head">
-    <span class="eyebrow">Account</span>
-    <h1>Your profile</h1>
-</div>
+<div class="profile-dashboard-layout">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="profile-sidebar">
+        <nav class="profile-sidebar-nav">
+    
+            <a href="{% url 'orders:order_history' %}" class="p-nav-item">
+                Orders <span class="badge-count">{{ total_orders }}</span>
+            </a>
+            <a href="{% url 'store:address_list' %}" class="p-nav-item">Addresses</a>
+            <a href="{% url 'vendors:dashboard' %}" class="p-nav-item">My Shop</a>
+            <a href="{% url 'accounts:spin' %}" class="p-nav-item">Spin</a>
+            <a href="{% url 'accounts:profile' %}" class="p-nav-item active">Profile</a>
+            <a href="{% url 'marketing:list' %}" class="p-nav-item">Whatsapp Earn</a>
+            
+            
+            
+        </nav>
+    </aside>
 
-<div class="profile-layout">
-
-    {# ---------- Profile card ---------- #}
-    <div class="glass profile-card">
-        <div class="avatar-row">
-            {% if profile.avatar %}
-                <img src="{{ profile.avatar.url }}" alt="" class="avatar-lg">
-            {% else %}
-                <div class="avatar-lg avatar-placeholder"><svg style="width:32px;height:32px"><use href="#icon-user"/></svg></div>
-            {% endif %}
-            <div>
-                <h3 style="margin:0">{{ user.username }}</h3>
-                <p class="muted" style="margin:4px 0 0">{{ user.email }}</p>
-            </div>
+    <!-- MAIN CONTENT -->
+    <main class="profile-main">
+        
+        <div class="profile-header">
+            <div class="breadcrumb">Home &gt; <span>Profile</span></div>
+            <h1 class="page-title">My Profile</h1>
+            <p class="page-subtitle">Manage your personal information and account settings.</p>
         </div>
 
-        <form method="post" action="{% url 'accounts:update_profile' %}" enctype="multipart/form-data" class="auth-form" style="margin-top:20px">
-            {% csrf_token %}
-            <label>Username<input type="text" name="username" value="{{ user.username }}"></label>
-            <label>Profile picture<input type="file" name="avatar" accept="image/*"></label>
-            <button type="submit" class="btn btn-small">Save changes</button>
-        </form>
-    </div>
-
-    {# ---------- Wallet card ---------- #}
-    <div class="glass profile-card">
-        <span class="eyebrow">Wallet</span>
-        <h3 style="margin:4px 0 16px">KES {{ profile.wallet_balance }}</h3>
-
-        <form method="post" action="{% url 'accounts:withdraw' %}" class="withdraw-form">
-            {% csrf_token %}
-            <label>Withdraw to M-Pesa (min KES {{ min_withdrawal }})
-                <input type="number" name="amount" min="{{ min_withdrawal }}" step="1" placeholder="{{ min_withdrawal }}">
-            </label>
-            <label>Phone number
-                <input type="text" name="phone_number" placeholder="07XXXXXXXX">
-            </label>
-            <button type="submit" class="btn btn-small btn-orange" {% if profile.wallet_balance < min_withdrawal %}disabled title="Balance below minimum"{% endif %}>
-                Withdraw instantly
-            </button>
-            {% if profile.wallet_balance < min_withdrawal %}
-                <p class="muted" style="font-size:0.8rem;margin-top:6px">Reach KES {{ min_withdrawal }} to unlock withdrawals.</p>
-            {% endif %}
-        </form>
-    </div>
-
-    {# ---------- Lifetime totals ---------- #}
-    <div class="glass profile-card">
-        <span class="eyebrow">Lifetime</span>
-        <h3 style="margin:4px 0 16px">Wallet summary</h3>
-
-        <div class="lifetime-grid">
-            <div class="lifetime-stat">
-                <span class="lifetime-stat-label">Total earned</span>
-                <span class="lifetime-stat-value positive">+KES {{ lifetime_earned }}</span>
-            </div>
-            <div class="lifetime-stat">
-                <span class="lifetime-stat-label">Total withdrawn</span>
-                <span class="lifetime-stat-value negative">−KES {{ lifetime_spent }}</span>
-            </div>
-            <div class="lifetime-stat">
-                <span class="lifetime-stat-label">Current balance</span>
-                <span class="lifetime-stat-value">KES {{ lifetime_balance }}</span>
-            </div>
-        </div>
-    </div>
-
-    {# ---------- Breakdown by source ---------- #}
-    <div class="glass profile-card">
-        <span class="eyebrow">Breakdown</span>
-        <h3 style="margin:4px 0 16px">By source</h3>
-
-        {% if breakdown %}
-            <table class="cart-table">
-                <tbody>
-                {% for row in breakdown %}
-                    <tr>
-                        <td>
-                            {{ row.label }}
-                            <br><span class="muted" style="font-size:0.8rem">{{ row.count }} transaction{{ row.count|pluralize }}</span>
-                        </td>
-                        <td style="text-align:right" class="{% if row.is_debit %}wallet-debit{% else %}wallet-credit{% endif %}">
-                            {% if row.is_debit %}−{% else %}+{% endif %}KES {{ row.amount }}
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p class="muted">No wallet activity yet — refer a friend or spin the daily wheel to start earning.</p>
-        {% endif %}
-    </div>
-
-    {# ---------- Withdrawal history ---------- #}
-    {% if recent_withdrawals %}
-    <div class="glass profile-card">
-        <span class="eyebrow">Withdrawals</span>
-        <h3 style="margin:4px 0 16px">Recent withdrawals</h3>
-        <table class="cart-table">
-            <tbody>
-            {% for w in recent_withdrawals %}
-                <tr>
-                    <td>
-                        KES {{ w.amount }} → {{ w.phone_number }}
-                        <br><span class="badge {% if w.status == 'success' %}badge-success{% elif w.status == 'failed' %}badge-warning{% else %}badge-muted{% endif %}">{{ w.get_status_display }}</span>
-                    </td>
-                    <td class="muted" style="text-align:right">{{ w.created_at|date:"d M, H:i" }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    {# ---------- Full transaction history ---------- #}
-    <div class="glass profile-card" style="grid-column: 1 / -1;">
-        <span class="eyebrow">Activity</span>
-        <h3 style="margin:4px 0 16px">All wallet transactions</h3>
-
-        {% if transactions_page.object_list %}
-            <table class="cart-table">
-                <thead>
-                    <tr>
-                        <th style="text-align:left">Type</th>
-                        <th style="text-align:left">Description</th>
-                        <th style="text-align:right">Amount</th>
-                        <th style="text-align:right">Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for txn in transactions_page %}
-                    <tr>
-                        <td>{{ txn.get_kind_display }}</td>
-                        <td class="muted">{{ txn.description|default:"—" }}</td>
-                        <td style="text-align:right" class="{% if txn.amount < 0 %}wallet-debit{% else %}wallet-credit{% endif %}">
-                            {% if txn.amount >= 0 %}+{% endif %}KES {{ txn.amount }}
-                        </td>
-                        <td class="muted" style="text-align:right">{{ txn.created_at|date:"d M Y, H:i" }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-
-            {% if transactions_page.has_other_pages %}
-                <div class="pagination">
-                    {% if transactions_page.has_previous %}
-                        <a class="pagination-link" href="?page={{ transactions_page.previous_page_number }}">← Previous</a>
+        <!-- User Card + Stats -->
+        <div class="profile-top-row">
+            
+            <div class="user-card">
+                <div class="user-card-avatar">
+                    {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}">
                     {% else %}
-                        <span class="pagination-link is-disabled">← Previous</span>
-                    {% endif %}
-                    <span class="pagination-info">Page {{ transactions_page.number }} of {{ transactions_page.paginator.num_pages }}</span>
-                    {% if transactions_page.has_next %}
-                        <a class="pagination-link" href="?page={{ transactions_page.next_page_number }}">Next →</a>
-                    {% else %}
-                        <span class="pagination-link is-disabled">Next →</span>
+                        <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.5rem; font-weight: bold;">
+                            {{ user.username|first|upper }}
+                        </div>
                     {% endif %}
                 </div>
-            {% endif %}
-        {% else %}
-            <p class="muted">No wallet transactions yet.</p>
-        {% endif %}
-    </div>
+                <div class="user-card-info">
+                    <h2>{{ user.get_full_name|default:user.username }} <span class="verified-badge">{{ account_status }}</span></h2>
+                    <p class="user-card-email">{{ user.email }}</p>
+                    <p class="user-card-role">Customer</p>
+                    <a href="{% url 'accounts:edit_profile' %}" class="btn-change-photo">Change Photo</a>
+                </div>
+            </div>
 
-    {# ---------- Refer & earn ---------- #}
-    <div class="glass profile-card">
-        <span class="eyebrow">Refer &amp; earn</span>
-        <h3 style="margin:4px 0 10px">{{ profile.referral_count }} friend{{ profile.referral_count|pluralize }} referred</h3>
-        <p class="muted">Share your link — you and your friend both get KES {{ referral_bonus }} once they complete their first order.</p>
-        <div class="referral-link-box">
-            <code id="referral-link">{{ referral_link }}</code>
-            <button type="button" class="btn btn-small btn-outline" onclick="navigator.clipboard.writeText(document.getElementById('referral-link').textContent); this.textContent='Copied!'">Copy</button>
+            <div class="stats-row">
+                <div class="stat-box">
+                    <strong>{{ total_orders }}</strong>
+                    <span>Total Orders</span>
+                </div>
+                <div class="stat-box">
+                    <strong>{{ avg_rating }}</strong>
+                    <span>Average Rating</span>
+                </div>
+                <div class="stat-box">
+                    <strong>{{ wishlist_count }}</strong>
+                    <span>Wishlist Items</span>
+                </div>
+                <div class="stat-box">
+                    <strong>{{ account_status }}</strong>
+                    <span>Account Status</span>
+                </div>
+            </div>
         </div>
-    </div>
 
-    {# ---------- Daily spin ---------- #}
-    <div class="glass profile-card">
-        <span class="eyebrow">Daily spin</span>
-        {% if today_spin %}
-            <h3 style="margin:4px 0 10px">Today: {{ today_spin.prize.label }}</h3>
-            <p class="muted">Come back tomorrow for another spin.</p>
-        {% else %}
-            <h3 style="margin:4px 0 10px">You have a free spin today</h3>
-        {% endif %}
-        <a href="{% url 'accounts:spin' %}" class="btn btn-small btn-orange">Go to spin wheel</a>
-    </div>
+        <!-- Form + Settings -->
+        <div class="profile-bottom-row">
+            
+            <!-- Personal Information Form -->
+            <div class="profile-form-section">
+                <h3 class="section-title">Personal Information</h3>
+                
+                <form method="POST" action="{% url 'accounts:update_profile' %}" enctype="multipart/form-data" class="dashboard-form">
+                    {% csrf_token %}
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" name="full_name" value="{{ user.get_full_name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address *</label>
+                            <input type="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number *</label>
+                            <input type="text" name="phone_number" value="{{ user.profile.phone_number|default:'' }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Date of Birth</label>
+                            <input type="date" name="dob" value="{{ user.profile.date_of_birth|date:'Y-m-d'|default:'' }}">
+                        </div>
+                        <div class="form-group">
+                            <label>Gender</label>
+                            <select name="gender">
+                                <option value="Female" {% if user.profile.gender == 'Female' %}selected{% endif %}>Female</option>
+                                <option value="Male" {% if user.profile.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Other" {% if user.profile.gender == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Bio (Optional)</label>
+                        <textarea name="bio" rows="3">{{ user.profile.bio|default:'' }}</textarea>
+                    </div>
 
-</div>
+                    <button type="submit" class="btn-save-changes">
+                        Save Changes
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Side Settings -->
+            <div class="profile-settings-section">
+                
+                <div class="settings-card">
+                    <h3 class="section-title">Account Settings</h3>
+                    
+                    <a href="{% url 'account_change_password' %}" class="setting-item">
+                        <div class="setting-text">
+                            <strong>Change Password</strong>
+                            <span>Update your password for better security.</span>
+                        </div>
+                        <span>&gt;</span>
+                    </a>
+                    
+                    <a href="#" class="setting-item">
+                        <div class="setting-text">
+                            <strong>Notification Preferences</strong>
+                            <span>Manage your email and SMS notifications.</span>
+                        </div>
+                        <span>&gt;</span>
+                    </a>
+
+                    <a href="#" class="setting-item">
+                        <div class="setting-text">
+                            <strong>Privacy Settings</strong>
+                            <span>Control your data and privacy settings.</span>
+                        </div>
+                        <span>&gt;</span>
+                    </a>
+                </div>
+
+                <div class="settings-card">
+                    <h3 class="section-title">Quick Actions</h3>
+                    
+                    <a href="{% url 'orders:order_history' %}" class="setting-item">
+                        <div class="setting-text">
+                            <strong>View Order History</strong>
+                            <span>Check your past orders</span>
+                        </div>
+                        <span>&gt;</span>
+                    </a>
+
+                    <a href="{% url 'store:address_list' %}" class="setting-item">
+                        <div class="setting-text">
+                            <strong>Manage Addresses</strong>
+                            <span>Update your delivery addresses</span>
+                        </div>
+                        <span>&gt;</span>
+                    </a>
+
+                    <a href="#" class="setting-item">
+                        <div class="setting-text">
+                            <strong>Get Help</strong>
+                            <span>Contact our support team</span>
+                        </div>
+                        <span>&gt;</span>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </main>
 </div>
 {% endblock %}

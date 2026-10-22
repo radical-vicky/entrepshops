@@ -169,6 +169,31 @@ def home(request):
         .order_by('sort_order', '-created_at')[:6]
     )
 
+    # ==========================================
+    # NEW QUERIES FOR THE NEW SECTIONS
+    # ==========================================
+    
+    # Hot Deals: Get products with a discount/compare price, or just latest
+    hot_deals = (
+        Product.objects.visible()
+        .exclude(compare_at_price__isnull=True)
+        .select_related('category', 'department')
+        .prefetch_related('images')
+        .order_by('-created_at')[:5]
+    )
+    
+    # Fallback if no products have compare_at_price set yet
+    if not hot_deals:
+        hot_deals = Product.objects.visible().order_by('-created_at')[:5]
+
+    # New Arrivals: Just the latest 5 products
+    new_arrivals = (
+        Product.objects.visible()
+        .select_related('category', 'department')
+        .prefetch_related('images')
+        .order_by('-created_at')[:5]
+    )
+
     return render(request, 'store/home.html', {
         'categories': categories,
         'selected_category': selected_category,
@@ -179,6 +204,8 @@ def home(request):
         'search_query': search_query,
         'departments': departments,
         'selected_department': selected_department,
+        'hot_deals': hot_deals,       # <--- ADDED
+        'new_arrivals': new_arrivals, # <--- ADDED
     })
 
 
@@ -570,7 +597,6 @@ def my_rentals(request):
         .order_by('-created_at')
     )
     return render(request, 'store/my_rentals.html', {'rentals': rentals})
-
 
 
 

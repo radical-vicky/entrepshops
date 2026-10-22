@@ -1,50 +1,114 @@
 {% extends "base.html" %}
-{% block title %}My orders — Entrep - Shop{% endblock %}
+{% load static %}
+
+{% block title %}Order History — EntrepShop{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-head">
+<div class="container" style="padding-top: 40px; padding-bottom: 60px;">
+
+    <!-- Page Header -->
+    <div class="page-head" style="margin-bottom: 24px;">
         <span class="eyebrow">Account</span>
-        <h1>My orders</h1>
+        <h1>Order History</h1>
+        <p class="lede">View and track all your past orders.</p>
     </div>
 
-    <div class="form-card wide">
-        <table class="cart-table">
-            <thead><tr><th>Order</th><th>Status</th><th>Total</th><th>Placed</th><th></th></tr></thead>
-            <tbody>
-            {% for order in orders %}
-                <tr>
-                    <td>#{{ order.id }}</td>
-                    <td><span class="badge {% if order.status == 'paid' or order.status == 'delivered' %}badge-success{% endif %}">{{ order.get_status_display }}</span></td>
-                    <td>KES {{ order.total }}</td>
-                    <td>{{ order.created_at|date:"d M Y, H:i" }}</td>
-                    <td><a href="{% url 'orders:order_detail' order.id %}">View</a></td>
-                </tr>
-            {% empty %}
-                <tr><td colspan="5">No orders yet.</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <div class="order-history-card">
+        <div class="order-history-header">
+            <h2>All Orders</h2>
+        </div>
+
+        <div class="table-responsive">
+            <table class="order-history-table">
+                <thead>
+                    <tr>
+                        <th>Order No.</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'orders:order_detail' order.id %}" class="order-id-link">
+                                #ENT{{ order.id|stringformat:"05d" }}
+                            </a>
+                        </td>
+                        <td class="text-muted">{{ order.created_at|date:"d M Y" }}</td>
+                        <td class="font-mono text-bold">KES {{ order.total|floatformat:2 }}</td>
+                        <td>
+                            <!-- Status Badges -->
+                            {% if order.status == 'delivered' %}
+                                <span class="status-badge status-delivered">Delivered</span>
+                            {% elif order.status == 'out_for_delivery' %}
+                                <span class="status-badge status-out">Out for Delivery</span>
+                            {% elif order.status == 'preparing' %}
+                                <span class="status-badge status-processing">Processing</span>
+                            {% elif order.status == 'paid' %}
+                                <span class="status-badge status-paid">Paid</span>
+                            {% elif order.status == 'pending_payment' %}
+                                <span class="status-badge status-pending">Pending</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="status-badge status-cancelled">Cancelled</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: right;">
+                            <a href="{% url 'orders:order_detail' order.id %}" class="btn-view-details">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--text-mute)" stroke-width="1.5" style="margin-bottom: 12px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <p>You haven't placed any orders yet.</p>
+                            <a href="{% url 'store:product_list' %}" class="btn btn-small" style="margin-top: 12px;">Start Shopping</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
+    <!-- Cancelled Orders Section (Optional) -->
     {% if cancelled_orders %}
-    <div class="form-card wide cancelled-orders-card">
-        <h3 style="margin-top:0;font-size:0.95rem;color:var(--text-mute)">Unsuccessful orders</h3>
-        <table class="cart-table">
-            <thead><tr><th>Order</th><th>Reason</th><th>Total</th><th>Placed</th><th></th></tr></thead>
-            <tbody>
-            {% for order in cancelled_orders %}
-                <tr>
-                    <td>#{{ order.id }}</td>
-                    <td class="muted">{{ order.cancellation_reason|default:"Payment not completed." }}</td>
-                    <td class="muted">KES {{ order.total }}</td>
-                    <td class="muted">{{ order.created_at|date:"d M Y, H:i" }}</td>
-                    <td><a href="{% url 'orders:order_detail' order.id %}">View</a></td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+    <div class="order-history-card" style="margin-top: 32px;">
+        <div class="order-history-header">
+            <h2>Cancelled Orders</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="order-history-table">
+                <thead>
+                    <tr>
+                        <th>Order No.</th>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Reason</th>
+                        <th style="text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in cancelled_orders %}
+                    <tr>
+                        <td><a href="{% url 'orders:order_detail' order.id %}" class="order-id-link">#ENT{{ order.id|stringformat:"05d" }}</a></td>
+                        <td class="text-muted">{{ order.created_at|date:"d M Y" }}</td>
+                        <td class="font-mono text-bold">KES {{ order.total|floatformat:2 }}</td>
+                        <td class="text-muted" style="font-size: 0.85rem;">{{ order.cancellation_reason|default:"Cancelled" }}</td>
+                        <td style="text-align: right;">
+                            <a href="{% url 'orders:order_detail' order.id %}" class="btn-view-details">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
     {% endif %}
+
 </div>
 {% endblock %}
